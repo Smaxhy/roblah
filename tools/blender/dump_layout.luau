@@ -70,6 +70,11 @@ local function partsOf(model, origin, gait, filter)
 				material = p.Material.Name,
 				shape = shapeOf(p),
 				transparency = p.Transparency,
+				-- a socket (one kit mesh drawn, without the kit, by its MeshCover parts) and the
+				-- outfit detail a kit mesh already has (CoveredBy): the previews hide them as the game does
+				meshId = p:GetAttribute("MeshId"),
+				meshCover = p:GetAttribute("MeshCover"),
+				coveredBy = p:GetAttribute("CoveredBy"),
 				joint = joints[p.Name],
 				follows = (function()
 					local w = p:FindFirstChildOfClass("WeldConstraint")

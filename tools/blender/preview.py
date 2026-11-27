@@ -119,8 +119,21 @@ def corners(part):
     return out
 
 
-def place(model, cell_center, cell_size, turn_deg, use_kit=True, extra_scale=1.0):
+def shown(model, use_kit=True):
+    """The parts the game shows: with the kit, a socket's mesh replaces the parts that drew it
+    (MeshCover) and a dressed piece hides its stand-in detail (CoveredBy); without it, a socket is
+    drawn by those parts and is itself shrunk to nothing (Hunter/MeshLibrary.dress)."""
     parts = [p for p in model["parts"] if p.get("transparency", 0) < 0.99]
+    if not use_kit:
+        return [p for p in parts if not p.get("meshId")]
+    roles = set(kit.ROLES)
+    sockets = {p["meshId"] for p in parts if p.get("meshId") and p.get("role") in roles}
+    dressed = {p["name"] for p in parts if p.get("role") in roles}
+    return [p for p in parts if not (p.get("meshCover") in sockets or (p.get("coveredBy") and p["coveredBy"] in dressed))]
+
+
+def place(model, cell_center, cell_size, turn_deg, use_kit=True, extra_scale=1.0):
+    parts = shown(model, use_kit)
     pts = [c for p in parts for c in corners(p)]
     lo = Vector((min(p.x for p in pts), min(p.y for p in pts), min(p.z for p in pts)))
     hi = Vector((max(p.x for p in pts), max(p.y for p in pts), max(p.z for p in pts)))
@@ -290,7 +303,7 @@ def anim(name, kinds, frames=12, cols=3, width=1080):
     for i, model in enumerate(models):
         c, r = i % cols, i // cols
         center = Vector((world_w / 2 - (c + 0.5) * cell, 0, -(r + 0.5) * cell + rows * cell / 2 - cell * 0.06))
-        parts = [p for p in model["parts"] if p.get("transparency", 0) < 0.99]
+        parts = shown(model)
         pts = [q for p in parts for q in corners(p)]
         lo = Vector((min(p.x for p in pts), min(p.y for p in pts), min(p.z for p in pts)))
         hi = Vector((max(p.x for p in pts), max(p.y for p in pts), max(p.z for p in pts)))

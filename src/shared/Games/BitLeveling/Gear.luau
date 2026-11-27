@@ -4,7 +4,7 @@
 ]]
 local HUNTERS = { "hunter_e", "hunter_d", "hunter_c", "hunter_b", "hunter_a", "hunter_s" }
 
--- every weapon at every rarity (Hunter/Weapons.luau: 61 weapons x 3 stars x shiny or not)
+-- every weapon at every rarity (Hunter/Weapons.luau: 202 weapons x 3 stars x shiny or not)
 local Weapons = require(script.Parent.Parent.Parent:WaitForChild("Hunter"):WaitForChild("Weapons"))
 
 local list = {
