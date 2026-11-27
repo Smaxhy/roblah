@@ -295,6 +295,60 @@ friends on the server able to join. They're tuned by headless fights: a Hunter a
 with middling stats wins about half the time alone, a strong one nearly always; a Red Gate's boss
 is a rank above the reading, so run if you must.
 
+## Bonds and your party
+
+Everyone a life meets can be bonded with: incident survivors, raid teammates, guild colleagues,
+Association staff, neighbours, the saga cast, and the game's roster of original Hunters
+(`Engine/Party.luau`, `Games/BitLeveling/Interactions.luau`).
+
+- **Who they are:** each person has a rank (or none), a class, two to four traits, likes,
+  dislikes, a backstory, and a history with you.
+  - **The roster:** its people bring their own (`Games/BitLeveling/Roster.luau`).
+  - **The saga cast:** 24 people the stories bring in, written by hand.
+  - **Everyone else:** their profile is generated, and comes out the same every time.
+- **What you can do:** talk, train together, spar, share a meal, ask about their past (the
+  backstory opens a line at a time as the bond grows), give a gift (they have likes and dislikes),
+  raid together, ask them to join your party, or part ways.
+- **Asking someone to join:** you see the odds and their reasons before you ask, and then they
+  **accept or refuse** in their own words. What moves the odds:
+  - your bond, your Charisma and your reputation
+  - the rank gap: a strong Hunter won't follow a weak one; a weaker one may jump at it
+  - their personality: the greedy want a fee, the cautious avoid dangerous lives, the honest refuse a rogue
+  - how full your party already is
+- **The party (up to four):** members help in Gate fights. A Tanker takes hits, a Healer cuts
+  what you take, and the others add damage. All of it shows in the odds.
+  - **Boss rooms:** they act every turn: strike, guard, heal.
+  - **Risks:** they can be hurt or killed, more in Red Gates and Gates above their rank.
+  - **Pay and loyalty:** they take a share. Loyalty rises with shared wins and gifts and falls
+    with losses and unpaid shares.
+  - **Leaving:** at low loyalty they leave, and a scheming one may betray you once.
+  - **Over the years:** they age, improve, and sometimes leave for reasons of their own.
+- **Where to find it:** **PARTY** on the life screen opens the party sheet, with R6 portraits,
+  rank, class, loyalty and bond, the candidates and their odds. Tapping a person opens their
+  profile.
+- **Canon figures** can only be public figures in the news. They never join a party.
+
+`lune run tests/party_check` checks it:
+- odds rise with bond and fall with the rank gap
+- people both accept and refuse
+- members help in fights and act in boss rooms
+- hurt, death, leaving and betrayal happen at sensible rates
+- lives with parties save
+
+## Sound
+
+Every button clicks and every swing, spell, monster, Gate and street sounds like itself.
+- **The recordings:** they're Roblox's own and ProSoundEffects' (Roblox's licensed partner), and
+  the music is from Roblox's licensed libraries. `python3 tools/sfx/verify_ids.py` checks every id
+  against the Creator Store: published, the right creator, nothing filed as gore.
+- **The modules:**
+  - `client/Sfx` is the mix and the volume setting.
+  - `client/UiSounds` gives every button its click and hover tick.
+  - `client/WorldSfx` places sounds in the 3D world: each weapon family's swing and hit, each
+    element and spell shape, each monster family's growl, attack, hurt and death, Gates
+    humming, opening, surging and breaking, sirens and crowds.
+- **The rest:** [`SFX.md`](SFX.md) has the sources, the API and the full table of ids.
+
 ## Stories and endings
 
 Beyond the Gate incidents and canon headlines, a life can fall into one of **15 story arcs**
@@ -376,6 +430,9 @@ tool. All three are covered in [`STUDIO_AND_BLENDER.md`](STUDIO_AND_BLENDER.md).
 lune run tools/checkgame BitLeveling            # validate, lint, headless lives
 lune run tests/hunterworld_check 100            # the world simulation's behaviour (see below)
 lune run tests/fates_check 60                   # every ending reachable, every life ends in one
+lune run tests/party_check 60                   # bonds, asking, accept/refuse odds, party help, risks, saves
+lune run tests/sfx_check                        # every button, weapon, spell, monster and Gate sound resolves; missing audio stays quiet
+python3 tools/sfx/verify_ids.py                 # every sound and music id against the Creator Store
 lune run tests/abilities_check                  # 251 moves: data, scaling, effects, HUD, loadout, real casts on a live server
 lune run tests/weapons_check                    # weapons, stars, Shiny, drops, the market's value
 lune run tests/weaponfx_check                   # every weapon at every rarity builds; every swing and hit draws

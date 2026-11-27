@@ -10,7 +10,9 @@ whirlpools) open around you in real time and monsters come out of the ones that 
 202 weapons in 53 families and nine elements, with ★ to ★★★ and Shiny rolls, a player market, six classes with 72 skills,
 12 magic schools and 251 live moves on a five-slot skill bar, 70 birth talents, 22 turn-based bosses, 15 story arcs and 40 endings (Monarch paths
 included, on a clearly non-canon world line), and an opening cutscene of a raid party walking
-into a Gate.
+into a Gate. Everyone you meet can be bonded with, and up to four of them can join your party
+(they accept or refuse, and fight beside you). Every button, swing, spell, monster and Gate has
+its own sound, all of it Roblox's own or its licensed libraries.
 
 - **Play:** open `build/BitLeveling.rbxlx` in Roblox Studio and press Play (build it with
   `bash tools/build_game.sh BitLeveling --no-test`).
