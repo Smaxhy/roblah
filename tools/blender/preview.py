@@ -354,6 +354,14 @@ def kit_items(layout):
         "pauldron_spiked": [1.3, 0.8, 1.3], "helm_winged": [2.4, 1.5, 1.5], "helm_horned": [2.4, 1.9, 1.5], "crown": [1.35, 0.7, 1.35],
         "gauntlet": [1.1, 1.0, 1.1], "boot": [1.05, 0.9, 1.35], "belt_pouch": [0.55, 0.45, 0.32], "cape_skinned": [2.0, 3.0, 0.14],
         "scarf_skinned": [0.32, 1.5, 0.1],
+        "head_elf": [2.2, 1.2, 1.1], "head_dwarf": [1.4, 1.8, 1.3], "beard": [0.9, 1.1, 0.3], "head_insect": [1.3, 1.0, 1.4],
+        "mandible": [0.35, 0.2, 0.7], "antenna": [0.12, 1.2, 0.5], "thorax_insect": [1.4, 1.1, 1.8], "abdomen_insect": [1.6, 1.3, 2.6],
+        "pincer": [0.7, 0.9, 1.2], "stinger": [0.5, 0.9, 0.6], "skull": [1.1, 1.2, 1.2], "ribcage": [1.8, 1.9, 1.1],
+        "bone_limb": [0.45, 2.0, 0.45], "tentacle": [0.5, 2.6, 0.5], "shell_dome": [2.6, 1.6, 2.6],
+        "wing_feather_r": [4.5, 0.2, 2.6], "wing_feather_l": [4.5, 0.2, 2.6], "wing_insect_r": [3.2, 0.06, 1.2], "wing_insect_l": [3.2, 0.06, 1.2],
+        "fin": [0.12, 1.2, 1.6], "maw": [1.6, 1.2, 2.2], "mane": [2.2, 1.4, 2.2], "hoof_leg": [0.6, 2.4, 0.6], "claw_hand": [0.8, 2.2, 0.8],
+        "trunk_bark": [2.2, 3.4, 2.2], "leaf_crown": [4, 2.8, 4], "root_leg": [0.9, 2.2, 0.9], "flame_core": [1.6, 2.6, 1.6],
+        "crystal_cluster": [1.6, 1.8, 1.6], "head_demon": [1.8, 1.8, 1.3], "head_beast_maned": [2.0, 1.8, 2.0],
     }
     items = []
     for role in kit.ROLES:
@@ -377,6 +385,10 @@ def main():
               lambda r: r["name"], width=1600)
     if what in ("anim", "all"):
         anim("monsters_walk", ["goblin", "dire_wolf", "wyvern", "spider", "naga", "stone_golem"], frames=12)
+    if what in ("families", "all"):
+        third = [r for r in kit.ROLES if list(kit.ROLES).index(r) >= list(kit.ROLES).index("head_elf")]
+        items = [it for it in kit_items(layout) if it["role"] in third]
+        sheet("kit_families", items, 8, 10.0, 35, "BITLEVELING · MONSTER-FAMILY MESHES (elves, dwarves, insects, undead, demons, plants, elementals)", lambda it: it["role"], width=1600)
     if what in ("kit", "all"):
         sheet("kit", kit_items(layout), 10, 10.0, 35, "BITLEVELING · THE MESH KIT: ONE MESH PER ROLE (each one stretches to the part that plays it)",
               lambda it: it["role"], width=1800)

@@ -1000,6 +1000,341 @@ def scarf_skinned():
     return v, f
 
 
+# ── the third set: monster families (elves, dwarves, insects, undead, demons, plants...) ─────
+def head_elf():
+    head = moved(superq(0.6, 0.62), sx=0.46, sy=0.9, sz=0.82)
+    head = remap(head[0], lambda x, y, z: (x * (1 - 0.18 * smoothstep(-0.1, -0.5, y)), y, z - 0.04 * smoothstep(-0.1, -0.45, y))), head[1]
+
+    def ear(side):
+        e = lathe([(-0.5, 0.5), (0.1, 0.35), (0.5, 0.0)], 8, "x")
+        e = moved(e, sx=0.62, sy=0.2, sz=0.07)
+        e = turned(e, "z", 24)
+        e = turned(e, "y", -20)
+        if side < 0:
+            e = ([[-p[0], p[1], p[2]] for p in e[0]], [list(reversed(f)) for f in e[1]])
+        return moved(e, dx=side * 0.42, dy=0.12, dz=0.08)
+
+    return merge(head, ear(1), ear(-1))
+
+
+def head_dwarf():
+    head = moved(superq(0.5, 0.55), dy=0.22, sx=0.92, sy=0.56, sz=0.86)
+    beard_body = superq(0.85, 0.8)
+    beard_body = remap(beard_body[0], lambda x, y, z: (x * (0.4 + 0.6 * (y + 0.5)), y, z)), beard_body[1]
+    beard_body = moved(beard_body, dy=-0.18, dz=-0.2, sx=0.8, sy=0.62, sz=0.38)
+    braids = [moved(cone(0.5, 1.0, 6, "y"), dx=dx, dy=-0.4, dz=-0.28, sx=0.1, sy=-0.22, sz=0.1) for dx in (-0.16, 0.16)]
+    brow = moved(superq(0.5, 0.5, 14, 8), dy=0.16, dz=-0.36, sx=0.8, sy=0.12, sz=0.14)
+    return merge(head, beard_body, brow, *braids)
+
+
+def beard():
+    v, f = superq(0.85, 0.8, 20, 16)
+
+    def d(x, y, z):
+        x *= 0.35 + 0.65 * (y + 0.5)
+        x += 0.03 * math.sin(y * 18)
+        return x, y, z
+
+    return remap(v, d), f
+
+
+def mandible():
+    v, f = lathe([(-0.5, 0.5), (-0.1, 0.4), (0.3, 0.2), (0.5, 0.0)], 8, "z")
+    v = remap(v, lambda x, y, z: (x + 0.35 * (0.5 - z) ** 2 * 0.0 + 0.3 * (-z + 0.5) ** 2 - 0.3, y, -z))
+    return v, f
+
+
+def head_insect():
+    head = moved(superq(0.75, 0.7), sx=0.8, sy=0.7, sz=0.7, dz=0.08)
+    eyes = [moved(superq(1.0, 1.0, 12, 8), dx=dx, dy=0.12, dz=-0.18, sx=0.28, sy=0.3, sz=0.26) for dx in (-0.3, 0.3)]
+    m_r = moved(mandible(), dx=0.16, dy=-0.18, dz=-0.32, sx=0.32, sy=0.14, sz=0.36)
+    m_l = moved(([[-p[0], p[1], p[2]] for p in mandible()[0]], [list(reversed(fc)) for fc in mandible()[1]]), dx=-0.16, dy=-0.18, dz=-0.32, sx=0.32, sy=0.14, sz=0.36)
+    return merge(head, m_r, m_l, *eyes)
+
+
+def antenna():
+    stalk = lathe([(-0.5, 0.5), (0.3, 0.3), (0.42, 0.25)], 6, "y")
+    stalk = remap(stalk[0], lambda x, y, z: (x * 0.3, y * 0.9, z * 0.3 + 0.35 * (y + 0.5) ** 2)), stalk[1]
+    knob = moved(superq(1.0, 1.0, 10, 6), dy=0.42, dz=0.33, sx=0.22, sy=0.16, sz=0.22)
+    return merge(stalk, knob)
+
+
+def thorax_insect():
+    v, f = superq(0.7, 0.7, 24, 16)
+    return remap(v, lambda x, y, z: (x * (1 - 0.08 * (0.5 + 0.5 * math.cos(z * math.pi * 6))), y * (1 - 0.08 * (0.5 + 0.5 * math.cos(z * math.pi * 6))), z)), f
+
+
+def abdomen_insect():
+    prof = []
+    for i in range(17):
+        t = -0.5 + i / 16
+        r = 0.5 * math.sin(math.pi * clamp((t + 0.5) * 1.05, 0, 1)) ** 0.6
+        r *= 1 - 0.06 * (0.5 + 0.5 * math.cos(i * math.pi))  # segment bands
+        prof.append((t, max(0.02, r)))
+    return lathe(prof, 16, "z")
+
+
+def pincer():
+    palm = moved(superq(0.6, 0.6), dz=0.25, sx=0.62, sy=0.72, sz=0.5)
+
+    def jaw(upper):
+        prof = [(-0.5, 0.5), (-0.1, 0.42), (0.25, 0.25), (0.5, 0.0)]
+        v, f = lathe(prof, 8, "z")
+        sgn = 1 if upper else -1
+
+        def curl(x, y, z):
+            k = (0.5 - z)  # 0 at the root (+Z) .. 1 at the tip (-Z)
+            return x, y + sgn * (0.35 * math.sin(k * math.pi * 0.9)) - sgn * 0.25 * k, -z
+        v = remap(v, curl)
+        return moved((v, f), dy=sgn * 0.14, dz=-0.18, sx=0.42 if upper else 0.34, sy=0.36 if upper else 0.28, sz=0.75 if upper else 0.6)
+
+    return merge(palm, jaw(True), jaw(False))
+
+
+def stinger():
+    bulb = moved(superq(0.9, 0.9), dy=-0.2, dz=0.15, sx=0.6, sy=0.55, sz=0.6)
+    barb = moved(horn("y"), dy=0.15, dz=-0.05, sx=0.4, sy=0.7, sz=0.4)
+    return merge(bulb, barb)
+
+
+def skull():
+    cranium = moved(superq(0.75, 0.8), dy=0.12, sx=0.86, sy=0.76, sz=0.9)
+
+    def sockets(x, y, z):
+        for ex in (-0.2, 0.2):
+            d2 = (x - ex) ** 2 + (y - 0.02) ** 2
+            if z < -0.2 and d2 < 0.03:
+                z += 0.16 * (1 - d2 / 0.03)
+        if z < -0.25 and abs(x) < 0.06 and -0.18 < y < -0.06:
+            z += 0.08  # the nose
+        return x, y, z
+
+    cranium = remap(cranium[0], sockets), cranium[1]
+    jaw = moved(superq(0.5, 0.6, 16, 10), dy=-0.33, dz=-0.06, sx=0.62, sy=0.28, sz=0.68)
+    teeth = [moved(superq(0.4, 0.4, 6, 4), dx=-0.2 + k * 0.08, dy=-0.2, dz=-0.38, sx=0.05, sy=0.08, sz=0.05) for k in range(6)]
+    return merge(cranium, jaw, *teeth)
+
+
+def ribcage():
+    spine = moved(lathe([(-0.5, 0.5), (0.5, 0.5)], 8, "y"), dz=0.38, sx=0.12, sy=1.0, sz=0.12)
+    parts = [spine]
+    for k in range(5):
+        y = 0.35 - k * 0.16
+        rib = torus(0.42 - abs(k - 1.5) * 0.03, 0.035, 24, 5, "y")
+        rib = remap(rib[0], lambda x, yy, z: (x, yy, z * 0.9)), rib[1]
+        parts.append(moved(rib, dy=y))
+    sternum = moved(superq(0.4, 0.4, 8, 6), dy=0.05, dz=-0.38, sx=0.12, sy=0.6, sz=0.08)
+    parts.append(sternum)
+    return merge(*parts)
+
+
+def bone_limb():
+    prof = [(-0.5, 0.3), (-0.46, 0.5), (-0.38, 0.48), (-0.28, 0.22), (0.28, 0.2), (0.38, 0.46), (0.46, 0.5), (0.5, 0.3)]
+    v, f = lathe(prof, 10, "y")
+    return remap(v, lambda x, y, z: (x * (1.15 if abs(y) > 0.38 else 1.0), y, z)), f
+
+
+def tentacle():
+    prof = []
+    for i in range(16):
+        t = 0.5 - i / 15
+        prof.append((t, 0.5 * (0.15 + 0.85 * (t + 0.5) ** 0.8)))
+    v, f = lathe(prof, 10, "y")
+    return remap(v, lambda x, y, z: (x + 0.25 * (0.5 - y) ** 2, y, z + 0.08 * math.sin((0.5 - y) * 7))), f
+
+
+def shell_dome():
+    v, f = superq(0.55, 0.6, 26, 18)
+
+    def d(x, y, z):
+        if y < -0.15:
+            y = -0.15 + (y + 0.15) * 0.25
+        k = 1 + 0.04 * (abs(math.sin(x * 9)) + abs(math.sin(z * 9))) * smoothstep(-0.15, 0.4, y)  # plates
+        return x * k, y, z * k
+
+    return remap(v, d), f
+
+
+def wing_feather(right=True):
+    def outline(u):
+        x = -0.5 + u
+        front = -0.5 + 0.12 * u
+        span = 1.0 - 0.55 * u ** 1.2
+        feathers = 0.12 * abs(math.sin(u * math.pi * 9))  # feather tips along the trailing edge
+        return x, front, front + span - feathers
+
+    def thick(x, z, v):
+        return 0.2 + 0.3 * (1 - smoothstep(0.0, 0.3, v))
+
+    v, f = slab(outline, 72, 10, thick)
+    v = swap_axes(v, "xzy")
+    if not right:
+        v = [[-p[0], p[1], p[2]] for p in v]
+        f = [list(reversed(fc)) for fc in f]
+    return v, f
+
+
+def wing_insect(right=True):
+    def outline(u):
+        x = -0.5 + u
+        w = 0.5 * math.sin(math.pi * clamp(u * 1.02, 0, 1)) ** 0.7
+        return x, -w, w
+
+    def thick(x, z, v):
+        vein = max(0.0, 1 - abs(math.sin((v - 0.5) * math.pi * 5)) * 8) + max(0.0, 1 - abs(math.sin((x + 0.5) * math.pi * 6)) * 10)
+        return 0.12 + 0.25 * min(1.0, vein)
+
+    v, f = slab(outline, 40, 12, thick)
+    v = swap_axes(v, "xzy")
+    if not right:
+        v = [[-p[0], p[1], p[2]] for p in v]
+        f = [list(reversed(fc)) for fc in f]
+    return v, f
+
+
+def fin():
+    def outline(u):
+        z = -0.5 + u
+        top = -0.5 + 1.0 * math.sin(math.pi * u * 0.9) ** 0.6 * (1 - 0.3 * u)
+        return z, -0.5, max(-0.45, top)
+
+    def thick(z, y, v):
+        return 0.5 * (1 - v * 0.8) * (0.6 + 0.4 * abs(math.sin((z + 0.5) * math.pi * 5)))
+
+    v, f = slab(outline, 26, 10, thick)
+    return swap_axes(v, "zyx"), f
+
+
+def maw():
+    v, f = superq(0.65, 0.7, 28, 18)
+
+    def d(x, y, z):
+        if z < -0.15 and abs(y) < 0.12 * (1 + (-z - 0.15) * 3):
+            # the mouth: a deep slot at the front
+            z += 0.35 * smoothstep(-0.15, -0.5, z) * (1 - abs(y) / 0.3)
+        return x, y, z
+
+    v = remap(v, d)
+    teeth = []
+    for k in range(7):
+        x = -0.3 + k * 0.1
+        teeth.append(moved(cone(0.5, 1.0, 4, "y"), dx=x, dy=0.06, dz=-0.38, sx=0.06, sy=-0.14, sz=0.06))
+        teeth.append(moved(cone(0.5, 1.0, 4, "y"), dx=x + 0.05, dy=-0.06, dz=-0.38, sx=0.06, sy=0.14, sz=0.06))
+    return merge((v, f), *teeth)
+
+
+def mane():
+    v, f = torus(0.36, 0.16, 36, 10, "y")
+
+    def fluff(x, y, z):
+        a = math.atan2(z, x)
+        k = 1 + 0.18 * max(0.0, math.sin(a * 11)) + 0.08 * math.sin(a * 5 + y * 20)
+        return x * k, y * (1 + 0.6 * max(0, -z)), z * k
+
+    return remap(v, fluff), f
+
+
+def hoof_leg():
+    leg = lathe([(0.5, 0.4), (0.3, 0.46), (0.0, 0.32), (-0.25, 0.24), (-0.32, 0.28)], 12, "y")
+    hoof = moved(lathe([(-0.5, 0.45), (-0.32, 0.4)], 12, "y"), dz=-0.02)
+    return merge(leg, hoof)
+
+
+def claw_hand():
+    arm = moved(lathe([(0.5, 0.42), (0.2, 0.46), (0.0, 0.36), (-0.25, 0.34), (-0.32, 0.42)], 12, "y"), dy=0.08, sy=0.84)
+    claws = []
+    for dx in (-0.22, 0.0, 0.22):
+        c = moved(cone(0.5, 1.0, 6, "y"), dx=dx, dy=-0.38, dz=-0.12, sx=0.14, sy=-0.26, sz=0.14)
+        c = remap(c[0], lambda x, y, z: (x, y, z - 0.25 * max(0, -y - 0.3))), c[1]
+        claws.append(c)
+    return merge(arm, *claws)
+
+
+def trunk_bark():
+    prof = [(-0.5, 0.5), (-0.38, 0.4), (0.0, 0.36), (0.3, 0.38), (0.5, 0.32)]
+    v, f = lathe(prof, 28, "y")
+
+    def bark(x, y, z):
+        a = math.atan2(z, x)
+        k = 1 + 0.07 * math.cos(a * 12 + y * 3) + 0.05 * math.sin(y * 17 + a * 3)
+        return x * k, y, z * k
+
+    return remap(v, bark), f
+
+
+def leaf_crown():
+    rng = [(0.0, 0.1, 0.0, 0.62), (-0.28, -0.05, 0.1, 0.45), (0.3, -0.02, -0.08, 0.48), (0.05, -0.1, -0.3, 0.42), (-0.05, 0.0, 0.3, 0.45), (0.0, 0.3, 0.05, 0.4)]
+    blobs = []
+    for i, (x, y, z, r) in enumerate(rng):
+        b = superq(0.95, 0.95, 16, 10)
+        b = rocky(b[0], 0.08, 8, i * 1.7), b[1]
+        blobs.append(moved(b, dx=x, dy=y, dz=z, sx=r, sy=r * 0.8, sz=r))
+    return merge(*blobs)
+
+
+def root_leg():
+    main = lathe([(0.5, 0.45), (0.0, 0.36), (-0.3, 0.3), (-0.4, 0.2)], 10, "y")
+    main = remap(main[0], lambda x, y, z: (x + 0.05 * math.sin(y * 9), y, z + 0.05 * math.cos(y * 7))), main[1]
+    roots = []
+    for k in range(3):
+        a = math.radians(k * 120 + 20)
+        r = moved(cone(0.5, 1.0, 6, "y"), dx=math.cos(a) * 0.22, dy=-0.38, dz=math.sin(a) * 0.22, sx=0.14, sy=-0.24, sz=0.14)
+        r = remap(r[0], lambda x, y, z, a=a: (x + math.cos(a) * 0.25 * max(0, -y - 0.3), y, z + math.sin(a) * 0.25 * max(0, -y - 0.3))), r[1]
+        roots.append(r)
+    return merge(main, *roots)
+
+
+def flame_core():
+    prof = []
+    for i in range(20):
+        t = -0.5 + i / 19
+        u = t + 0.5  # 0 at the bottom .. 1 at the tip
+        r = 0.5 * math.sin(math.pi * min(1.0, u * 2.4)) ** 0.5 if u < 0.21 else 0.5 * (1 - (u - 0.21) / 0.79) ** 1.15
+        prof.append((t, max(0.01, r)))
+    v, f = lathe(prof, 18, "y")
+
+    def lick(x, y, z):
+        a = math.atan2(z, x)
+        k = 1 + 0.22 * math.sin(a * 5 + y * 8) * smoothstep(-0.2, 0.5, y)
+        tw = y * 2.2  # it twists as it rises
+        c, s = math.cos(tw), math.sin(tw)
+        x, z = x * k, z * k
+        return x * c - z * s, y, x * s + z * c
+
+    return remap(v, lick), f
+
+
+def crystal_cluster():
+    parts = []
+    for i, (dx, dz, h, tilt, yaw) in enumerate(((0, 0, 1.0, 0, 0), (-0.28, 0.1, 0.65, -22, 30), (0.3, -0.05, 0.7, 20, -20), (0.05, 0.3, 0.55, 18, 80), (-0.12, -0.3, 0.5, -15, -60))):
+        c = moved(crystal("y"), sx=0.28, sy=h, sz=0.28, dy=-0.5 + h / 2)
+        c = turned(c, "z", tilt)
+        c = turned(c, "y", yaw)
+        parts.append(moved(c, dx=dx, dz=dz))
+    return merge(*parts)
+
+
+def head_demon():
+    h = head_biped()
+    horns = []
+    for side in (-1, 1):
+        hv, hf = horn("y")
+        hv = [[p[0] * side, p[1], p[2]] for p in hv]
+        if side < 0:
+            hf = [list(reversed(fc)) for fc in hf]
+        hv, hf = turned((hv, hf), "z", -35 * side)
+        horns.append(moved((hv, hf), dx=side * 0.42, dy=0.5, dz=0.05, sx=0.32, sy=0.7, sz=0.32))
+    fangs = [moved(cone(0.5, 1.0, 5, "y"), dx=dx, dy=-0.28, dz=-0.42, sx=0.07, sy=-0.16, sz=0.07) for dx in (-0.12, 0.12)]
+    return merge(h, *horns, *fangs)
+
+
+def head_beast_maned():
+    h = moved(head_beast(), dz=-0.1, sx=0.8, sy=0.8, sz=0.8)
+    m = moved(mane(), dz=0.18, sx=1.0, sy=1.2, sz=0.7)
+    m = turned(m, "x", 80)
+    return merge(h, m)
+
+
 SKINNED = {"cape_skinned": (3, 4), "scarf_skinned": (1, 4)}  # columns of bones, bones per column
 
 ROLES = {
@@ -1022,8 +1357,17 @@ ROLES = {
     "pauldron_spiked": pauldron_spiked, "helm_winged": helm_winged, "helm_horned": helm_horned, "crown": crown,
     "gauntlet": gauntlet, "boot": boot, "belt_pouch": belt_pouch,
     "cape_skinned": cloth_skinned, "scarf_skinned": scarf_skinned,
+    # the third set: monster families (Hunter/Monsters asks for them with MeshRole)
+    "head_elf": head_elf, "head_dwarf": head_dwarf, "beard": beard, "head_insect": head_insect, "mandible": mandible,
+    "antenna": antenna, "thorax_insect": thorax_insect, "abdomen_insect": abdomen_insect, "pincer": pincer, "stinger": stinger,
+    "skull": skull, "ribcage": ribcage, "bone_limb": bone_limb, "tentacle": tentacle, "shell_dome": shell_dome,
+    "wing_feather_r": lambda: wing_feather(True), "wing_feather_l": lambda: wing_feather(False),
+    "wing_insect_r": lambda: wing_insect(True), "wing_insect_l": lambda: wing_insect(False),
+    "fin": fin, "maw": maw, "mane": mane, "hoof_leg": hoof_leg, "claw_hand": claw_hand, "trunk_bark": trunk_bark,
+    "leaf_crown": leaf_crown, "root_leg": root_leg, "flame_core": flame_core, "crystal_cluster": crystal_cluster,
+    "head_demon": head_demon, "head_beast_maned": head_beast_maned,
 }
-FLAT = {"crystal_x", "crystal_y", "crystal_z", "core_gem", "torso_golem", "head_golem", "arm_golem", "leg_golem", "crown"}
+FLAT = {"crystal_x", "crystal_y", "crystal_z", "core_gem", "torso_golem", "head_golem", "arm_golem", "leg_golem", "crown", "crystal_cluster"}
 
 
 def build_mesh(role):

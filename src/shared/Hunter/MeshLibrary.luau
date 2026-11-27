@@ -48,6 +48,11 @@ MeshLibrary.ROLES = {
 	"gauntlet", "boot", "belt_pouch",
 	-- cloth with bones: it swings (client/ClothPhysics, SmartBone-compatible)
 	"cape_skinned", "scarf_skinned",
+	-- the third set: monster families (Hunter/Monsters asks for them with MeshRole)
+	"head_elf", "head_dwarf", "beard", "head_insect", "mandible", "antenna", "thorax_insect", "abdomen_insect",
+	"pincer", "stinger", "skull", "ribcage", "bone_limb", "tentacle", "shell_dome",
+	"wing_feather_r", "wing_feather_l", "wing_insect_r", "wing_insect_l", "fin", "maw", "mane", "hoof_leg",
+	"claw_hand", "trunk_bark", "leaf_crown", "root_leg", "flame_core", "crystal_cluster", "head_demon", "head_beast_maned",
 }
 -- the roles whose meshes carry Bones (cloth): tagged for physics when they're laid on
 MeshLibrary.SKINNED = { cape_skinned = true, scarf_skinned = true }

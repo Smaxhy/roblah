@@ -394,6 +394,161 @@
    "verts": 294,
    "tris": 584,
    "bones": 4
+  },
+  "head_elf": {
+   "verts": 514,
+   "tris": 1016,
+   "bones": 0
+  },
+  "head_dwarf": {
+   "verts": 1072,
+   "tris": 2124,
+   "bones": 0
+  },
+  "beard": {
+   "verts": 302,
+   "tris": 600,
+   "bones": 0
+  },
+  "head_insect": {
+   "verts": 701,
+   "tris": 1384,
+   "bones": 0
+  },
+  "mandible": {
+   "verts": 26,
+   "tris": 48,
+   "bones": 0
+  },
+  "antenna": {
+   "verts": 72,
+   "tris": 136,
+   "bones": 0
+  },
+  "thorax_insect": {
+   "verts": 362,
+   "tris": 720,
+   "bones": 0
+  },
+  "abdomen_insect": {
+   "verts": 274,
+   "tris": 544,
+   "bones": 0
+  },
+  "pincer": {
+   "verts": 530,
+   "tris": 1048,
+   "bones": 0
+  },
+  "stinger": {
+   "verts": 636,
+   "tris": 1264,
+   "bones": 0
+  },
+  "skull": {
+   "verts": 744,
+   "tris": 1456,
+   "bones": 0
+  },
+  "ribcage": {
+   "verts": 660,
+   "tris": 1312,
+   "bones": 0
+  },
+  "bone_limb": {
+   "verts": 82,
+   "tris": 160,
+   "bones": 0
+  },
+  "tentacle": {
+   "verts": 162,
+   "tris": 320,
+   "bones": 0
+  },
+  "shell_dome": {
+   "verts": 444,
+   "tris": 884,
+   "bones": 0
+  },
+  "wing_feather_r": {
+   "verts": 1606,
+   "tris": 3208,
+   "bones": 0
+  },
+  "wing_feather_l": {
+   "verts": 1606,
+   "tris": 3208,
+   "bones": 0
+  },
+  "wing_insect_r": {
+   "verts": 1018,
+   "tris": 2032,
+   "bones": 0
+  },
+  "wing_insect_l": {
+   "verts": 1018,
+   "tris": 2032,
+   "bones": 0
+  },
+  "fin": {
+   "verts": 594,
+   "tris": 1184,
+   "bones": 0
+  },
+  "maw": {
+   "verts": 562,
+   "tris": 1064,
+   "bones": 0
+  },
+  "mane": {
+   "verts": 360,
+   "tris": 720,
+   "bones": 0
+  },
+  "hoof_leg": {
+   "verts": 88,
+   "tris": 168,
+   "bones": 0
+  },
+  "claw_hand": {
+   "verts": 86,
+   "tris": 156,
+   "bones": 0
+  },
+  "trunk_bark": {
+   "verts": 142,
+   "tris": 280,
+   "bones": 0
+  },
+  "leaf_crown": {
+   "verts": 876,
+   "tris": 1728,
+   "bones": 0
+  },
+  "root_leg": {
+   "verts": 66,
+   "tris": 116,
+   "bones": 0
+  },
+  "flame_core": {
+   "verts": 362,
+   "tris": 720,
+   "bones": 0
+  },
+  "crystal_cluster": {
+   "verts": 100,
+   "tris": 180,
+   "bones": 0
+  },
+  "head_demon": {
+   "verts": 808,
+   "tris": 1596,
+   "bones": 0
+  },
+  "head_beast_maned": {
+   "verts": 838,
+   "tris": 1672,
+   "bones": 0
   }
  }
 }
