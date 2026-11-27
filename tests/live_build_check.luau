@@ -190,6 +190,80 @@ if okA then
 		check(ok, "the " .. g .. " gait animates")
 	end
 end
+-- the Blender mesh kit (Hunter/MeshLibrary): with a kit, every part that has a role gets its
+-- mesh (a MeshPart its size, welded on, the part hidden) and nothing else changes; without
+-- one, nothing does
+do
+	local MeshLibrary = Loader.require(shared.Hunter.MeshLibrary)
+	local R6Rig = Loader.require(shared.Hunter.R6Rig)
+	local Looks = Loader.require(shared.Hunter.Looks)
+	local Weapons = Loader.require(shared.Hunter.Weapons)
+	local kit = I.new("Model")
+	kit.Name = MeshLibrary.KIT_NAME
+	for _, role in MeshLibrary.ROLES do
+		local m = I.new("MeshPart")
+		m.Name = role
+		m.Parent = kit
+	end
+	local function meshCount(model)
+		local n = 0
+		for _, d in model:GetDescendants() do
+			if d:IsA("MeshPart") then
+				n += 1
+			end
+		end
+		return n
+	end
+	local bad, dressed = {}, 0
+	local function verify(model, gait, label)
+		for _, p in model:GetDescendants() do
+			if p:IsA("BasePart") and not p:IsA("MeshPart") then
+				local mesh = model:FindFirstChild(p.Name .. "Mesh", true)
+				if p:GetAttribute("Dressed") then
+					dressed += 1
+					if p.Transparency ~= 1 then
+						table.insert(bad, label .. "/" .. p.Name .. " still shows under its mesh")
+					end
+				elseif MeshLibrary.roleOf(p, gait) ~= nil then
+					table.insert(bad, label .. "/" .. p.Name .. " has a role and no mesh")
+				end
+				local _ = mesh
+			end
+		end
+		for _, m in model:GetDescendants() do
+			if m:IsA("MeshPart") then
+				local w = m:FindFirstChildOfClass("WeldConstraint")
+				if not w or not w.Part0 or w.Part0.Size ~= m.Size then
+					table.insert(bad, label .. "/" .. m.Name .. " isn't welded to a part its size")
+				end
+			end
+		end
+	end
+	MeshLibrary.setKit(kit)
+	local ok, err = pcall(function()
+		for id, def in Monsters.DEFS do
+			local model = Monsters.build(id)
+			verify(model, def.gait, id)
+			local before = meshCount(model)
+			MeshLibrary.dress(model, def.gait)
+			if meshCount(model) ~= before then
+				table.insert(bad, id .. " was dressed twice")
+			end
+		end
+		for _, pr in Looks.PRESETS do
+			verify(R6Rig.build(Looks.applyPreset(Looks.DEFAULT, pr.id), { rank = 3 }), nil, pr.id)
+		end
+		for _, w in Weapons.list do
+			verify(R6Rig.build({}, { weapon = { base = w.id, stars = 3, shiny = true } }), nil, w.id)
+		end
+	end)
+	MeshLibrary.setKit(nil)
+	check(ok and #bad == 0, string.format("with the mesh kit, every part with a role is dressed (%d parts) and nothing else", dressed) .. (if not ok then ": " .. tostring(err) elseif #bad > 0 then ": " .. table.concat(bad, "; ", 1, math.min(#bad, 6)) else ""))
+	check(dressed > 400, "the kit reaches monsters, weapons and gear")
+	local plain = Monsters.build("dragonkin")
+	check(meshCount(plain) == 0, "without a kit, monsters stay parts")
+end
+
 if failures > 0 then
 	process.exit(1)
 end

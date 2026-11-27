@@ -227,7 +227,9 @@ function Npcs.stepCivilians(waypoints: { Vector3 })
 				c.model:PivotTo(CFrame.new(waypoints[rng:NextInteger(1, #waypoints)] + Vector3.new(0, 3, 0)))
 				for _, p in c.model:GetDescendants() do
 					if p:IsA("BasePart") and p.Name ~= "HumanoidRootPart" then
-						p.Transparency = if p.Name == "FacePlate" then 1 else 0
+						-- back to what it was (a lens stays see-through; a part under a mesh stays hidden)
+						local base = p:GetAttribute("BaseT")
+						p.Transparency = if type(base) == "number" then base elseif p.Name == "FacePlate" then 1 else 0
 					end
 				end
 				c.hum.PlatformStand = false
@@ -290,7 +292,10 @@ function Npcs.knockDown(c: any)
 	animate(c.model, "idle")
 	for _, p in c.model:GetDescendants() do
 		if p:IsA("BasePart") and p.Name ~= "HumanoidRootPart" and p.Name ~= "FacePlate" then
-			p.Transparency = 0.5
+			if p:GetAttribute("BaseT") == nil then
+				p:SetAttribute("BaseT", p.Transparency)
+			end
+			p.Transparency = math.max(p.Transparency, 0.5)
 		end
 	end
 end

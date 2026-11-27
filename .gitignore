@@ -4,3 +4,7 @@ tools/gui_render/out/
 tools/avatar/shots/
 node_modules/
 tools/vfx/shots/
+tools/blender/.venv/
+tools/blender/out/*.png
+tools/blender/out/layout.json
+__pycache__/

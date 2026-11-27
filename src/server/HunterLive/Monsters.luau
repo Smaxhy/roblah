@@ -5,11 +5,15 @@
 	Four kinds a rank, 24 in all. Each is built from Parts on a Humanoid (HipHeight carries the
 	body), with Motor6D joints from the root to every limb that moves, so the client can animate
 	them (client/MonsterAnim.luau: legs swing with speed, wings flap, tails and serpents sway,
-	slimes squash). Attributes on the model: Gait, Rank, Kind, Incident.
+	slimes squash). Attributes on the model: Gait, Rank, Kind, Incident. If the place has the
+	Blender mesh kit (Hunter/MeshLibrary), smooth meshes are laid over the parts.
 
 		local model, hum = Monsters.build(kindId)
 		Monsters.KINDS[rank] = { kind ids }
 ]]
+
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local MeshLibrary = require(ReplicatedStorage:WaitForChild("LifeSim"):WaitForChild("Hunter"):WaitForChild("MeshLibrary"))
 
 local Monsters = {}
 
@@ -330,6 +334,8 @@ function Monsters.build(kind: string): (Model, Humanoid)
 	model:SetAttribute("Gait", gait)
 	model:SetAttribute("Kind", kind)
 	model:SetAttribute("Rank", d.rank)
+	-- smooth Blender meshes over the parts, if the place has the kit (Hunter/MeshLibrary)
+	MeshLibrary.dress(model, gait)
 	return model, hum
 end
 

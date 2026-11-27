@@ -48,6 +48,14 @@ function HunterLive.install(S)
 		return
 	end
 	local Shared = ReplicatedStorage:WaitForChild("LifeSim")
+	-- the Blender mesh kit: in the place already, or fetched by its asset id (Hunter/MeshLibrary)
+	task.spawn(function()
+		local okLib, MeshLibrary = pcall(require, Shared:WaitForChild("Hunter"):WaitForChild("MeshLibrary"))
+		if okLib then
+			local loaded = MeshLibrary.load()
+			print(if loaded then "[BitLeveling] mesh kit ready: monsters, weapons and gear use the Blender meshes" else "[BitLeveling] no mesh kit: monsters, weapons and gear are built from parts")
+		end
+	end)
 	local hunter = Shared:WaitForChild("Hunter")
 	local Looks = require(hunter:WaitForChild("Looks"))
 	local R6Rig = require(hunter:WaitForChild("R6Rig"))

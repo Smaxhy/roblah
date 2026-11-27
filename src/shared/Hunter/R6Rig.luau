@@ -16,6 +16,7 @@
 
 local Looks = require(script.Parent:WaitForChild("Looks"))
 local WeaponModels = require(script.Parent:WaitForChild("WeaponModels"))
+local MeshLibrary = require(script.Parent:WaitForChild("MeshLibrary"))
 
 local R6Rig = {}
 
@@ -1063,6 +1064,8 @@ function R6Rig.build(rawLook: any, opts: any?): Model
 		blockHair(model, head, hairDef.fallback or "crop", c3(dye))
 	end
 	model:SetAttribute("R6Look", true)
+	-- the Blender mesh kit over the gear and the weapon, if the place has it (Hunter/MeshLibrary)
+	MeshLibrary.dress(model)
 	return model
 end
 
