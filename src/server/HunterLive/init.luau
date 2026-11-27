@@ -1021,13 +1021,28 @@ function HunterLive.install(S)
 	end
 	-- (admins, and anyone in Studio) start a Gate now, to test: { rank = 1..6, kind = "gate" | "red" | "double", breaks = true }
 	local Admin = require(script.Parent:WaitForChild("Admin"))
+	-- open a Gate on demand (the admin buttons, and the Studio plugin's play test)
+	local function adminOpen(payload: any, site: any?, who: string): any
+		local rank = math.clamp(math.floor(tonumber(payload.rank) or math.random(1, 6)), 1, 6)
+		local kind = if payload.kind == "red" or payload.kind == "double" then payload.kind else nil
+		local inc = spawnIncident({ rank = rank, kind = kind, site = site })
+		if not inc then
+			return { ok = false, error = "Couldn't open one there." }
+		end
+		if payload.breaks then
+			inc.at.breakAt = 20
+			inc.at.raid = nil
+			inc.broke = true
+			inc.outcome = "break_contained"
+		end
+		print(string.format("[BitLeveling admin] %s opened a %s Gate (%s) at %s", who, HW.rankWord(rank), tostring(kind or "gate"), inc.label))
+		return { ok = true, toast = string.format("Opened a %s Gate at %s.", HW.rankWord(rank), inc.label) }
+	end
 	function handlers.hwAdminSpawn(player, _session, payload)
 		if not (Admin.isAdmin and Admin.isAdmin(player)) then
 			return { ok = false, error = "Not allowed." }
 		end
 		payload = if type(payload) == "table" then payload else {}
-		local rank = math.clamp(math.floor(tonumber(payload.rank) or math.random(1, 6)), 1, 6)
-		local kind = if payload.kind == "red" or payload.kind == "double" then payload.kind else nil
 		-- the site nearest the admin's character, if they're walking
 		local site = nil
 		local ch = player.Character
@@ -1047,21 +1062,25 @@ function HunterLive.install(S)
 				end
 			end
 		end
-		local inc = spawnIncident({ rank = rank, kind = kind, site = site })
-		if not inc then
-			return { ok = false, error = "Couldn't open one there." }
-		end
-		if payload.breaks then
-			inc.at.breakAt = 20
-			inc.at.raid = nil
-			inc.broke = true
-			inc.outcome = "break_contained"
-		end
-		print(string.format("[BitLeveling admin] %s opened a %s Gate (%s) at %s", player.Name, HW.rankWord(rank), tostring(kind or "gate"), inc.label))
-		return { ok = true, toast = string.format("Opened a %s Gate at %s.", HW.rankWord(rank), inc.label) }
+		return adminOpen(payload, site, player.Name)
 	end
 
 	S.HunterLive = { spawn = spawnIncident, incidents = incidents, sites = Map.sites }
+
+	-- in Studio only: the BitLeveling Studio plugin's PLAY TEST buttons call this (server view)
+	if RunService:IsStudio() then
+		local hook = Instance.new("BindableFunction")
+		hook.Name = "BitLevelingStudio"
+		hook.OnInvoke = function(action: string, payload: any)
+			if action == "spawn" then
+				return adminOpen(if type(payload) == "table" then payload else {}, nil, "Studio")
+			elseif action == "status" then
+				return { ok = true, incidents = #incidents, players = #Players:GetPlayers() }
+			end
+			return { ok = false, error = "unknown action " .. tostring(action) }
+		end
+		hook.Parent = game:GetService("ServerStorage")
+	end
 
 	Players.PlayerRemoving:Connect(function(player)
 		walking[player] = nil

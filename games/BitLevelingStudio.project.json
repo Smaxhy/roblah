@@ -1,0 +1,8 @@
+{
+  "name": "BitLevelingStudio",
+  "tree": {
+    "$className": "Folder",
+    "Main": { "$path": "../src/plugin/Main.server.luau" },
+    "Lib": { "$path": "../src/plugin/Lib" }
+  }
+}
