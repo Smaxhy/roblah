@@ -166,6 +166,142 @@ local BOSSES = {
 		},
 		barks = { start = { "*a voice from inside empty armour*" }, hurt = { "*a hollow ringing*" }, phase = { "*the crown burns*" } },
 	},
+
+	-- ══ the bestiary's family bosses (ORIGINAL bosses of canon-type and original families;
+	-- Hunter/Bestiary). Tuned on the ones above: the same base, coins and health for their rank.
+	-- None is a canon individual: the ice elf warchief is not the Red Gate's boss, the hive
+	-- matron is not Jeju's queen, the demon noble is no demon lord of the story.
+
+	-- ── E ──
+	kobold_tunnel_boss = {
+		name = "Kobold Tunnel-Boss", title = "Boss of a kobold mine", enemy = "foe_kobolds",
+		hp = 100, coins = 2, base = 5, coinPower = 3, temper = "quick",
+		cause = "Killed by a kobold tunnel-boss",
+		moves = {
+			{ id = "pick", name = "Pick", text = "swings a crystal-tipped pick at your knees", power = 6, weight = 10 },
+			{ id = "cave_in", name = "Cave-in", text = "kicks out a prop, and the tunnel roof comes down on you", power = 5, weight = 6, target = "all", status = "tremor" },
+		},
+		phases = { { at = 0.4, line = "It whistles. The walls are full of kobolds.", base = 1, power = 2, moves = { { id = "swarm", name = "The Whole Shift", text = "sends every miner in the seam at you", power = 6, weight = 8, target = "all" } } } },
+		barks = { start = { "*a whistle and the clatter of picks*" }, hurt = { "*a yelp*" }, phase = { "*the walls answer*" } },
+	},
+
+	-- ── D ──
+	bone_captain = {
+		name = "Bone Captain", title = "What a crypt Gate's guardroom keeps", enemy = "foe_undead_low",
+		hp = 160, coins = 2, base = 9, coinPower = 4, temper = "cunning",
+		cause = "Killed by a bone captain",
+		moves = {
+			{ id = "blade", name = "Notched Blade", text = "cuts with a sword that has killed a great many people", power = 9, weight = 10 },
+			{ id = "rank", name = "Fall In", text = "raps its shield, and the skeletons lock into a line", power = 5, weight = 6, target = "all", status = "tremor" },
+		},
+		phases = { { at = 0.4, line = "The captain's bones pull themselves back together, a little wrong.", base = 2, power = 2 } },
+		barks = { start = { "*bones rattling into line*" }, hurt = { "*a dry crack*" }, phase = { "*it stands up again*" } },
+	},
+
+	-- ── C ──
+	elf_huntmaster = {
+		name = "Forest Elf Huntmaster", title = "Boss of a forest Gate", enemy = "foe_forest_elves",
+		hp = 230, coins = 3, base = 14, coinPower = 5, temper = "quick",
+		cause = "Killed by a forest elf huntmaster",
+		moves = {
+			{ id = "arrow", name = "Heartseeker", text = "looses an arrow you only hear after it hits", power = 14, weight = 10, status = "bleed" },
+			{ id = "volley", name = "Canopy Volley", text = "and the rangers in the trees fill the clearing with arrows", power = 7, weight = 6, target = "all" },
+		},
+		phases = { { at = 0.4, line = "The huntmaster drops the bow and draws two blades.", base = 3, power = 3, moves = { { id = "twin", name = "Twin Blades", text = "comes out of the trees with a blade in each hand", power = 12, weight = 8, status = "bleed" } } } },
+		barks = { start = { "*a bowstring, somewhere above*" }, hurt = { "*a hiss through teeth*" }, phase = { "*leaves falling*" } },
+	},
+
+	-- ── B ──
+	forge_lord = {
+		name = "Forge-Lord of the Deep Hall", title = "Boss of a dwarven hall", enemy = "foe_dwarves",
+		hp = 370, coins = 3, base = 24, coinPower = 6, temper = "brute",
+		cause = "Killed by a dwarf forge-lord",
+		moves = {
+			{ id = "hammer", name = "Forge Hammer", text = "brings down a hammer that glows like a furnace", power = 20, weight = 10, heavy = true, status = "burn" },
+			{ id = "wall", name = "Shield Wall", text = "and its axe-guards lock shields and drive forward", power = 10, weight = 6, target = "all", status = "tremor" },
+		},
+		phases = { { at = 0.4, line = "The forge-lord strikes the floor. The runes along the walls catch fire.", base = 4, power = 4, moves = { { id = "fire", name = "Rune-fire", text = "sets the whole hall burning", power = 13, weight = 7, target = "all", status = "burn" } } } },
+		barks = { start = { "*silence, and an anvil ringing*" }, hurt = { "*a grunt behind the beard*" }, phase = { "*the forge roars*" } },
+	},
+
+	-- ── A ──
+	ice_elf_warchief = {
+		name = "Ice Elf Warchief", title = "What leads the hunt in a frozen Gate", enemy = "foe_ice_elves",
+		hp = 620, coins = 4, base = 27, coinPower = 8, temper = "quick",
+		cause = "Killed by an ice elf warchief",
+		moves = {
+			{ id = "axe", name = "Ice Axe", text = "swings an axe of blue ice in a flat, terrible arc", power = 28, weight = 10, status = "bleed" },
+			{ id = "hunt", name = "The Hunt", text = "calls, and its hunters come out of the snow at all of you", power = 15, weight = 6, target = "all" },
+		},
+		phases = { { at = 0.4, line = "The warchief breathes on its axe, and frost runs up its arms.", base = 6, power = 6, moves = { { id = "nova", name = "Winter", text = "freezes the air in the whole cavern", power = 20, weight = 8, target = "all", status = "sinking" } } } },
+		barks = { start = { "*the snow goes quiet*" }, hurt = { "*a word you don't know*" }, phase = { "*the cold deepens*" } },
+	},
+	hive_matron = {
+		name = "Hive Matron", title = "What sits at the heart of an ant Gate", enemy = "foe_ants",
+		hp = 640, coins = 4, base = 26, coinPower = 8, temper = "brute",
+		cause = "Killed by a hive matron",
+		moves = {
+			{ id = "mandibles", name = "Mandibles", text = "closes mandibles that shear through armour", power = 29, weight = 10, heavy = true },
+			{ id = "acid", name = "Acid Rain", text = "sprays acid across the whole nest chamber", power = 15, weight = 6, target = "all", status = "rupture" },
+		},
+		phases = { { at = 0.45, line = "The chamber walls open. Her guards come out of them.", base = 6, power = 6, moves = { { id = "guards", name = "Royal Guard", text = "sends her plated guards in", power = 21, weight = 8, target = "all", status = "bleed" } } } },
+		barks = { start = { "*a sound like a thousand legs on stone*" }, hurt = { "*a shrill clicking*" }, phase = { "*the nest answers*" } },
+	},
+	dark_matriarch = {
+		name = "Dark Elf Matriarch", title = "What rules a lightless Red Gate", enemy = "foe_dark_elves",
+		hp = 600, coins = 4, base = 26, coinPower = 8, temper = "cunning",
+		cause = "Taken by a dark elf matriarch in a Red Gate",
+		moves = {
+			{ id = "drain", name = "Drain", text = "draws the warmth out of you across the room", power = 26, weight = 10, status = "sinking" },
+			{ id = "spiders", name = "Her Children", text = "lets her phase spiders loose among you", power = 15, weight = 6, target = "all", status = "bleed" },
+		},
+		phases = { { at = 0.4, line = "The torches go out. Only her eyes are left.", base = 6, power = 6 } },
+		barks = { start = { "*a whisper behind you*" }, hurt = { "*a laugh, then not*" }, phase = { "*the dark comes in*" } },
+	},
+
+	-- ── S ──
+	frost_jarl = {
+		name = "Frost Giant Jarl", title = "Boss of a frozen S-rank Gate", enemy = "foe_giants",
+		hp = 1080, coins = 4, base = 55, coinPower = 11, temper = "brute",
+		cause = "Killed by a frost giant jarl",
+		moves = {
+			{ id = "axe", name = "Glacier Axe", text = "brings down an axe the size of a lorry", power = 44, weight = 10, heavy = true, status = "tremor" },
+			{ id = "breath", name = "Winter's Breath", text = "breathes, and the whole field freezes", power = 25, weight = 6, target = "all", status = "sinking" },
+		},
+		phases = {
+			{ at = 0.55, line = "The jarl roars, and its kin answer from the mountains.", base = 6, power = 6 },
+			{ at = 0.25, line = "The jarl tears the frozen ground up in slabs.", base = 8, power = 8, moves = { { id = "avalanche", name = "Avalanche", text = "brings the mountainside down on everyone", power = 33, weight = 9, target = "all", status = "tremor" } } },
+		},
+		barks = { start = { "*footsteps you feel through the floor*" }, hurt = { "*a bellow that cracks the ice*" }, phase = { "*it stands taller*" } },
+	},
+	lich_archivist = {
+		name = "The Lich of the Sunken Archive", title = "What waits at the bottom of a drowned crypt", enemy = "foe_undead_high",
+		hp = 1000, coins = 4, base = 54, coinPower = 11, temper = "cunning",
+		cause = "Unmade by a lich",
+		moves = {
+			{ id = "word", name = "Word of Ending", text = "speaks one word, and your strength goes out like a candle", power = 42, weight = 10, status = "sinking" },
+			{ id = "raise", name = "Raise the Knights", text = "lifts a hand, and its grave knights stand up out of the water", power = 24, weight = 6, target = "all" },
+		},
+		phases = {
+			{ at = 0.5, line = "The lich's crown burns blue. The water freezes solid.", base = 7, power = 7, moves = { { id = "frost", name = "Black Frost", text = "freezes the archive and everyone in it", power = 28, weight = 7, target = "all", status = "sinking" } } },
+			{ at = 0.2, line = "It opens a book that should not be opened.", base = 8, power = 8 },
+		},
+		barks = { start = { "*pages turning, in the dark*" }, hurt = { "*a dry, cold laugh*" }, phase = { "*the crown burns*" } },
+	},
+	demon_noble = {
+		name = "Demon Noble", title = "What commands a demon Gate's host", enemy = "foe_demons",
+		hp = 1100, coins = 4, base = 55, coinPower = 11, temper = "brute",
+		cause = "Killed by a demon noble",
+		moves = {
+			{ id = "sword", name = "Burning Greatsword", text = "swings a greatsword wrapped in fire", power = 44, weight = 10, heavy = true, status = "burn" },
+			{ id = "host", name = "The Host", text = "points, and its soldiers come on in ranks", power = 25, weight = 6, target = "all" },
+		},
+		phases = {
+			{ at = 0.55, line = "Its wings open. The banners in the hall catch fire.", base = 6, power = 6 },
+			{ at = 0.25, line = "It calls the sky down.", base = 8, power = 8, moves = { { id = "meteor", name = "Meteor", text = "drops burning stone on all of you", power = 34, weight = 9, target = "all", status = "burn" } } },
+		},
+		barks = { start = { "*iron, fire, and a horn*" }, hurt = { "*a roar of pure contempt*" }, phase = { "*the sky goes red*" } },
+	},
 }
 
 return BOSSES
