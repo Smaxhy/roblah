@@ -31,6 +31,31 @@ local UserInputService = game:GetService("UserInputService")
 
 local TitleMenu = {}
 
+-- (sound) client/UiSounds clicks every button by itself; these screens pick which sound each
+-- button makes (the UiSound / UiHover attributes) and play the PLAY sting. Silent without it.
+local uiSounds: any = nil
+local function sfx(name: string, opts: any?)
+	if uiSounds == nil then
+		local ok, mod = pcall(function()
+			return require((script.Parent :: any).Parent:FindFirstChild("UiSounds"))
+		end)
+		uiSounds = if ok and type(mod) == "table" then mod else false
+	end
+	if uiSounds then
+		pcall(uiSounds.play, name, opts)
+	end
+end
+local function sounds(b: Instance, press: string?, hover: string?)
+	pcall(function()
+		if press then
+			b:SetAttribute("UiSound", press)
+		end
+		if hover then
+			b:SetAttribute("UiHover", hover)
+		end
+	end)
+end
+
 local C = {
 	ink = Color3.fromRGB(6, 8, 16),
 	panel = Color3.fromRGB(14, 18, 32),
@@ -182,6 +207,7 @@ local function tile(parent: Instance, order: number, glyph: string, title: strin
 		tween(st, 0.2, { Transparency = 0.6 })
 		tween(b, 0.2, { BackgroundTransparency = 0.18 })
 	end)
+	sounds(b, "open", "tile")
 	b.Activated:Connect(onClick)
 	return b
 end
@@ -189,6 +215,7 @@ end
 local function chip(parent: Instance, text: string, on: boolean, color: Color3, onClick: () -> ()): TextButton
 	local b = make("TextButton", { Size = UDim2.fromOffset(0, 34), AutomaticSize = Enum.AutomaticSize.X, BackgroundColor3 = if on then color else C.panelHi, BackgroundTransparency = if on then 0.15 else 0.3, Text = "  " .. text .. "  ", TextColor3 = if on then C.ink else C.text, Font = Enum.Font.GothamBold, TextSize = 14, ZIndex = 14 }, parent)
 	corner(b, 17)
+	sounds(b, "tab")
 	b.Activated:Connect(onClick)
 	return b
 end
@@ -220,6 +247,7 @@ function TitleMenu.show(parent: Instance, env: any): any
 	-- PLAY
 	local play = make("TextButton", { Name = "Play", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.72), Size = UDim2.fromOffset(280, 72), BackgroundColor3 = C.mana, BackgroundTransparency = 0.05, Text = "PLAY", TextColor3 = C.ink, Font = Enum.Font.GothamBlack, TextSize = 34, ZIndex = 11 }, gui)
 	corner(play, 36)
+	sounds(play, "none", "tile") -- (its sting plays when the menu opens: PLAY or any key)
 	local playStroke = stroke(play, Color3.new(1, 1, 1), 0.2, 3)
 	make("UIGradient", { Color = ColorSequence.new(C.manaHi, C.mana), Rotation = 90 }, play)
 	local hint = make("TextLabel", { AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0.72, 46), Size = UDim2.fromOffset(300, 18), BackgroundTransparency = 1, Text = "press any key", TextColor3 = C.sub, Font = Enum.Font.GothamMedium, TextSize = 13, ZIndex = 11 }, gui)
@@ -299,6 +327,7 @@ function TitleMenu.show(parent: Instance, env: any): any
 	local function bigButton(parent: Instance, order: number, text: string, color: Color3, onClick: () -> ()): TextButton
 		local b = make("TextButton", { LayoutOrder = order, Size = UDim2.new(1, 0, 0, 46), BackgroundColor3 = color, Text = text, TextColor3 = C.ink, Font = Enum.Font.GothamBlack, TextSize = 18, ZIndex = 14 }, parent)
 		corner(b, 23)
+		sounds(b, "begin", "tile")
 		b.Activated:Connect(onClick)
 		return b
 	end
@@ -310,6 +339,7 @@ function TitleMenu.show(parent: Instance, env: any): any
 		make("UIListLayout", { Padding = UDim.new(0, 4), SortOrder = Enum.SortOrder.LayoutOrder }, b)
 		make("TextLabel", { LayoutOrder = 1, Size = UDim2.new(1, 0, 0, 20), BackgroundTransparency = 1, Text = (if selected then "◆ " else "◇ ") .. title, TextXAlignment = Enum.TextXAlignment.Left, TextColor3 = if selected then color else C.text, Font = Enum.Font.GothamBlack, TextSize = 16, ZIndex = 14 }, b)
 		make("TextLabel", { LayoutOrder = 2, Size = UDim2.new(1, 0, 0, 0), AutomaticSize = Enum.AutomaticSize.Y, BackgroundTransparency = 1, Text = desc, TextWrapped = true, TextXAlignment = Enum.TextXAlignment.Left, TextColor3 = C.sub, Font = Enum.Font.Gotham, TextSize = 13, ZIndex = 14 }, b)
+		sounds(b, "select")
 		b.Activated:Connect(onClick)
 		return b
 	end
@@ -392,6 +422,9 @@ function TitleMenu.show(parent: Instance, env: any): any
 		end
 		sc.surge()
 		sc.setZoom(1.12)
+		if not env.direct then
+			sfx("play") -- (sound) the Gate surges as the menu opens
+		end
 		tween(play, 0.25, { Position = UDim2.fromScale(0.5, 1.3) }, Enum.EasingStyle.Back, Enum.EasingDirection.In)
 		tween(hint, 0.2, { TextTransparency = 1 })
 		tween(logo, 0.45, { Position = UDim2.fromScale(0.215, 0.1), Size = UDim2.fromScale(0.36, 0.08) })
@@ -408,20 +441,20 @@ function TitleMenu.show(parent: Instance, env: any): any
 			return tile(col, order, glyph, title, line, color, fn)
 		end
 		if env.hasLife then
-			add("▶", "CONTINUE", env.lifeLine or "Back to your life", C.gold, function()
+			sounds(add("▶", "CONTINUE", env.lifeLine or "Back to your life", C.gold, function()
 				if on.continue then
 					on.continue()
 				end
-			end)
+			end), "confirm")
 		end
 		add("✦", "NEW LIFE", "Choose your world and mode, then be born", C.mana, newLifePage)
 		add("◆", "CHARACTER", "Your Hunter's look, your talent and class", C.manaHi, characterPage)
 		add("★", "SPINS", "Talent spin and family name spin", C.gold, spinsPage)
-		add("⚔", "WALK THE CITY", "The live city: Gates open around you in real time", Color3.fromRGB(150, 230, 170), function()
+		sounds(add("⚔", "WALK THE CITY", "The live city: Gates open around you in real time", Color3.fromRGB(150, 230, 170), function()
 			if on.walk then
 				on.walk()
 			end
-		end)
+		end), "confirm")
 		-- the smaller things, in a row of chips
 		order += 1
 		local more = make("Frame", { LayoutOrder = order, Size = UDim2.new(1, 0, 0, 0), AutomaticSize = Enum.AutomaticSize.Y, BackgroundTransparency = 1, ZIndex = 12 }, col)
@@ -443,6 +476,7 @@ function TitleMenu.show(parent: Instance, env: any): any
 		local edit = make("TextButton", { AnchorPoint = Vector2.new(1, 1), Position = UDim2.new(1, -60, 0.9, 0), Size = UDim2.fromOffset(150, 34), BackgroundColor3 = C.panelHi, BackgroundTransparency = 0.15, Text = "EDIT LOOK", TextColor3 = C.text, Font = Enum.Font.GothamBold, TextSize = 14, ZIndex = 13 }, f)
 		corner(edit, 17)
 		stroke(edit, C.mana, 0.4)
+		sounds(edit, "open")
 		edit.Activated:Connect(function()
 			if on.character then
 				on.character()

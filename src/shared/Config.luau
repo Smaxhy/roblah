@@ -48,44 +48,372 @@ return {
 	-- How many finished lives (lanterns) to keep per player.
 	maxLanterns = 60,
 
-	-- Sound effects: Roblox Creator Store audio (search "limbus" in the Creator Store's Audio).
-	-- An id, or { id = ..., volume = ... }. Leave one out (or "") to silence it. Uploads by
-	-- other people can be taken down by Roblox at any time; a missing sound just goes quiet.
+	-- Sound effects. Each entry is an asset id (a number), an engine file ("rbxasset://sounds/..."),
+	-- or { id = ..., volume = ..., pitch = ..., gain = ..., lazy = true }:
+	--   volume  how loud Sfx.play(name) plays it (the app's named sounds; default `volume` below)
+	--   pitch   a base pitch
+	--   gain    a trim for when client/UiSounds or client/WorldSfx layer it (default 1)
+	--   lazy    a long loop or ambience: loaded the first time it plays, not at the start
+	-- Leave one out (or "") to silence it. A sound that can't load (taken down, or gone from the
+	-- client) goes quiet, and every layer built on it just drops out.
+	--
+	-- (BitLeveling) client/UiSounds and client/WorldSfx build every click, slash, spell, roar,
+	-- Gate and siren from the SOURCES below, each layered, pitched and sliced a little differently
+	-- every time. Every id was looked up on 2026-11-27 through Roblox's own Creator Store API
+	-- (apis.roblox.com/toolbox-service/v1/items/details), which returned the name and creator
+	-- written next to it; docs/SFX.md has the whole list and how to check it again.
+	--   [R]    uploaded by Roblox itself (creator "Roblox", id 1)
+	--   [RP]   uploaded by "Roblox Presents" (4111519), Roblox's own events account
+	--   [PSE]  Pro Sound Effects (creator "ProSoundEffects", 7462895450): the library of sound
+	--          effects Roblox licensed in 2022, free to use in any Roblox experience
+	--   [ENG]  a file that ships inside the Roblox client (content/sounds in the client's
+	--          rbxManifest.txt, version 0.748.0.7481526, as mirrored by the public
+	--          MaximumADHD/Roblox-Client-Tracker). Nothing to upload, nothing to take down.
+	--   [KIT]  came with the LifeSim kit: Creator Store uploads by the Limbus Company community,
+	--          looked up live the same day (creator in docs/SFX.md). They can be taken down any
+	--          time, so each has a stand-in built from the sources (client/WorldSfx).
 	sfx = {
 		volume = 0.3, -- v0.10: everything a good deal quieter; the buttons quieter still
-		-- the join intro: "LIMBUS COMPANY!", once, as the intro starts
-		intro = { id = 136558976377458, volume = 0.45 },
-		transition = 111474834139985, -- scene transition: Cantos, Intervallos, the mode select
-		-- menus and buttons
-		click = { id = 101579863217690, volume = 0.16 }, -- UI click 1
-		confirm = { id = 119514733669898, volume = 0.2 }, -- UI click 2
-		tab = { id = 131776850478043, volume = 0.16 }, -- battle UI
-		reroll = 97564402737431, -- Dante's clock rewinding: rerolls and the birth roll
-		resonance = 74578647755806, -- picking a sin
-		-- coin clashes
-		coin = { id = 132596270805754, volume = 0.22 }, -- coin flip
-		tails = { id = 90448103253452, volume = 0.22 }, -- a coin lands tails
-		clash = 120171660922619, -- clash draw
-		clashWin = 74854125236607, -- clash won
-		parry = 111913931670052, -- parry win
-		evade = 73456708215174,
-		guard = 108548606364997,
-		hit = 82880079097413,
-		slash = 102360766617958,
-		pierce = 114823440881243,
-		blunt = 77951971772104,
-		crit = 132015436228708, -- critical / Poise hit
-		stagger = 137592261284291,
-		tremorBurst = 84022207370828,
-		burn = 89989865225661,
-		bossStart = { id = 108760159697947, volume = 0.4 }, -- Proelium Fatale!
-		defeat = 119164791265768,
-		-- life
-		panic = 81470902110645,
-		ego = 104416839342380, -- E.G.O crack
-		death = 111878951416164,
-		shatter = 88226215199235, -- Sanity breaks
-		prescript = 71629892905253,
+
+		-- ── the app's named sounds (Sfx.play("click") anywhere). With client/UiSounds running
+		-- each plays a layered version built from the sources; the id here is what plays without
+		-- it. (The kit's own were Limbus Company sounds, with "LIMBUS COMPANY!" and "Proelium
+		-- Fatale!" shouted over a Solo Leveling game; these are the game's own now.)
+		intro = { id = 9125404320, volume = 0.35 }, -- [PSE] Boom Impact Deep Distant Thumping Hits
+		transition = { id = 15675046931, volume = 0.3 }, -- [R] Roblox_UI_Sweep
+		click = { id = 15675032796, volume = 0.3 }, -- [R] Roblox_UI_Small_Click
+		confirm = { id = 17208396156, volume = 0.3 }, -- [R] Roblox GUI - Select
+		tab = { id = 17208408337, volume = 0.28 }, -- [R] Roblox GUI - Tab
+		reroll = { id = 16480575861, volume = 0.3 }, -- [R] Roblox_Pinball_Big_Metal_Tally_01
+		resonance = { id = 17208327798, volume = 0.3 }, -- [R] Roblox GUI - Aura
+		bossStart = { id = 9114630316, volume = 0.35 }, -- [PSE] Gong Hit Resonant Trail 1
+		defeat = { id = 9116407527, volume = 0.32 }, -- [PSE] Magic Rumbling Decay 2
+		death = { id = 9116418234, volume = 0.3 }, -- [PSE] Magic Tone Falling Shimmer Flanged 1
+		ego = { id = 9116422213, volume = 0.3 }, -- [PSE] Magic Transformation 17
+		shatter = { id = 9114590297, volume = 0.28 }, -- [PSE] Glass Break 1
+
+		-- ── the turn-based fights (the kit's clash screen) [KIT]. Each has a stand-in.
+		coin = { id = 132596270805754, volume = 0.22 }, -- Limbus Company Coin Flip Sound Effect
+		tails = { id = 90448103253452, volume = 0.22 }, -- Limbus Coin Tails
+		clash = 120171660922619, -- Limbus Company SFX - Clash Draw
+		clashWin = 74854125236607, -- Limbus Company SFX - Clash Win
+		parry = 111913931670052, -- parry-win-limbus
+		evade = 73456708215174, -- Limbus Company - Evade
+		guard = 108548606364997, -- Limbus Company - Guard
+		hit = 82880079097413, -- Limbus Company - Hit Sound Effect
+		slash = 102360766617958, -- Limbus Company | Slash
+		pierce = 114823440881243, -- Limbus Company | Pierce
+		blunt = 77951971772104, -- Limbus Company | Blunt
+		crit = 132015436228708, -- Limbus Company - Critical/Poise Hit Sound Effect
+		stagger = 137592261284291, -- stagger limbus-company
+		tremorBurst = 84022207370828, -- Tremor Burst - Limbus Company
+		burn = 89989865225661, -- Burn_SFX_Limbus_East_Don
+		panic = 81470902110645, -- Limbus Company | Panic
+		prescript = 71629892905253, -- Prescripts Limbus Company
+
+		-- ══ SOURCES ══════════════════════════════════════════════════════════════════════════
+		-- ── [ENG] engine files in the client
+		eng_boom = "rbxasset://sounds/impact_explosion_03.mp3", -- the default Explosion
+		eng_splash = "rbxasset://sounds/impact_water.mp3", -- a character landing in water
+		eng_jump = "rbxasset://sounds/action_jump.mp3",
+		eng_land = "rbxasset://sounds/action_jump_land.mp3",
+		eng_fallwind = { id = "rbxasset://sounds/action_falling.ogg", lazy = true }, -- free-fall wind (a loop)
+		eng_steps = { id = "rbxasset://sounds/action_footsteps_plastic.mp3", lazy = true }, -- footsteps (a loop)
+		eng_slider = "rbxasset://sounds/volume_slider.ogg", -- the settings menu's slider tick
+
+		-- ── [R] Roblox's own uploads (the 2009 library is the client's old content/sounds folder)
+		rb_slash = 12222216, -- swordslash.wav
+		rb_lunge = 12222208, -- swordlunge.wav
+		rb_unsheath = 12222225, -- unsheath.wav
+		rb_hit = 12222046, -- hit.wav
+		rb_collide = 12221984, -- collide.wav
+		rb_swoosh = 12222200, -- swoosh.wav
+		rb_ping = 12221990, -- electronicpingshort.wav
+		rb_thunder = 12222030, -- HalloweenThunder.wav
+		rb_lightning = 12222019, -- HalloweenLightning.wav
+		rb_rocketwhoosh = 12222095, -- Rocket whoosh 01.wav
+		rb_glass = 12222005, -- glassbreak.wav
+		rb_sling = 12222103, -- Rubber band sling shot.wav (a bowstring's snap, pitched)
+		rb_victory = 12222253, -- victory.wav
+		rb_pageturn = 12222076, -- pageturn.wav
+		rb_switch = 12222170, -- switch.wav
+		rb_cannon = 3149249837, -- Cannon_Explode
+		rb_roar = 9120031442, -- Thunder With Lion Roar Searing Blast Growl 3 (SFX)
+		rb_ufobeam = { id = 162670130, lazy = true }, -- UFO Beam (a beam's hum, 17 s)
+		rb_laser = 130113322, -- Fire (a laser blaster's shot)
+		rb_equip = 282906960, -- Equip (a laser blaster powering up)
+		rb_checkpoint = 4110925712, -- [RP] WCC2019_checkpointHit (a bright chime)
+
+		-- ── [R] Roblox's interface sounds (Roblox_UI 2023, RBLX UI 2022, Roblox GUI 2024, Pinball 2024)
+		ui_click = 15675032796, -- Roblox_UI_Small_Click
+		ui_click2 = 15675059323, -- Roblox_UI_Bright_Click
+		ui_select = 17208396156, -- Roblox GUI - Select
+		ui_select2 = 10128760939, -- RBLX UI Select 01 (SFX)
+		ui_select3 = 10066968815, -- RBLX UI Select 02 (SFX)
+		ui_hover1 = 17208339919, -- Roblox GUI - Hover 01
+		ui_hover2 = 17208343514, -- Roblox GUI - Hover 02
+		ui_hover3 = 17208348006, -- Roblox GUI - Hover 03
+		ui_back = 17208186900, -- Roblox GUI - Back
+		ui_back2 = 10066914500, -- RBLX UI Back (SFX)
+		ui_tab = 17208408337, -- Roblox GUI - Tab
+		ui_swipe = 17208405682, -- Roblox GUI - Swipe
+		ui_swipe2 = 10128766965, -- RBLX UI Swipe (SFX)
+		ui_sweep = 15675046931, -- Roblox_UI_Sweep
+		ui_paper = 15675037413, -- Roblox_UI_Paper_Swipe
+		ui_purchase = 17208380755, -- Roblox GUI - Purchase
+		ui_purchase2 = 10066947742, -- RBLX UI Purchase (SFX)
+		ui_negative = 17208353912, -- Roblox GUI - Negative
+		ui_delete = 10066926605, -- RBLX UI Delete (SFX)
+		ui_notify = 17208361335, -- Roblox GUI - Notification High
+		ui_notifyLow = 17208372272, -- Roblox GUI - Notification Low
+		ui_toast = 99437156604053, -- PV_ToastNotif
+		ui_pop = 15675055424, -- Roblox_UI_Cute_Pop
+		ui_indicator = 15675085146, -- Roblox_UI_Indicator
+		ui_stinger = 15675043410, -- Roblox_UI_Tonal_Stinger
+		ui_aura = 17208327798, -- Roblox GUI - Aura
+		ui_equip = 17208323435, -- Roblox GUI - Equip
+		ui_pickup = 17208319162, -- Roblox GUI - Pickup
+		ui_bubble = 17208204604, -- Roblox GUI - Bubble
+		ui_whoosh1 = 15675024286, -- Roblox_UI_Whoosh_01
+		ui_whoosh2 = 15675028888, -- Roblox_UI_Whoosh_02
+		ui_whoosh3 = 15674975792, -- Roblox_UI_Whoosh_03
+		ui_whoosh4 = 15675012262, -- Roblox_UI_Whoosh_04
+		ui_coins = 127645268874265, -- CoinTransfer_01
+		ui_tick = 16480551554, -- Roblox_Pinball_Small_Metal_Click_01
+		ui_tick2 = 16480550292, -- Roblox_Pinball_Tiny_Button_Press_01
+		ui_tally = 16480575861, -- Roblox_Pinball_Big_Metal_Tally_01
+		ui_bells = 16480570986, -- Roblox_Pinball_Bumper_Low_Bells_02
+
+		-- ── [PSE] weapons
+		sw_swish1 = 9119749145, -- Sword Swish 102
+		sw_swish2 = 9119749263, -- Sword Swish 5
+		sw_fast1 = 9126013644, -- Swish Med High End Sharp Swords Fast Punches
+		sw_fast2 = 9126013811, -- Swish Med High End Sharp Swords Fast Punches
+		sw_fast3 = 9126014020, -- Swish Med High End Sharp Swords Fast Punches
+		sw_hit1 = 9119746598, -- Sword Hit 1
+		sw_hit2 = 9119746592, -- Sword Hit 2
+		sw_hit3 = 9119746751, -- Sword Hit 4
+		sw_impact1 = 9119747120, -- Sword Impact 102
+		sw_impact2 = 9119747138, -- Sword Impact 202
+		sw_impact3 = 9119747163, -- Sword Impact 302
+		sw_draw = 9119742466, -- Sword Draw Clang Unsheathing Two Sabers 1
+		sw_draw2 = 9119744642, -- Sword Draw Clang Unsheathing Two Sabers 29
+		sw_stab = 9119748927, -- Sword Stab 1
+		kn_shing1 = 9116197252, -- Knife Shing 202
+		kn_shing2 = 9116197044, -- Knife Shing 102
+		wh_heavy1 = 9120728815, -- Whoosh Heavy Punches 1
+		wh_heavy2 = 9120728883, -- Whoosh Heavy Punches 2
+		wh_heavy3 = 9120729007, -- Whoosh Heavy Punches 3
+		wh_thick1 = 9120742729, -- Whoosh Thick Quick Multiple Variations 1
+		wh_thick2 = 9120742716, -- Whoosh Thick Quick Multiple Variations 2
+		wh_air = 9113077334, -- Air Whoosh Heavy Bys And Impacts 1
+		wh_slice = 9120972444, -- Wood Whoosh Slicing Air Quick Swings 1
+		bl_sledge1 = 9125672726, -- Metal Impact Sledge Hammer Hits On 5 Ft I-Beam
+		bl_sledge2 = 9125670743, -- Metal Impact Sledge Hammer Hits On 5 Ft I-Beam
+		bl_metal = 9116651255, -- Metal Hits 2
+		bl_boxing = 9113568548, -- Boxing Hits 13
+		bl_body1 = 9113487341, -- Body Hit 1
+		bl_body2 = 9113487470, -- Body Hit 2
+		bl_punch = 9119061517, -- Sharp Punch 6
+		sh_clang1 = 9119072660, -- Shield Clang As Hit Metal Sword Hubcap 1
+		sh_clang2 = 9119072674, -- Shield Clang As Hit Metal Sword Hubcap 2
+		sh_impact1 = 9119075623, -- Shield Impacts 16
+		sh_impact2 = 9119074309, -- Shield Impacts 2
+		xb_fire1 = 9114001369, -- Crossbow Fire 12
+		xb_fire2 = 9114002577, -- Crossbow Fire 3
+		xb_bolt1 = 9113998001, -- Crossbow Bolts Impact 3
+		xb_bolt2 = 9113998866, -- Crossbow Bolts Impact 23
+		xb_load = 9114004212, -- Crossbow Movement Latches 8
+		ar_hit1 = 9113161129, -- Arrow In And Hit 5
+		ar_hit2 = 9113161312, -- Arrow In And Hit 10
+		ar_fly = 9113166206, -- Arrow Out Whooshing Pass By 1
+		bw_creak = 9125407239, -- Bow Stretches Wood Creaking
+		ch_whip1 = 9113612424, -- Buggy Whip Quick Swish Crack 2
+		ch_whip2 = 9113611449, -- Buggy Whip Light Crack Swish Many Versions 6
+		ch_crack = 9120663217, -- Whip Cracks 2
+		ch_rattle1 = 9113763590, -- Chain Rattle Glassy Metal Rattle 3
+		ch_rattle2 = 9113763589, -- Chain Rattle Glassy Metal Rattle 2
+		rk_hit1 = 9118627392, -- Rock Impacts 8
+		rk_hit2 = 9118607982, -- Rock Hits Rock On Rock Various Versions 6
+
+		-- ── [PSE] the elements
+		fi_ball = 9114428740, -- Fireball Pass By 1
+		fi_burst1 = 9117987278, -- Pyro Fire Ball Burst 12
+		fi_burst2 = 9117983605, -- Pyro Fire Ball Burst 9
+		fi_burst3 = 9117984812, -- Pyro Fire Ball Burst 1
+		fi_whoosh1 = 9114446852, -- Fire Whoosh 15
+		fi_whoosh2 = 9114446277, -- Fire Whoosh 6
+		fi_lick = 9114463219, -- Flame Licks 8
+		fi_loop = { id = 9112780193, lazy = true }, -- Fireplace Constant Burning Flame 1
+		ic_shatter = 9114855870, -- Ice Block Drop To Concrete Shatter 1
+		ic_chunk = 9114865628, -- Ice Hammer Hitting Large Chunks 10
+		ic_freeze = 9125611419, -- Ice Freeze Large Piece Crackles Liquid Nitrogen
+		ic_crack = 9114858767, -- Ice Cracks 1
+		el_zap1 = 9114277757, -- Electric Zaps 12
+		el_zap2 = 9114277402, -- Electric Zaps 6
+		el_zap3 = 9114277623, -- Electric Zaps 8
+		el_burst1 = 9116275998, -- Lightning Flashes Quick Electrical Bursts 13
+		el_burst2 = 9116276946, -- Lightning Flashes Quick Electrical Bursts 21
+		el_charge = 9125980435, -- Spaceship Pre Blast Electric Charge Up Buzzy
+		el_thunder1 = 9120016037, -- Thunder Cracks Big Rumbling Blasts Booming 1
+		el_thunder2 = 9120020225, -- Thunder Lightning 3
+		wi_howl = 9120697823, -- Whoosh By Howling Wind Light Rumbling 1
+		wi_gusts = { id = 9113732046, lazy = true }, -- Cavernous Winds Empty Eerie Gusts Tonal 1
+		wi_sonic = 9120769331, -- Wind Whoosh Sonic Boom Low End Impact 1
+		ea_quake1 = 9114224354, -- Earthquake Explosion 1
+		ea_quake2 = 9114224675, -- Earthquake Explosion 5
+		ea_boulder = 9118585978, -- Rock Cracks Big Boulder Hits 4
+		ea_debris = 9114221862, -- Earthquake Debris Rock Bursts Scattering 1
+		ea_tumble = 9118693443, -- Rocks Tumble 2
+		ea_rumble = { id = 9112775181, lazy = true }, -- Earthquake Rumble 2
+		wa_splash = 9120585252, -- Water Splash Big Water Splash Dive In 1
+		wa_puddle = 9125703162, -- Mud Puddle Splash Shallow Water Impacts
+		wa_geyser = 9120558177, -- Water Geyser Gush Huge Rush Splash 1
+		wa_bubbles = 9120310416, -- Underwater Bubbles Deeper Med Short Bursts 6
+		ho_choir = { id = 9114791989, lazy = true }, -- Heavenly Presence Thick Melodic Choir Pad 1
+		ho_chimes1 = 9116394545, -- Magic Glows Soft Clusters Of Chiming Hits 1
+		ho_chimes2 = 9116395085, -- Magic Glows Soft Clusters Of Chiming Hits 5
+		ho_bell = 9126073001, -- Synth Sparkle Tone High Pitch Bell Tone Ding
+		ho_tree = 9119447936, -- Sparkle Bell Tree Wind Chimes 1
+		vo_suck = 9113436640, -- Big Suck Deep Groaning Build Up Airy Rush 4
+		vo_reverse = 9119707097, -- Swish Suck Reversed Metallic Swoosh Impact 1
+		vo_blast = 9126050066, -- Synth Blast Space Explosion Reverberant Tail
+		vo_drone = { id = 9114353038, lazy = true }, -- Evil Drone Deep Airy Swell 1
+		ve_hiss = 9119991629, -- Termite Sprays Acid Hissing Bursts 1
+		ve_sear = 9119166199, -- Sizzle Short And Explosive Sear 8
+		ve_bloops = 9112752570, -- Bubbles Dribble Small Bloops 1
+		ve_acid = { id = 9113040409, lazy = true }, -- Acid Sizzle 1
+		ac_burst1 = 9116384485, -- Magic Burst 1
+		ac_burst2 = 9116384483, -- Magic Burst 3
+		ac_burst3 = 9116384473, -- Magic Burst 2
+		ac_zoom = 9116411685, -- Magic Swoosh Fast Zooming Pass Bys 18
+		ac_shimmerby = 9125647212, -- Magic Whooshes Pass Bys Metallic Shimmering
+		ac_tube = 9125648149, -- Magic Zoom Up Sharp Tubular Whoosh Fast Hiss
+		ac_poof1 = 9125640290, -- Magic Poofs Short Breathy Bursts
+		ac_poof2 = 9116406610, -- Magic Poofs Thumpy Wheezy Exhale 1
+		ac_pulse = 9116393976, -- Magic Glow Short Pulsing Bursts 9
+		ac_transform = 9116422213, -- Magic Transformation 17
+		ac_descend = 9114055470, -- Descending Synth Burst Tonal Light Phasing 2
+		he_shimmer = 9116420454, -- Magic Tone Tonal Shimmer Shaking Rattle 3
+		he_fall = 9116418234, -- Magic Tone Falling Shimmer Flanged 1
+		he_sparkle = { id = 9125986205, lazy = true }, -- Sparkle Tone Constant High End Shimmer
+		mg_rise1 = 9125805579, -- Rising Whoosh Hissing Build Up Ascending Swoosh
+		mg_rise2 = 9125805781, -- Rising Whoosh Hissing Build Up Ascending Swoosh
+		mg_warp = 9126102694, -- Time Warp Searing Build Up Large Suck Rumble
+		mg_powerup = 9117886786, -- Power Up Sweeteners 17
+		mg_synthup = 9117297453, -- Phasey Synth Power Up High Pitched Rise 2
+		mg_laser = 9116225257, -- Laser Blast 101
+		mg_field = { id = 9116386800, lazy = true }, -- Magic Force Field Constant 1
+		mg_energyby = 9114340693, -- Energy Pass By Sci Fi Tonal Whooshes 1
+		mg_explode = 9117876706, -- Power Explosions Big Heavy Searing Boom 2
+		mg_bigboom = 9126102254, -- Time Warp Big Explosion Blast Boom Tonal Tail
+		mg_whooshboom = 9120705982, -- Whoosh Explosion 1
+		mg_shock = 9125934191, -- Shockwave Impact Huge Whooshing In Build Up
+		mg_deepboom = 9125404320, -- Boom Impact Deep Distant Thumping Hits Booming
+		mg_stinger = 9125641284, -- Magic Synth Stinger Glassine Multi Tone Burst
+		mg_transition = 9116427346, -- Magic Transition 4
+		mg_rumbledecay = 9116407527, -- Magic Rumbling Decay 2
+
+		-- ── [PSE] monsters (creature and animal recordings; nothing human, nothing gory)
+		mo_goblin1 = 9114624345, -- Goblin Growl 1
+		mo_goblin2 = 9114624343, -- Goblin Growl 2
+		mo_goblin3 = 9114624510, -- Goblin Growl 4
+		mo_goblinStutter = 9114625189, -- Goblin Stutter 3
+		mo_goblinCroak = 9114624129, -- Goblin Croak 5
+		mo_brute1 = 9114629612, -- Goliath Vocal Deep Growling Voice 34
+		mo_brute2 = 9116967287, -- Monster Vocals 1
+		mo_brute3 = 9116967303, -- Monster Vocals 2
+		mo_snort = 9113634952, -- Bull Goblin Snorts 7
+		mo_bull = 9113635166, -- Bull Grunts Breathing Constant 1
+		mo_wolf = 9120788137, -- Wolf Growl 3
+		mo_wolfSnarl1 = 9120790555, -- Wolf Snarl 1
+		mo_wolfSnarl2 = 9120791326, -- Wolf Snarl 6
+		mo_lion1 = 9116302309, -- Lion Roar Short Blast Attack Angry Sharp 1
+		mo_lion2 = 9116302323, -- Lion Roar Short Blast Attack Angry Sharp 2
+		mo_lion3 = 9116302511, -- Lion Roar Short Blast Attack Angry Sharp 4
+		mo_lionLow = 9116300504, -- Lion Roar Growl Exhale Low Rumble Breath 1
+		mo_lionTired = 9116304872, -- Lion Roar Tired 12
+		mo_lionPain = 9125628981, -- Lion Roar Painful Bellows Cries Whines
+		mo_bugs1 = 9113977177, -- Creature Mix Big Flying Insects 1
+		mo_bugs2 = 9113976170, -- Creature Mix Big Flying Insects 12
+		mo_wings = 9114876115, -- Insect Wings 2
+		mo_bee = 9113414492, -- Bee Various Buzzing Actions 7
+		mo_chomp = 9114574294, -- Giant Bug Chomps 3
+		mo_spider1 = 9113991080, -- Creature Vocal Spider Hiss Squawk 1
+		mo_spider2 = 9125475729, -- Creature Vocal Spider Growl Belch Hiss Snarl
+		mo_spiderAtk = 9125471800, -- Creature Mix Big Spider Attack Vocal Footsteps
+		mo_spiderDie = 9113991846, -- Creature Vocal Spider Snarl Hiss Exhale 1
+		mo_snake = 9119302978, -- Snake Hiss 2
+		mo_snakeAtk1 = 9119300025, -- Snake Attack Vocal 7
+		mo_snakeAtk2 = 9119300024, -- Snake Attack Vocal 6
+		mo_hydra = 9114854828, -- Hydra Wet Throaty Hissing 1
+		mo_ghost = 9114574159, -- Ghost Wind Slow Build And Decay Swirling 2
+		mo_whisper = 9125440141, -- Choral Wind Eerie Vocal Whisper Wind Ghosts
+		mo_demon1 = 9114228524, -- Eerie Whispering Eerie Reverberant Demon 2
+		mo_demon2 = 9114228525, -- Eerie Whispering Eerie Reverberant Demon 3
+		mo_demonRev = 9114039101, -- Demon Screams Reversed Hollow Voice 2
+		mo_growlBurst = 9114315023, -- Energy Burst Growl 1
+		mo_slime1 = 9119990452, -- Tentacle Slime 1
+		mo_slime2 = 9119990528, -- Tentacle Slime 2
+		mo_slime3 = 9119990321, -- Tentacle Slime 4
+		mo_dissolve = 9113602577, -- Bubble Dissolve Giant 1
+		mo_bat = 9125386815, -- Bat Noises Bursts Of Wings Flapping Fast Away
+		mo_flap = 9114787449, -- Hawk Bird Wings Flap Flutter 1
+		mo_screech1 = 9125474505, -- Creature Screech Pterodactyl Vocals
+		mo_screech2 = 9125474863, -- Creature Screech Pterodactyl Vocals
+		mo_shriek = 9113988191, -- Creature Vocal Pterodactyl Death Shriek 2
+		mo_crabRoar = 9113987603, -- Creature Vocal Giant Crab Monster Roars 1
+		mo_crab1 = 9113980480, -- Creature Mix Giant Crab Monster Roar Growl 2
+		mo_crab2 = 9113980319, -- Creature Mix Giant Crab Monster Roar Growl 1
+		mo_throat = 9113985466, -- Creature Roar Constant Deep Throaty Growls 3
+		mo_breath = 9113984056, -- Creature Mix Weird Deep Monster Breathing 3
+		mo_stomp1 = 9114165461, -- Dragon Footsteps 5
+		mo_stomp2 = 9125404769, -- Boomy Footsteps Giant Thumpy Dinosaur Footsteps
+		mo_leaves = { id = 9116258071, lazy = true }, -- Leaves Rustle Wind Blowing Through Trees 1
+		mo_branch = 9120258724, -- Tree Branches Breaking Snapping Cracking 1
+		mo_woodCreak = 9126263691, -- Wood Groan Creak Opening Wood Chest
+		mo_underwater = 9120348411, -- Underwater Movement 14
+		mo_gurgle = 9120005520, -- Throat Gurgle 1
+		mo_stone = 9113807250, -- Cinder Block Slide On Stone Surface Course 4
+		mo_metal = 9125819216, -- Robot Impact Miscellaneous Metal Clangs Clunks
+		mo_fall = 9113479463, -- Body Falls 1
+
+		-- ── [PSE] Gates
+		gt_hum = { id = 9125567032, lazy = true }, -- Force Field Drone Constant Sci Fi Pulsing Hum
+		gt_swirl = { id = 9114330786, lazy = true }, -- Energy Field Constant Rotating Swooshes 1
+		gt_presence = { id = 9112777364, lazy = true }, -- Energy Presence 1
+		gt_red = { id = 9114353261, lazy = true }, -- Evil Drone Deep Unsetting Rumbly Keening 1
+		gt_redChoir = { id = 9125603019, lazy = true }, -- Heavenly Presence Eerie Choral Tones Dark
+		gt_open = 9120057087, -- Time Warp Searing Build Up Boomy Explosion 5
+		gt_surge = 9118747824, -- Rumble Constant Roar Energy Building 1
+		gt_glass = 9114591736, -- Glass Breaks 6
+		gt_close = 9126236071, -- Wind Suck Slow Backwards Swooshing Build Up
+		gt_enter = 9126228631, -- Whoosh Back Zoom Swoosh Fast Camera In And Out
+		gt_tunnel = 9125742262, -- Plasma Trails Constant Airy Whooshing Windy
+		gt_meteor = 9114428748, -- Fireball Burning Whoosh By 2
+		gt_mortar = 9116973611, -- Mortar Explosion 3
+
+		-- ── [PSE] the city
+		ct_siren = { id = 9112871822, lazy = true }, -- Siren Composite 1
+		ct_sirenAway = 9117810961, -- Police Siren Slow Vehicle Away 2
+		ct_yelp = { id = 9119165420, lazy = true }, -- Siren Yelp 1
+		ct_panic1 = { id = 9114012460, lazy = true }, -- Crowd Panic 1
+		ct_panic2 = 9114012583, -- Crowd Panic 2
+		ct_street = { id = 9112879448, lazy = true }, -- Street Crowd 2
+		ct_walkie1 = 9120456889, -- Walkie Talkie 12
+		ct_walkie2 = 9120458059, -- Walkie Talkie 5
+		ct_walkie3 = 9120456241, -- Walkie Talkie 1
+		ct_static = 9118027586, -- Radio Static 9
+		ct_skid = 9119186275, -- Skids Tire Screeches On Dirt Pavement 4
+		ct_airbrake = 9113052763, -- Air Brakes Bus Truck Several Bursts 2
+		ct_van = 9112968238, -- 1973 Dodge Tradesman Van 1
+		ct_door = 9113204879, -- Audi Car Door Movement Opening Closing 1
+		ct_vanDoor = 9120364883, -- Van Door Fumbly Hits 2
+		ct_horn = 9120386436, -- Vehicle Horn Short Long Honks 13
+		ct_alarm = { id = 9113719289, lazy = true }, -- Car Alarm Exterior Van Yelp Alarm
+		ct_crystal = 9125530803, -- Electronic Blips Sharp Crystalline Beeps
+		ct_gong = 9114630316, -- Gong Hit Resonant Trail 1
+		ct_clock = 9113816351, -- Clock Mechanism 1
 	},
 
 	-- Background music, picked by mood. The game moves between moods on its own:
