@@ -155,8 +155,14 @@ function HunterLive.start(opts: any?)
 
 	local function siren(g: any, on: boolean)
 		if on and not g.siren then
-			local s = make("Sound", { SoundId = PING, Looped = true, Volume = 0.25, RollOffMaxDistance = 260, RollOffMinDistance = 20 }, g.core)
-			s:Play()
+			-- (sounds) a real siren's wail, looped on the Gate (client/WorldSfx); its handle takes the
+			-- PlaybackSpeed wobble below as a gentle doppler, and :Destroy() stops it
+			local okW, W = pcall(require, script.Parent:FindFirstChild("WorldSfx"))
+			local s = okW and W and W.city("siren", g.core, { volume = 0.9, fadeIn = 0.6 })
+			if not s then
+				s = make("Sound", { SoundId = PING, Looped = true, Volume = 0.25, RollOffMaxDistance = 260, RollOffMinDistance = 20 }, g.core)
+				s:Play()
+			end
 			g.siren = s
 		elseif not on and g.siren then
 			g.siren:Destroy()
@@ -316,11 +322,40 @@ function HunterLive.start(opts: any?)
 			shake = math.max(shake, amount)
 		end
 	end
-	local function sound(id: string, at: Vector3, volume: number, pitch: number?)
+	-- (sounds) client/WorldSfx plays everything here, placed where it happens. `id` is a WorldSfx
+	-- name ("magic.fire.impact", "weapon.katana.swing", "monster.orc.attack", "gate.open",
+	-- "fire.burst"...) or an asset id; the client's old rbxasset://sounds/*.wav files (which it no
+	-- longer ships) play the bank's sound for what they were used for. docs/SFX.md lists them all.
+	local okWorldSfx, WorldSfx = pcall(function()
+		return require(script.Parent:WaitForChild("WorldSfx", 5))
+	end)
+	if not okWorldSfx then
+		WorldSfx = nil
+	end
+	local function sound(id: any, at: any, volume: number?, pitch: number?, opts: any?): boolean
+		if WorldSfx then
+			local o = if opts then table.clone(opts) else {}
+			o.volume = (o.volume or 1) * (volume or 1)
+			o.pitch = (o.pitch or 1) * (pitch or 1)
+			local ok, played = pcall(WorldSfx.play, id, at, o)
+			if ok and played then
+				return true
+			end
+		end
+		if type(id) ~= "string" or not string.find(id, "://", 1, true) or typeof(at) ~= "Vector3" then
+			return false
+		end
 		local p = fxPart({ Size = Vector3.one, Position = at, Transparency = 1 }, fxRoot)
-		local s = make("Sound", { SoundId = id, Volume = volume, PlaybackSpeed = pitch or 1, RollOffMaxDistance = 200 }, p)
-		s:Play()
+		local s = make("Sound", { SoundId = id, Volume = volume or 0.5, PlaybackSpeed = pitch or 1, RollOffMaxDistance = 200 }, p)
+		pcall(function()
+			s:Play()
+		end)
 		Debris:AddItem(p, 3)
+		return true
+	end
+	-- a monster's family from what the server says of it (fx "hit"/"kill" may carry `kind`)
+	local function monsterFamily(d: any): string
+		return if WorldSfx and d.kind then WorldSfx.monsterFamily(d.kind) else "default"
 	end
 
 	-- every move's effect (client/SkillFx): drawn here, in this client's effect folder
@@ -349,9 +384,13 @@ function HunterLive.start(opts: any?)
 		end
 		if kind == "slash" then
 			arc(v3(d.from) + Vector3.new(0, 3, 0), v3(d.to) + Vector3.new(0, 3, 0), Color3.fromRGB(160, 220, 255), 0.5)
-			sound(SLASH, v3(d.to), 0.4, 0.9 + math.random() * 0.3)
+			sound("weapon.sword.swing", v3(d.from), 0.8, nil, { rank = d.rank })
+			sound("weapon.sword.hit", v3(d.to), 0.9, nil, { rank = d.rank, delay = 0.06 })
+			sound("monster." .. monsterFamily(d) .. ".hurt", v3(d.to), 0.6, nil, { rank = d.rank, delay = 0.1 })
 		elseif kind == "hit" then
 			flash(v3(d.to) + Vector3.new(0, 3, 0), Color3.fromRGB(255, 90, 70), 4 + (d.rank or 1), 0.3)
+			sound("monster." .. monsterFamily(d) .. ".attack", v3(d.from), 1, nil, { rank = d.rank })
+			sound(if (d.rank or 1) >= 4 then "weapon.blunt.hit" else "fist.hit", v3(d.to), if d.player == player.UserId then 1.2 else 0.8, nil, { rank = d.rank, delay = 0.05 })
 			if d.player == player.UserId then
 				shake = math.max(shake, 0.6 + (d.rank or 1) * 0.25)
 				TweenService:Create(tint, TweenInfo.new(0.06), { TintColor = Color3.fromRGB(255, 150, 150) }):Play()
@@ -361,6 +400,8 @@ function HunterLive.start(opts: any?)
 			end
 		elseif kind == "kill" then
 			flash(v3(d.at) + Vector3.new(0, 2, 0), BLUE, 8 + (d.rank or 1) * 2, 0.5)
+			sound("monster." .. monsterFamily(d) .. ".death", v3(d.at), 1, nil, { rank = d.rank })
+			sound("city.crystal", v3(d.at), 0.8, nil, { delay = 0.35 })
 		elseif kind == "swing" then
 			local at, dir = v3(d.at), v3(d.dir)
 			-- the weapon's own swing for its family, coloured by its element (client/WeaponFx);
@@ -383,11 +424,20 @@ function HunterLive.start(opts: any?)
 					pcall(WeaponFx.hit, v3(t) + Vector3.new(0, 1, 0), d.element, d.power, { parent = fxRoot })
 				end
 			end
-			if d.player == player.UserId then
-				sound(SLASH, at, 0.5, 1 + math.random() * 0.2)
+			local family = ch and ch:GetAttribute("WeaponFamily")
+			if not drawn then
+				sound(if WorldSfx then "weapon." .. tostring(family or "sword") .. ".swing" else SLASH, at, if d.player == player.UserId then 1 else 0.8, nil, { rank = d.rank, power = d.power })
+			end
+			if type(d.targets) == "table" and WorldSfx then
+				for i, t in d.targets do
+					if i <= 4 then
+						pcall(WorldSfx.weapon, family or "sword", "hit", v3(t), { power = d.power, delay = 0.04 + i * 0.02 })
+					end
+				end
 			end
 		elseif kind == "enter" then
 			flash(v3(d.at) + Vector3.new(0, 3, 0), BLUE, 6, 0.4)
+			sound("gate.enter", v3(d.at), 1)
 			local g = gates[d.id]
 			if g then
 				g.vfx:surge(1)
@@ -398,13 +448,24 @@ function HunterLive.start(opts: any?)
 				flash(g.core.Position, BLUE, g.size * 1.5, 0.8)
 				g.vfx:surge(1.5)
 				shakeNear(g.pos, 0.8, 120)
-				sound(PING, g.core.Position, 0.6, 0.5)
+				sound("gate.open", g.core.Position, 1, nil, { rank = g.rank })
+				if WorldSfx and not g.hum then
+					g.hum = WorldSfx.gate("hum", g.core, { rank = g.rank, fadeIn = 2 })
+				end
 			end
 		elseif kind == "redGate" then
 			local g = gates[d.id]
 			if g then
 				flash(g.core.Position, RED, g.size * 2, 1)
 				shakeNear(g.pos, 1.2, 160)
+				sound("gate.red", g.core.Position, 1, nil, { rank = g.rank })
+				if WorldSfx and not g.redHum then
+					if g.hum then
+						g.hum:stop(1.5)
+						g.hum = nil
+					end
+					g.redHum = WorldSfx.gate("redDrone", g.core, { rank = g.rank, fadeIn = 2.5 })
+				end
 			end
 		elseif kind == "break" then
 			local g = gates[d.id]
@@ -413,10 +474,16 @@ function HunterLive.start(opts: any?)
 				flash(g.core.Position, Color3.fromRGB(255, 110, 60), g.size * 2.4, 1.1)
 				g.vfx:surge(2)
 				shakeNear(g.pos, 2 + g.rank * 0.4, 220)
+				sound("gate.break", g.core.Position, 1.1, nil, { rank = g.rank })
+				sound("city.panic", g.pos + Vector3.new(0, 3, 0), 0.9, nil, { delay = 0.6, duration = 6 })
 			end
 		elseif kind == "siren" then
 			local g = gates[d.id]
 			if g then
+				if d.on == true and not g.siren then
+					sound("city.sirenBlip", g.pos + Vector3.new(26, 4, 0), 1)
+					sound("city.radio", g.pos + Vector3.new(-24, 4, 6), 1, nil, { delay = 0.8 })
+				end
 				siren(g, d.on == true)
 			end
 		elseif kind == "cordon" then
