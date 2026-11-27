@@ -91,16 +91,58 @@ local okCiv, e2 = pcall(function()
 	end
 end)
 check(okCiv, "civilian R6 rigs build" .. (if okCiv then "" else ": " .. tostring(e2)))
--- every monster rank builds (their model builder, without moving them)
-for rank = 1, 6 do
+-- every monster kind builds, with its joints
+local Monsters = Npcs.Monsters
+local kinds = 0
+for id, def in Monsters.DEFS do
 	local ok, err = pcall(function()
-		local def = Npcs.MONSTER[rank]
-		assert(def and def.hp > 0, "no def")
-		local model, hum = Npcs.monsterModel(rank)
+		local model, hum = Monsters.build(id)
 		assert(model.PrimaryPart and hum.MaxHealth == def.hp, "bad monster model")
-		assert(#model:GetChildren() > 5, "too few parts")
+		assert(#model:GetChildren() > 4, "too few parts")
+		assert(model:GetAttribute("Gait") == def.gait, "no gait")
 	end)
-	check(ok, "monster rank " .. rank .. " (" .. Npcs.MONSTER[rank].name .. ") builds" .. (if ok then "" else ": " .. tostring(err)))
+	kinds += 1
+	check(ok, string.format("%s (%s-rank, %s) builds", def.name, ({ "E", "D", "C", "B", "A", "S" })[def.rank], def.gait) .. (if ok then "" else ": " .. tostring(err)))
+end
+for r = 1, 6 do
+	check(#Monsters.KINDS[r] >= 4, "rank " .. r .. " has four kinds of monster")
+end
+
+-- the client animates every gait without error, and something moves (client/MonsterAnim)
+local client = Loader.preload(Loader.node("src/client", "Client", nil))
+local okA, MonsterAnim = pcall(Loader.require, client.MonsterAnim)
+check(okA, "client/MonsterAnim loads" .. (if okA then "" else ": " .. tostring(MonsterAnim)))
+if okA then
+	local gaits = {}
+	for id, def in Monsters.DEFS do
+		local ok, err = pcall(function()
+			local model = Monsters.build(id)
+			local r = MonsterAnim.rig(model)
+			assert(r and r.gait == def.gait, "no rig")
+			for step = 1, 12 do
+				MonsterAnim.animate(r, 1 / 30, step / 30)
+			end
+			local moved = false
+			for _, j in r.joints do
+				local okT, tf = pcall(function()
+					return j.Transform -- (offline, a Transform never set can't be read: that joint just stays still)
+				end)
+				if okT and tf ~= roblox.CFrame.new() then
+					moved = true
+				end
+			end
+			assert(moved or next(r.joints) == nil, "no joint moved")
+		end)
+		gaits[def.gait] = gaits[def.gait] or ok
+		if not ok then
+			check(false, def.name .. " animates: " .. tostring(err))
+		end
+	end
+	local n = 0
+	for g, ok in gaits do
+		n += 1
+		check(ok, "the " .. g .. " gait animates")
+	end
 end
 if failures > 0 then
 	process.exit(1)

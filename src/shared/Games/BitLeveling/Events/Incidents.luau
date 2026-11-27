@@ -23,6 +23,9 @@ local HUNTERS = { "hunter_e", "hunter_d", "hunter_c", "hunter_b", "hunter_a", "h
 local PAY = { { 1, 3 }, { 3, 9 }, { 10, 30 }, { 40, 120 }, { 200, 600 }, { 2000, 8000 } }
 local HURT = { { -14, -6 }, { -26, -11 }, { -44, -20 }, { -75, -34 }, { -130, -60 }, { -240, -110 } }
 local FAME = { 1, 2, 4, 7, 12, 25 }
+-- the boss rooms (Bosses.luau): a raid's boss by the Gate's rank, a Red Gate's by its real rank
+local RAID_BOSS = { "goblin_chief", "brood_mother", "orc_warlord", "frost_bear", "golem_lord", "dragonkin_tyrant" }
+local RED_BOSS = { "bat_matriarch", "hob_captain", "naga_matriarch", "wraith_lord", "wyvern_queen", "hollow_king" }
 
 local function share(range, f: number)
 	return { math.max(1, math.floor(range[1] * f)), math.max(1, math.floor(range[2] * f)) }
@@ -209,6 +212,16 @@ for r = 1, 6 do
 		tags = if r >= 3 then { "danger", "gate" } else { "gate" },
 		choices = {
 			{
+				label = "Take the boss room",
+				hint = "A boss, fought in turns. Friends on the server can join you. The kill is yours, and so is the best of the drop.",
+				hw = "raided",
+				battle = RAID_BOSS[r],
+				clash = monster(r, 0.95, { boss = true }),
+				win = { strength = 2 + math.floor(r / 2), willpower = 1 + math.floor(r / 3), money = share(pay, 1.5), sanity = 1, charisma = 1 + math.floor(FAME[r] / 6), loot = { rank = r, chance = 0.85, shinyBoost = 1.5 }, log = "You took the boss. The Gate shivered when it died, and an hour later it folded shut behind the collection team. Your name went on the report first." },
+				lose = { vitality = hurt(r, 1), sanity = -7, log = "The boss put you through a wall. The rest of the team finished it while a healer kept you breathing.", cause = "Killed by a Gate's boss" },
+				fled = { sanity = -4, log = "You backed out of the boss room. The team finished it without you, and the share reflected it." },
+			},
+			{
 				label = "Join the raid",
 				hint = "Front line with the team. The share is by contribution.",
 				hw = "raided",
@@ -243,9 +256,11 @@ for r = 1, 6 do
 		choices = {
 			{
 				label = "Push for the boss",
-				hint = "The only way out is through it. This is {gTrueRank} now.",
+				hint = "The only way out is through it, in turns, with whoever's left. This is {gTrueRank} now.",
 				hw = "fought",
-				clash = monster(math.min(6, r + 1), 0.8),
+				battle = RED_BOSS[math.min(6, r + 1)],
+				clash = monster(math.min(6, r + 1), 0.8, { boss = true }),
+				fled = { sanity = -10, log = "You fell back from the throne room. Someone else ended it, days later by the Gate's clock. You were alive to see the sky go blue." },
 				win = { strength = 3, willpower = 3, money = share(PAY[math.min(6, r + 1)], 1.2), sanity = -6, loot = { rank = math.min(6, r + 1), chance = 1, minStars = 2, shinyBoost = 2 }, log = "You were there when the boss fell. The red went out of the sky, the Gate opened, and you walked out into an afternoon that hadn't noticed you were gone." },
 				lose = { vitality = hurt(math.min(6, r + 1), 1), sanity = -10, log = "You didn't reach the boss.", cause = "Lost inside a Red Gate" },
 			},

@@ -109,6 +109,24 @@ check(normal.double < normal.red and normal.double <= 6, string.format("Double D
 print(string.format("== %d lives in each world", N))
 local sim = Engine.new(pack)
 -- answer whatever card is open with a random choice the life can take (or drop it)
+-- a boss fight in turns: strike with the life's best way until it ends
+local function fightOut(life)
+	local turns = 0
+	while life.battle and turns < 80 do
+		turns += 1
+		local key = tostring(life.id)
+		local best, bestV = nil, -1
+		for id, a in pack.approaches or {} do
+			if type(a) == "table" and a.stat and not a.bloodless and (life.stats[a.stat] or 0) > bestV and sim:approachOpen(life, a, { fight = true, stat = a.stat }) then
+				best, bestV = id, life.stats[a.stat] or 0
+			end
+		end
+		local _, err = Engine.Battle.act(sim, life, { [key] = life }, key, if best then "strike" else "guard", best)
+		if err then
+			Engine.Battle.act(sim, life, { [key] = life }, key, "flee")
+		end
+	end
+end
 local function answer(life)
 	local g = 0
 	while life.alive and life.pending and g < 30 do
@@ -125,6 +143,7 @@ local function answer(life)
 			break
 		end
 		sim:choose(life, open[Rng.int(life, 1, #open)], nil)
+		fightOut(life)
 	end
 end
 local secretWords = { "System", "Architect", "Monarch", "Cartenon", "Ashborn", "Shadow" }
@@ -146,13 +165,14 @@ local function play(seed: number, difficulty: string, era: string?, district: st
 end
 
 local function summarise(difficulty: string)
-	local s = { lives = 0, awakened = 0, ranks = { 0, 0, 0, 0, 0, 0 }, koreaEarlyS = 0, incidents = 0, breaksSeen = 0, deathsGate = 0, news = 0, secretLeak = 0, canonYearsOff = 0, jejuLost = 0, jejuRestored = 0, wrongCity = 0, rewritten = 0, kept = 0, ages = {}, unsaveable = 0 }
+	local s = { lives = 0, exposedYears = 0, awakened = 0, ranks = { 0, 0, 0, 0, 0, 0 }, koreaEarlyS = 0, incidents = 0, breaksSeen = 0, deathsGate = 0, news = 0, secretLeak = 0, canonYearsOff = 0, jejuLost = 0, jejuRestored = 0, wrongCity = 0, rewritten = 0, kept = 0, ages = {}, unsaveable = 0 }
 	for i = 1, N do
 		local seed = 7000 + i * 13
 		local era = ({ "before", "first_gen", "first_gen", "under" })[(i % 4) + 1]
 		local life = play(seed, difficulty, era, if i % 9 == 0 then "jeju" else nil)
 		s.lives += 1
 		table.insert(s.ages, life.age)
+		s.exposedYears += math.max(0, life.age - 13) -- (incident cards start at 13)
 		local gw = life.gw
 		if gw then
 			for _, h in gw.history do
@@ -245,7 +265,9 @@ for _, diff in { "normal", "crisis" } do
 		_G.normalSummary = s
 	else
 		local n = _G.normalSummary
-		check(s.incidents >= n.incidents, "the High-Danger World pulls lives into more incidents")
+		-- (per year a life could be in one: High-Danger lives are shorter, so totals can tie)
+		local rateC, rateN = s.incidents / math.max(1, s.exposedYears), n.incidents / math.max(1, n.exposedYears)
+		check(rateC > rateN, string.format("the High-Danger World pulls lives into more incidents a year (%.3f vs %.3f)", rateC, rateN))
 	end
 end
 
@@ -296,6 +318,48 @@ do
 		end
 	end
 	check(wrong == 0, "incident cards are only for incidents in the life's own city")
+end
+
+-- boss rooms: a raid card's boss room starts a fight in turns; when it ends, the incident
+-- hears how it went (Engine/HunterWorld.afterChoice through sim.battleHook)
+do
+	local fought, recorded, flagsLeft = 0, 0, 0
+	for seed = 1, 12 do
+		local life = sim:newLife({ seed = 9000 + seed, difficulty = "normal" })
+		life.age = 26
+		life.year = 12
+		life.form = "hunter_c"
+		life.stats.strength = 70
+		life.stats.agility = 60
+		life.stats.vitality = 100
+		life.pending = nil
+		life.queue = {}
+		local gw = HW.state(life)
+		local cfg = HW.config(pack)
+		local _, mode = HW.modeOf(sim, life)
+		local inc = HW.spawn(life, { cfg = cfg, mode = mode, year = life.year, district = sim:districtDef(life), districtId = life.district, minRank = 3 })
+		inc.n = 1
+		inc.rank, inc.readRank = 3, 3
+		local id = if seed % 2 == 0 then "hw_raid_C" else "hw_red_B"
+		HW.queueCard(sim, life, id, inc, "raider")
+		sim:advance(life, sim.newReport())
+		if life.pending == id then
+			local before = #(gw.history or {})
+			sim:choose(life, 1, nil)
+			if life.battle then
+				fought += 1
+				fightOut(life)
+			end
+			if #(gw.history or {}) > before then
+				recorded += 1
+			end
+			if life.flags["hw_on_" .. id] then
+				flagsLeft += 1
+			end
+		end
+	end
+	check(fought >= 10, string.format("raid and Red Gate boss rooms start fights in turns (%d of 12)", fought))
+	check(recorded >= 10 and flagsLeft == 0, string.format("a finished boss fight is recorded on the incident (%d recorded, %d left open)", recorded, flagsLeft))
 end
 
 if failures > 0 then

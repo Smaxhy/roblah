@@ -271,6 +271,12 @@ function Sim.new(pack)
 	-- (BitLeveling) weapons out of Gates (result.loot)
 	if pack.hunterWorld then
 		self.lootHook = HunterWorld.loot
+		-- a boss fight in turns ends later than its card: the incident hears how it went then
+		self.battleHook = function(sim: any, life: any, event: any, choice: any, outcome: string)
+			if life.gw then
+				HunterWorld.afterChoice(sim, life, event, choice, { clash = { won = outcome == "won" } })
+			end
+		end
 	end
 	self.activitiesById = {}
 	for _, a in pack.activities do

@@ -344,125 +344,31 @@ function Npcs.removeResponder(r: any)
 	end
 end
 
--- ── monsters ──────────────────────────────────────────────────────────────
--- ORIGINAL looks by rank, built from parts on a Humanoid (HipHeight carries the body)
-local MONSTER = {
-	{ name = "Goblin", hp = 60, size = 0.7, color = Color3.fromRGB(96, 130, 70), eye = Color3.fromRGB(255, 220, 80), speed = 16, dmg = 8, shape = "biped" },
-	{ name = "Armoured Beetle", hp = 130, size = 1, color = Color3.fromRGB(70, 76, 96), eye = Color3.fromRGB(140, 220, 255), speed = 14, dmg = 14, shape = "crawler" },
-	{ name = "Orc", hp = 280, size = 1.35, color = Color3.fromRGB(92, 120, 70), eye = Color3.fromRGB(255, 80, 60), speed = 15, dmg = 24, shape = "biped" },
-	{ name = "Ice Bear", hp = 560, size = 1.6, color = Color3.fromRGB(226, 232, 240), eye = Color3.fromRGB(120, 200, 255), speed = 18, dmg = 40, shape = "quad" },
-	{ name = "Stone Golem", hp = 1100, size = 2.4, color = Color3.fromRGB(120, 116, 110), eye = Color3.fromRGB(255, 170, 60), speed = 11, dmg = 70, shape = "biped" },
-	{ name = "Dragon-kin", hp = 2600, size = 3, color = Color3.fromRGB(46, 34, 66), eye = Color3.fromRGB(255, 60, 90), speed = 17, dmg = 120, shape = "quad" },
-}
-Npcs.MONSTER = MONSTER
-
-local function weld(a: BasePart, b: BasePart)
-	local w = Instance.new("WeldConstraint")
-	w.Part0 = a
-	w.Part1 = b
-	w.Parent = b
+-- ── monsters ──
+-- 24 kinds, four a rank (server/HunterLive/Monsters.luau), each with its own body and joints
+local Monsters = require(script.Parent:WaitForChild("Monsters"))
+Npcs.Monsters = Monsters
+-- (the old one-a-rank table, kept for anything that reads it: the first kind of each rank)
+Npcs.MONSTER = {}
+for r = 1, 6 do
+	Npcs.MONSTER[r] = Monsters.DEFS[Monsters.KINDS[r][1]]
+end
+function Npcs.monsterModel(rank: number, kind: string?): (Model, Humanoid)
+	return Monsters.build(kind or Monsters.KINDS[math.clamp(rank, 1, 6)][1])
 end
 
-local function monsterModel(rank: number): (Model, Humanoid)
-	local def = MONSTER[rank]
-	local s = def.size
-	local model = Instance.new("Model")
-	model.Name = def.name
-	local function p(name, size, offset, color, mat, shape)
-		local part = Instance.new("Part")
-		part.Name = name
-		part.Size = size * s
-		part.Color = color or def.color
-		part.Material = mat or Enum.Material.SmoothPlastic
-		part.CanCollide = false
-		part.Massless = true
-		part.TopSurface = Enum.SurfaceType.Smooth
-		part.BottomSurface = Enum.SurfaceType.Smooth
-		if shape then
-			part.Shape = shape
-		end
-		part.CFrame = CFrame.new(Vector3.new(0, 0, 0) + offset * s)
-		part.Parent = model
-		return part
-	end
-	local root = p("HumanoidRootPart", Vector3.new(2, 2, 1), Vector3.new(0, 3, 0))
-	root.Transparency = 1
-	root.Massless = false
-	root.CanCollide = true
-	local parts = {}
-	if def.shape == "biped" then
-		table.insert(parts, p("Body", Vector3.new(2, 2.2, 1.2), Vector3.new(0, 3.1, 0)))
-		table.insert(parts, p("Head", Vector3.new(1.3, 1.2, 1.2), Vector3.new(0, 4.9, -0.1)))
-		table.insert(parts, p("ArmL", Vector3.new(0.8, 2.2, 0.8), Vector3.new(-1.5, 3, 0)))
-		table.insert(parts, p("ArmR", Vector3.new(0.8, 2.2, 0.8), Vector3.new(1.5, 3, 0)))
-		table.insert(parts, p("LegL", Vector3.new(0.9, 2, 0.9), Vector3.new(-0.55, 1, 0)))
-		table.insert(parts, p("LegR", Vector3.new(0.9, 2, 0.9), Vector3.new(0.55, 1, 0)))
-		for _, x in { -0.3, 0.3 } do
-			table.insert(parts, p("Eye", Vector3.new(0.22, 0.18, 0.1), Vector3.new(x, 5.05, -0.72), def.eye, Enum.Material.Neon))
-		end
-	elseif def.shape == "crawler" then
-		table.insert(parts, p("Shell", Vector3.new(3, 1.4, 4), Vector3.new(0, 1.4, 0), nil, Enum.Material.Metal))
-		table.insert(parts, p("Head", Vector3.new(1.6, 0.9, 1), Vector3.new(0, 1.2, -2.4)))
-		for k = -1, 1 do
-			for _, x in { -1.8, 1.8 } do
-				table.insert(parts, p("Leg", Vector3.new(0.3, 1.1, 0.3), Vector3.new(x, 0.55, k * 1.2), Color3.fromRGB(30, 30, 36)))
-			end
-		end
-		for _, x in { -0.4, 0.4 } do
-			table.insert(parts, p("Eye", Vector3.new(0.25, 0.25, 0.1), Vector3.new(x, 1.35, -2.92), def.eye, Enum.Material.Neon))
-		end
-	else -- quad
-		table.insert(parts, p("Body", Vector3.new(2.6, 2.2, 4.6), Vector3.new(0, 2.6, 0)))
-		table.insert(parts, p("Head", Vector3.new(1.8, 1.6, 1.8), Vector3.new(0, 3.2, -2.9)))
-		for _, x in { -0.9, 0.9 } do
-			for _, z in { -1.6, 1.6 } do
-				table.insert(parts, p("Leg", Vector3.new(0.9, 1.6, 0.9), Vector3.new(x, 0.8, z)))
-			end
-			table.insert(parts, p("Eye", Vector3.new(0.25, 0.25, 0.1), Vector3.new(x * 0.45, 3.5, -3.82), def.eye, Enum.Material.Neon))
-		end
-		if rank >= 6 then
-			for _, x in { -1, 1 } do
-				table.insert(parts, p("Wing", Vector3.new(4, 0.2, 2.6), Vector3.new(x * 3, 3.6, 0.4), Color3.fromRGB(70, 40, 90)))
-			end
-		end
-	end
-	for _, part in parts do
-		weld(root, part)
-	end
-	local glow = Instance.new("PointLight")
-	glow.Color = def.eye
-	glow.Range = 8 * s
-	glow.Brightness = 1.5
-	glow.Parent = root
-	local hum = Instance.new("Humanoid")
-	hum.RigType = Enum.HumanoidRigType.R6
-	hum.HipHeight = 2 * s
-	hum.WalkSpeed = def.speed
-	hum.MaxHealth = def.hp
-	hum.Health = def.hp
-	hum.DisplayName = def.name
-	hum.HealthDisplayType = Enum.HumanoidHealthDisplayType.AlwaysOn
-	hum.DisplayDistanceType = Enum.HumanoidDisplayDistanceType.Viewer
-	hum.NameDisplayDistance = 80
-	hum.HealthDisplayDistance = 80
-	hum.Parent = model
-	model.PrimaryPart = root
-	return model, hum
-end
-
-Npcs.monsterModel = monsterModel
-
-function Npcs.spawnMonster(rank: number, at: Vector3, incidentId: number): any
-	local model, hum = monsterModel(rank)
-	-- (its pivot is its root: lift it so the feet start above the street, never under it)
-	model:PivotTo(CFrame.new(at + Vector3.new(rng:NextNumber(-3, 3), 3 * MONSTER[rank].size + 1, rng:NextNumber(-3, 3))))
+function Npcs.spawnMonster(rank: number, at: Vector3, incidentId: number, kind: string?): any
+	kind = kind or Monsters.KINDS[math.clamp(rank, 1, 6)][rng:NextInteger(1, #Monsters.KINDS[math.clamp(rank, 1, 6)])]
+	local def = Monsters.DEFS[kind :: string]
+	local model, hum = Monsters.build(kind :: string)
+	-- (its pivot is its root: lift it so it starts above the street, never under it)
+	model:PivotTo(CFrame.new(at + Vector3.new(rng:NextNumber(-3, 3), 4 * def.size + 1, rng:NextNumber(-3, 3))))
 	model:SetAttribute("Incident", incidentId)
-	model:SetAttribute("Rank", rank)
 	model.Parent = folder
 	pcall(function()
 		(model.PrimaryPart :: BasePart):SetNetworkOwner(nil)
 	end)
-	local m = { model = model, hum = hum, rank = rank, def = MONSTER[rank], incident = incidentId, cool = 0, target = nil, home = at }
+	local m = { model = model, hum = hum, rank = def.rank, kind = kind, def = def, incident = incidentId, cool = 0, target = nil, home = at }
 	table.insert(Npcs.monsters, m)
 	return m
 end

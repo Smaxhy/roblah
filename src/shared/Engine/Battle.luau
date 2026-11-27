@@ -259,7 +259,8 @@ local function hurt(sim, life, report, amount: number, cause: string, condition:
 		return 0
 	end
 	local before = life.stats[sim.vital] or 0
-	local result = { health = -amount, cause = cause }
+	-- (the pack's Health stat: its id is the pack's own, e.g. BitLeveling's vitality)
+	local result: any = { [sim.vital or "health"] = -amount, cause = cause }
 	if condition and sim.pack.conditions and sim.pack.conditions[condition] and Rng.chance(rng, 0.35) then
 		result.condition = condition
 	end
@@ -500,7 +501,7 @@ function Battle.finish(sim: any, hostLife: any, lives: any, outcome: string, rep
 			elseif life.alive and f.fled then
 				Effects.apply(sim, life, (choice and choice.fled) or def.fled or { sanity = -4, log = "You got out. Not everyone does." }, report)
 			elseif life.alive and outcome ~= "won" then
-				Effects.apply(sim, life, (choice and choice.lose) and Battle.withoutHealth(choice.lose) or { sanity = -6 }, report)
+				Effects.apply(sim, life, (choice and choice.lose) and Battle.withoutHealth(choice.lose, sim.vital) or { sanity = -6 }, report)
 			end
 			life.scene = nil
 			life.battleWith = nil
@@ -512,6 +513,10 @@ function Battle.finish(sim: any, hostLife: any, lives: any, outcome: string, rep
 	end
 	hostLife.battleDone = { outcome = outcome, boss = def.name, last = b.last, log = b.log }
 	hostLife.battle = nil
+	-- (BitLeveling) the card the fight came from learns how it went (Engine/HunterWorld.afterChoice)
+	if sim.battleHook and event and choice then
+		sim.battleHook(sim, hostLife, event, choice, outcome)
+	end
 	-- the host's year goes on (anything queued behind the fight)
 	if hostLife.alive then
 		sim:advance(hostLife, reports[tostring(hostLife.id)] or sim.newReport())
@@ -520,12 +525,15 @@ function Battle.finish(sim: any, hostLife: any, lives: any, outcome: string, rep
 end
 
 -- a lose result without its Health loss (the fight already took that)
-function Battle.withoutHealth(result: any): any
+function Battle.withoutHealth(result: any, vital: string?): any
 	if type(result) ~= "table" then
 		return result
 	end
 	local out = table.clone(result)
 	out.health = nil
+	if vital then
+		out[vital] = nil
+	end
 	out.die = nil
 	return out
 end

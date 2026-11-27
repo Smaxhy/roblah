@@ -27,6 +27,7 @@ local Workspace = game:GetService("Workspace")
 
 local Theme = require(script.Parent:WaitForChild("UI"):WaitForChild("Theme"))
 local GateVfx = require(script.Parent:WaitForChild("GateVfx"))
+local MonsterAnim = require(script.Parent:WaitForChild("MonsterAnim"))
 local C, F = Theme.colors, Theme.fonts
 
 local HunterLive = {
@@ -39,11 +40,8 @@ local HunterLive = {
 local started = false
 
 local BLUE = Color3.fromRGB(70, 150, 255)
-local BLUE_DEEP = Color3.fromRGB(14, 26, 70)
 local RED = Color3.fromRGB(255, 50, 50)
-local RED_DEEP = Color3.fromRGB(70, 8, 10)
 local SPARKLE = "rbxasset://textures/particles/sparkles_main.dds"
-local SMOKE = "rbxasset://textures/particles/smoke_main.dds"
 local PING = "rbxasset://sounds/electronicpingshort.wav"
 local SLASH = "rbxasset://sounds/swordslash.wav"
 
@@ -539,6 +537,9 @@ function HunterLive.start(opts: any?)
 			apply(res.incidents)
 		end
 	end)
+
+	-- the monsters' legs, wings, tails and coils move on this client (client/MonsterAnim)
+	MonsterAnim.start()
 
 	-- animate: spin the swirls, flash the light bars, wail the sirens, shake, tint near danger
 	local clock = 0

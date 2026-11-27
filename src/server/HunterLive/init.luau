@@ -384,8 +384,12 @@ function HunterLive.install(S)
 			elseif inc.outcome == "zone_lost" then
 				count += 4
 			end
-			for _ = 1, count do
-				local m = Npcs.spawnMonster(inc.rank, inc.pos, inc.id)
+			-- one or two kinds of monster come out of a Gate (its own dungeon's kinds)
+			local kinds = Npcs.Monsters.KINDS[math.clamp(inc.rank, 1, 6)]
+			local a = kinds[math.random(1, #kinds)]
+			local b = kinds[math.random(1, #kinds)]
+			for k = 1, count do
+				local m = Npcs.spawnMonster(inc.rank, inc.pos, inc.id, if k % 3 == 0 then b else a)
 				table.insert(inc.monsters, m)
 			end
 			inc.monstersLeft = count
@@ -623,6 +627,7 @@ function HunterLive.install(S)
 	-- what a monster's hit does
 	local function onHit(m: any, kind: string, victim: any)
 		local pos = m.model.PrimaryPart.Position
+		m.model:SetAttribute("Attacking", (m.model:GetAttribute("Attacking") or 0) + 1) -- the client swings the limb (client/MonsterAnim)
 		if kind == "player" then
 			local ch = victim.Character
 			local h = ch and ch:FindFirstChildOfClass("Humanoid")
