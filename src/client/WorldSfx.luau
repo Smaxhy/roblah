@@ -1120,6 +1120,18 @@ WorldSfx.KIND_FAMILY = {
 	stone_golem = "golem", wyvern = "dragon", minotaur = "beast", dragonkin = "dragon", colossus = "golem",
 	abyss_serpent = "aquatic", hollow_king = "undead",
 }
+-- the bestiary's 40 families (Hunter/Monsters: a kind's `family`), each to the voice it uses here
+WorldSfx.BESTIARY_FAMILY = {
+	goblins = "goblinoid", kobolds = "goblinoid", vermin = "beast", orcs = "orc", high_orcs = "orc",
+	ogres = "giant", trolls = "giant", giants = "giant", minotaurs = "beast", centaurs = "beast",
+	ice_elves = "elf", forest_elves = "elf", dark_elves = "elf", dwarves = "dwarf",
+	lizardfolk = "reptile", naga = "reptile", basilisks = "reptile",
+	ants = "insect", beetles = "insect", mantises = "insect", centipedes = "insect", scorpions = "spider", spiders = "spider",
+	wolves = "beast", bears = "beast", boars = "beast", great_cats = "beast", lycans = "beast", hounds = "beast",
+	harpies = "flier", drakes = "dragon", dragonkin = "dragon",
+	golems = "golem", constructs = "golem", slimes = "slime", elementals = "elemental",
+	undead = "undead", demons = "demon", plants = "plant", aquatic = "aquatic",
+}
 local FAMILY_WORDS = {
 	{ "goblin", "goblinoid" }, { "kobold", "goblinoid" }, { "gremlin", "goblinoid" }, { "orc", "orc" }, { "elf", "elf" },
 	{ "elv", "elf" }, { "dwar", "dwarf" }, { "troll", "giant" }, { "ogre", "giant" },
@@ -1776,8 +1788,14 @@ function WorldSfx.magic(element: string?, shape: string?, at: any?, opts: any?):
 end
 
 function WorldSfx.monsterFamily(kindOrFamily: any, def: any?, gait: string?): string
-	if type(def) == "table" and type(def.family) == "string" and MONSTER[def.family] then
-		return def.family
+	if type(def) == "table" and type(def.family) == "string" then
+		if MONSTER[def.family] then
+			return def.family
+		end
+		local mapped = WorldSfx.BESTIARY_FAMILY[def.family]
+		if mapped and MONSTER[mapped] then
+			return mapped
+		end
 	end
 	local k = if type(kindOrFamily) == "string" then string.lower(kindOrFamily) else ""
 	if MONSTER[k] then
