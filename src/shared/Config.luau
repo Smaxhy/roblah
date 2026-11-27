@@ -69,16 +69,14 @@ return {
 	--   [ENG]  a file that ships inside the Roblox client (content/sounds in the client's
 	--          rbxManifest.txt, version 0.748.0.7481526, as mirrored by the public
 	--          MaximumADHD/Roblox-Client-Tracker). Nothing to upload, nothing to take down.
-	--   [KIT]  came with the LifeSim kit: Creator Store uploads by the Limbus Company community,
-	--          looked up live the same day (creator in docs/SFX.md). They can be taken down any
-	--          time, so each has a stand-in built from the sources (client/WorldSfx).
+	--   (The LifeSim kit shipped community re-uploads of another game's audio here; they are all
+	--   gone. Every id below is checked by tools/sfx/verify_ids.py, and the music by its --music.)
 	sfx = {
 		volume = 0.3, -- v0.10: everything a good deal quieter; the buttons quieter still
 
 		-- ── the app's named sounds (Sfx.play("click") anywhere). With client/UiSounds running
 		-- each plays a layered version built from the sources; the id here is what plays without
-		-- it. (The kit's own were Limbus Company sounds, with "LIMBUS COMPANY!" and "Proelium
-		-- Fatale!" shouted over a Solo Leveling game; these are the game's own now.)
+		-- it.
 		intro = { id = 9125404320, volume = 0.35 }, -- [PSE] Boom Impact Deep Distant Thumping Hits
 		transition = { id = 15675046931, volume = 0.3 }, -- [R] Roblox_UI_Sweep
 		click = { id = 15675032796, volume = 0.3 }, -- [R] Roblox_UI_Small_Click
@@ -92,24 +90,24 @@ return {
 		ego = { id = 9116422213, volume = 0.3 }, -- [PSE] Magic Transformation 17
 		shatter = { id = 9114590297, volume = 0.28 }, -- [PSE] Glass Break 1
 
-		-- ── the turn-based fights (the kit's clash screen) [KIT]. Each has a stand-in.
-		coin = { id = 132596270805754, volume = 0.22 }, -- Limbus Company Coin Flip Sound Effect
-		tails = { id = 90448103253452, volume = 0.22 }, -- Limbus Coin Tails
-		clash = 120171660922619, -- Limbus Company SFX - Clash Draw
-		clashWin = 74854125236607, -- Limbus Company SFX - Clash Win
-		parry = 111913931670052, -- parry-win-limbus
-		evade = 73456708215174, -- Limbus Company - Evade
-		guard = 108548606364997, -- Limbus Company - Guard
-		hit = 82880079097413, -- Limbus Company - Hit Sound Effect
-		slash = 102360766617958, -- Limbus Company | Slash
-		pierce = 114823440881243, -- Limbus Company | Pierce
-		blunt = 77951971772104, -- Limbus Company | Blunt
-		crit = 132015436228708, -- Limbus Company - Critical/Poise Hit Sound Effect
-		stagger = 137592261284291, -- stagger limbus-company
-		tremorBurst = 84022207370828, -- Tremor Burst - Limbus Company
-		burn = 89989865225661, -- Burn_SFX_Limbus_East_Don
-		panic = 81470902110645, -- Limbus Company | Panic
-		prescript = 71629892905253, -- Prescripts Limbus Company
+		-- ── the turn-based fights (the kit's clash screen): Roblox's and ProSoundEffects' own
+		coin = { id = 9113849492, volume = 0.22 }, -- [PSE] Coins Or Keys Jingle 6
+		tails = { id = 12222170, volume = 0.22 }, -- [R] switch.wav
+		clash = 9119072660, -- [PSE] Shield Clang As Hit Metal Sword Hubcap 1
+		clashWin = 9119747120, -- [PSE] Sword Impact 102
+		parry = 9113449585, -- [PSE] Blade Hits Metal Rod On Knife Impacts 10
+		evade = 9118158081, -- [PSE] Reversed Whoosh Backwards Hissing Burst 1
+		guard = 9119074309, -- [PSE] Shield Impacts 2
+		hit = 9117969717, -- [PSE] Punch Kit Beefy Hit 3
+		slash = 9119746598, -- [PSE] Sword Hit 1
+		pierce = 9113161406, -- [PSE] Arrow In And Hit 13
+		blunt = 9117969420, -- [PSE] Punching Bag Hits 22
+		crit = 9119747138, -- [PSE] Sword Impact 202
+		stagger = 9113225986, -- [PSE] Axe Impact Giant Thuddy Hits On Wood Floor 5
+		tremorBurst = 9114224721, -- [PSE] Earthquake Explosion 1
+		burn = 9117987278, -- [PSE] Pyro Fire Ball Burst 12
+		panic = 9125485274, -- [PSE] Deep Synth Drone Modulating Sub Rumble
+		prescript = 9126073001, -- [PSE] Synth Sparkle Tone High Pitch Bell Tone Ding
 
 		-- ══ SOURCES ══════════════════════════════════════════════════════════════════════════
 		-- ── [ENG] engine files in the client
@@ -140,9 +138,9 @@ return {
 		rb_cannon = 3149249837, -- Cannon_Explode
 		rb_roar = 9120031442, -- Thunder With Lion Roar Searing Blast Growl 3 (SFX)
 		rb_ufobeam = { id = 162670130, lazy = true }, -- UFO Beam (a beam's hum, 17 s)
-		rb_laser = 130113322, -- Fire (a laser blaster's shot)
-		rb_equip = 282906960, -- Equip (a laser blaster powering up)
-		rb_checkpoint = 4110925712, -- [RP] WCC2019_checkpointHit (a bright chime)
+		rb_laser = 9114277757, -- [PSE] Electric Zaps 12 (a laser's shot)
+		rb_equip = 17208323435, -- [R] Roblox GUI - Equip
+		rb_checkpoint = 9126072027, -- [PSE] Synth Sparkle Tone High Pitch Bell Tone Burst (a bright chime)
 
 		-- ── [R] Roblox's interface sounds (Roblox_UI 2023, RBLX UI 2022, Roblox GUI 2024, Pinball 2024)
 		ui_click = 15675032796, -- Roblox_UI_Small_Click
@@ -198,7 +196,7 @@ return {
 		sw_impact3 = 9119747163, -- Sword Impact 302
 		sw_draw = 9119742466, -- Sword Draw Clang Unsheathing Two Sabers 1
 		sw_draw2 = 9119744642, -- Sword Draw Clang Unsheathing Two Sabers 29
-		sw_stab = 9119748927, -- Sword Stab 1
+		sw_stab = 9119746592, -- [PSE] Sword Hit 2 (the "Sword Stab" clip was filed under gore)
 		kn_shing1 = 9116197252, -- Knife Shing 202
 		kn_shing2 = 9116197044, -- Knife Shing 102
 		wh_heavy1 = 9120728815, -- Whoosh Heavy Punches 1
@@ -338,7 +336,7 @@ return {
 		mo_bugs2 = 9113976170, -- Creature Mix Big Flying Insects 12
 		mo_wings = 9114876115, -- Insect Wings 2
 		mo_bee = 9113414492, -- Bee Various Buzzing Actions 7
-		mo_chomp = 9114574294, -- Giant Bug Chomps 3
+		mo_chomp = 9114624343, -- [PSE] Goblin Growl 2 (a snap and growl; the bug chomp clip was filed under gore)
 		mo_spider1 = 9113991080, -- Creature Vocal Spider Hiss Squawk 1
 		mo_spider2 = 9125475729, -- Creature Vocal Spider Growl Belch Hiss Snarl
 		mo_spiderAtk = 9125471800, -- Creature Mix Big Spider Attack Vocal Footsteps
@@ -427,7 +425,7 @@ return {
 		fade = 2.5, -- seconds to crossfade between tracks
 		hold = 90, -- an ambient mood plays at least this long before the music may change
 		moods = {
-			boss = { 85214333918906 }, -- Limbus Company boss theme
+			boss = { 9042613158, 1837064066, 9040003655 }, -- Inevitable, The Destroyer, Terrorscape (APM, Roblox's music library)
 			hero = { 9042616620, 1837063192, 1837079862 }, -- Last Charge, Releasing the Beast, Gatekeeper
 			sad = { 1837083871 }, -- Give In To The Night
 			angry = { 1837059295 }, -- Dawn of Destiny

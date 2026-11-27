@@ -32,6 +32,8 @@ API = "https://apis.roblox.com/toolbox-service/v1/items/details?assetIds="
 ROBLOX, PSE = 1, 7462895450
 ALLOWED = {ROBLOX: "Roblox", PSE: "ProSoundEffects"}
 ALLOWED_EXTRA = {}  # creator id -> name, for any other creator the team decides to trust
+# the music (Config.music.moods): Roblox's licensed libraries (APM, DistroKid) or Roblox
+MUSIC_ALLOWED = {1: "Roblox", 7462718749: "APMOfficial", 7135127272: "DistrokidOfficial"}
 BUILT_IN = {
     "action_falling.ogg", "action_footsteps_plastic.mp3", "action_get_up.mp3", "action_jump.mp3",
     "action_jump_land.mp3", "action_swim.mp3", "impact_explosion_03.mp3", "impact_water.mp3",
@@ -63,6 +65,21 @@ def config_sfx_block(text):
     return ""
 
 
+def config_music_block(text):
+    i = text.find("moods = {")
+    if i < 0:
+        return ""
+    depth = 0
+    for j in range(i + len("moods = "), len(text)):
+        if text[j] == "{":
+            depth += 1
+        elif text[j] == "}":
+            depth -= 1
+            if depth == 0:
+                return text[i:j + 1]
+    return ""
+
+
 def strip_comments(text):
     # Luau block comments (--[[ ]], --[=[ ]=]) and line comments; ids in prose aren't sounds
     text = re.sub(r"--\[(=*)\[.*?\]\1\]", "", text, flags=re.S)
@@ -84,9 +101,12 @@ def collect():
         code = strip_comments(text)
         for m in re.finditer(r"(?<![\w.])(\d{7,})(?![\w.])", code):
             where.setdefault(int(m.group(1)), set()).add(name)
-        for m in re.finditer(r"rbxasset://sounds/([^\"'\s]+)", code):
+        for m in re.finditer(r"rbxasset://sounds/([\w .\-]+\.(?:wav|mp3|ogg))", code):
             paths.setdefault(m.group(1), set()).add(name)
-    return named, where, paths
+    music = set()
+    for m in re.finditer(r"(?<![\w.])(\d{7,})(?![\w.])", strip_comments(config_music_block(read("src/shared/Config.luau")))):
+        music.add(int(m.group(1)))
+    return named, where, paths, music
 
 
 def fetch(ids):
@@ -122,7 +142,7 @@ def norm(name):
 
 def main():
     offline = "--offline" in sys.argv
-    named, where, paths = collect()
+    named, where, paths, music = collect()
     problems = []
     for p, files in sorted(paths.items()):
         if p not in BUILT_IN:
@@ -148,6 +168,15 @@ def main():
                 problems.append(f"{i} (WorldSfx): written as \"{named[i]}\", the store says \"{r['name']}\"")
             if BAD_WORDS.search(r["name"]) or BAD_WORDS.search(r["desc"]):
                 problems.append(f"{i} ({files}): \"{r['name']}\" mentions gore")
+        # the music: published audio from Roblox's licensed libraries
+        mrows = fetch(music)
+        for i in sorted(music):
+            r = mrows.get(i)
+            if not r:
+                problems.append(f"{i} (Config.music): not found")
+            elif r["type"] != 3 or r["creator"] not in MUSIC_ALLOWED:
+                problems.append(f"{i} (Config.music): \"{r['name']}\" by {r['creatorName']} ({r['creator']}), not a licensed library")
+        print(f"music: {len(music)} tracks, " + ", ".join(sorted({r['creatorName'] for r in mrows.values()})))
         by = {}
         for r in rows.values():
             by[r["creatorName"]] = by.get(r["creatorName"], 0) + 1
