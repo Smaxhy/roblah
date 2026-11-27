@@ -163,15 +163,16 @@ when it closes.
 
 `Hunter/Weapons.luau` has **202 weapons in 53 families**, graded E to S, each with its own 3D
 model (`Hunter/WeaponModels.luau`). The families, by class:
-- **Fighter:** swords, katanas, odachi, twin swords, greatswords, rapiers, cleavers, scythes,
-  axes, greataxes, glaives, chain-blades, kusarigama
-- **Tanker:** shields, bucklers, tower shields, hammers, warhammers, maces, flails, lances,
-  gauntlets
-- **Assassin:** daggers, twin daggers, sai, katars, claws, kunai, chakrams, whips
-- **Ranger:** bows, longbows, crossbows, arbalests, spears, javelins, tridents, halberds
-- **Mage:** staffs, crescent staffs, wands, focus orbs, caged crystals, grimoires, floating
-  codices, rune tablets, war fans, scepters
-- **Healer:** lanterns, rods, thuribles, bells
+- **Fighter (14):** swords, katanas, odachi, twin swords, greatswords, cleavers, scythes, spears,
+  tridents, axes, twin axes, greataxes, warhammers, gauntlets
+- **Tanker (9):** shields, bucklers, tower shields, maces, hammers, flails, halberds, glaives,
+  lances
+- **Assassin (9):** daggers, twin daggers, rapiers, sai, katars, claws, whips, chain-blades,
+  kusarigama
+- **Ranger (7):** bows, longbows, crossbows, arbalests, javelins, throwing knives, chakrams
+- **Mage (8):** staffs, wands, focus orbs, caged crystals, grimoires, floating grimoires, rune
+  tablets, war fans
+- **Healer (6):** lanterns, thuribles, handbells, rods, scepters, crescent staffs
 
 Each weapon has an **element**: none, fire, frost, lightning, venom, void, holy, wind or earth.
 - **On the rig:** the element gives the weapon its glow, its particles and the colour of its
