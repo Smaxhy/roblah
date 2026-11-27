@@ -9,3 +9,6 @@ tools/blender/out/*.png
 tools/blender/out/layout.json
 __pycache__/
 tools/ui/shots/
+.claude/worktrees/
+tools/blender/out/*.blend1
+tools/blender/out/*.gif
