@@ -647,6 +647,26 @@ for _, tier in TIER_ORDER do
 	end
 end
 
+-- more skills from their own files, when the game has them: MonarchSkills.luau (the Monarch
+-- classes' authorities, non-canon) and Techniques.luau (techniques a long career teaches). Each
+-- returns { traits = { [id] = def }, order = { id... }, activities = { ... }? }.
+for _, name in { "MonarchSkills", "Techniques" } do
+	local m = script.Parent:FindFirstChild(name)
+	if m then
+		local ext = require(m) :: any
+		for _, id in ext.order or {} do
+			local def = ext.traits and ext.traits[id]
+			if def and traits[id] == nil then
+				traits[id] = def
+				table.insert(traits.order, id)
+			end
+		end
+		for _, a in ext.activities or {} do
+			table.insert(activities, a)
+		end
+	end
+end
+
 return {
 	traits = traits,
 	activities = activities,

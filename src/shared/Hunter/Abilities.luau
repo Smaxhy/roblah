@@ -527,6 +527,24 @@ add({ class = "any", group = "craft", element = "mana" }, {
 	{ "mana_sentry", "Mana Sentry", "G", 4, "construct", "A sentinel of mana fights beside you for a while.", { unlock = "sk_mana_sensing", power = 0.8 } },
 })
 
+-- ── more moves from their own files, when the game has them: Hunter/MonarchMoves.luau (the
+-- Monarch classes, non-canon) and Hunter/TechniqueMoves.luau (techniques a long career teaches).
+-- Each returns { groups = { { id, name, kind } }?, sets = { { base = {...}, rows = { ... } } } },
+-- rows in the same form as above; they go through the same formula. ──
+local extraGroups: { any } = {}
+for _, name in { "MonarchMoves", "TechniqueMoves" } do
+	local m = script.Parent:FindFirstChild(name)
+	if m then
+		local ext = require(m) :: any
+		for _, set in ext.sets or {} do
+			add(set.base or {}, set.rows or {})
+		end
+		for _, g in ext.groups or {} do
+			table.insert(extraGroups, g)
+		end
+	end
+end
+
 -- ── finishing every move: its kind, defaults, and the numbers from the formula ──
 local function r2(x: number): number
 	return math.floor(x * 100 + 0.5) / 100
@@ -724,6 +742,9 @@ function Abilities.groups(): { any }
 		table.insert(out, { id = a.id, name = a.name, kind = "art" })
 	end
 	table.insert(out, { id = "craft", name = "Hunter Craft", kind = "craft" })
+	for _, g in extraGroups do
+		table.insert(out, g)
+	end
 	return out
 end
 
