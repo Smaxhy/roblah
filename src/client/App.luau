@@ -46,6 +46,9 @@ local Fx3D = require(UI:WaitForChild("Fx3D"))
 local World3D = require(UI:WaitForChild("World3D"))
 local Tip = require(UI:WaitForChild("Tip"))
 local OfficeSheet = require(UI:WaitForChild("OfficeSheet"))
+-- (v0.19) the party and the people in your life (BitLeveling: Engine/Party, server/HunterParty)
+local PartySheet = require(UI:WaitForChild("PartySheet"))
+local NpcProfile = require(UI:WaitForChild("NpcProfile"))
 local DeathScene = require(UI:WaitForChild("DeathScene"))
 local ChapterCard = require(UI:WaitForChild("ChapterCard"))
 local Tutorial = require(UI:WaitForChild("Tutorial"))
@@ -184,6 +187,15 @@ function App.start()
 		Parent = playerGui,
 	})
 	local _, toastColumn = layerGui(playerGui, "LifeSimToast", 10)
+	-- (v0.19) the PARTY screen and people's profiles: whole-screen, over the sheets, under fights
+	local partyGui = new("ScreenGui", {
+		Name = "LifeSimParty",
+		ResetOnSpawn = false,
+		IgnoreGuiInset = true,
+		ZIndexBehavior = Enum.ZIndexBehavior.Sibling,
+		DisplayOrder = 8,
+		Parent = playerGui,
+	})
 	local tutorialGui = new("ScreenGui", {
 		Name = "LifeSimTutorial",
 		ResetOnSpawn = false,
@@ -375,6 +387,49 @@ function App.start()
 
 	local hud = Hud.build(ctx, mainColumn)
 	ctx.hud = hud
+	-- (v0.19) PARTY on the life screen, beside this year's DO and PEOPLE: who's with you (a pack
+	-- with a party only: the life's view has `party`)
+	do
+		local pill = new("TextButton", {
+			Name = "Party",
+			AutoButtonColor = true,
+			BackgroundColor3 = Color3.fromRGB(14, 24, 52),
+			Size = UDim2.new(0, 0, 1, 0),
+			AutomaticSize = Enum.AutomaticSize.X,
+			Text = "PARTY",
+			RichText = true,
+			FontFace = F.display,
+			TextSize = 12,
+			TextColor3 = Color3.fromRGB(150, 206, 255),
+			LayoutOrder = 3,
+			Visible = false,
+			Parent = hud.yearStrip,
+		}, {
+			Kit.corner(3),
+			Kit.stroke(Color3.fromRGB(84, 170, 255), 1, 0.2),
+			Kit.padding(0, 10, 0, 10),
+		})
+		Tip.attach(pill, "PARTY", "Up to four people who follow you into the Gates. Ask anyone you know: they say yes or no.")
+		pill.Activated:Connect(function()
+			local acts: any = ctx.actions
+			if acts.openParty then
+				acts.openParty()
+			end
+		end)
+		ctx.partyPill = pill
+		local baseSetLife = hud.setLife
+		hud.setLife = function(self: any, life: any)
+			baseSetLife(self, life)
+			local sum = life and life.party
+			pill.Visible = sum ~= nil and life.alive == true and (life.age or 0) >= 16
+			if sum then
+				pill.Text = string.format("PARTY %d/%d", sum.count or 0, sum.max or 4) .. (if (sum.hurt or 0) > 0 then string.format("  <font color=\"#FFBE5A\">%d HURT</font>", sum.hurt) else "")
+			end
+			if PartySheet.isOpen() and life and not life.alive then
+				PartySheet.close()
+			end
+		end
+	end
 	state.world = hello.world
 	state.crew = hello.crew
 	state.isAdmin = hello.isAdmin == true
@@ -1625,10 +1680,54 @@ function App.start()
 	function actions.openPerson(rel)
 		if state.life and not state.busy then
 			sound("click")
+			-- (v0.19) a pack with a party: someone in your life opens their profile (their story,
+			-- what they like, your history, everything you can do together); a linked friend, a
+			-- pack without one: the kit's person sheet
+			if state.life.party and rel and not rel.linked and rel.alive and actions.openNpc then
+				actions.openNpc(rel.id)
+				return
+			end
 			task.delay(0.25, function()
 				Sheets.person(ctx, sheetColumn, rel)
 			end)
 		end
+	end
+
+	-- (v0.19) THE PARTY (UI/PartySheet) and one person's profile (UI/NpcProfile)
+	local function partyOpts(extra: any?): any
+		local o = {
+			onResponse = function(res: any)
+				applyResponse(res)
+				if res and res.result and res.result.accepted == true then
+					sound("win")
+				elseif res and res.result and res.result.accepted == false then
+					sound("lose")
+				else
+					sound("click")
+				end
+			end,
+			toast = toast,
+			currency = (ctx.info and ctx.info.meta and ctx.info.meta.currency) or "million won",
+		}
+		for k, v in extra or {} do
+			o[k] = v
+		end
+		return o
+	end
+	function actions.openParty()
+		if state.life and state.life.party and state.life.alive and not state.busy then
+			sound("click")
+			PartySheet.open(partyGui, call, partyOpts())
+		end
+	end
+	function actions.openNpc(relId: number)
+		if state.life and state.life.party and state.life.alive and not state.busy and type(relId) == "number" then
+			NpcProfile.open(partyGui, call, partyOpts({ relId = relId }))
+		end
+	end
+	function actions.closeParty()
+		PartySheet.close()
+		NpcProfile.close()
 	end
 
 	function actions.interact(relId: number, id: string, approach: string?)

@@ -12,6 +12,15 @@
 	whoever you are. An E-rank Hunter can be standing in front of an A-rank break; the odds
 	preview will say so, and so will the card. Choices that need a Hunter licence say so.
 	`hw` on a choice tells the incident what the player did (Engine/HunterWorld.afterChoice).
+
+	(v0.19) YOUR PARTY: a clash with `party = { rank, kind }` is fought with the party members
+	who are there (Engine/Party.luau): all of them in a raid, a Red Gate or a Double Dungeon,
+	whoever was nearby for a Gate in the street or a break. They add to the clash by their rank
+	and class (in the odds before you choose), a Tanker and a Healer take some of a loss, they
+	take their share of the pay, and they can be hurt or worse, more often in a Gate above their
+	rank, a Red Gate or a Double Dungeon. The rank is what's really inside (a Red Gate's true
+	rank). And the people you were in it with (the Hunters on the raid team, the stranger you
+	pulled clear, the porter from the collection crew) may stay in your life: `meet`.
 ]]
 
 local HW = require(script.Parent.Parent.Parent.Parent:WaitForChild("Engine"):WaitForChild("HunterWorld"))
@@ -57,6 +66,20 @@ local function check(stat: string, r: number, base: number, foe: string)
 	return { stat = stat, foe = foe, coins = 1 + math.floor(r / 3), base = base, coinPower = 2 + math.floor(r / 2), fixed = true }
 end
 
+-- (v0.19) your party is in this one with you (Engine/Party): the Gate's rank, and what kind
+-- of place it is (how much it helps, how much it risks them)
+local function party(clash: any, r: number, kind: string)
+	clash.party = { rank = math.clamp(r, 1, 6), kind = kind }
+	return clash
+end
+-- (v0.19) the higher of two ranks, the lower of two, for the people you meet in there
+local function lo(r: number): number
+	return math.max(1, r - 1)
+end
+local function hi(r: number): number
+	return math.min(6, r + 1)
+end
+
 local cards = {}
 local function add(e)
 	e.weight = 0
@@ -80,8 +103,8 @@ for r = 1, 6 do
 		label = "Keep the crowd moving",
 		hint = "Somebody has to stop the crush at the crossing.",
 		hw = "helped",
-		clash = check("charisma", r, 2 + r, "A panicking crowd"),
-		win = { charisma = 2, sanity = 2, log = "You got an old man, two kids and a stroller through the crush. A patrol officer nodded at you on the way past." },
+		clash = party(check("charisma", r, 2 + r, "A panicking crowd"), r, "city"),
+		win = { charisma = 2, sanity = 2, meet = { role = "someone you got through the crush at the {gRank} Gate in {gCity}", chance = 0.3, bond = { 26, 40 } }, log = "You got an old man, two kids and a stroller through the crush. A patrol officer nodded at you on the way past." },
 		lose = { vitality = { -12, -4 }, sanity = -3, log = "The crowd surged. You went down on the curb and someone stepped on your hand.", cause = "Crushed in a crowd fleeing a Gate" },
 	}
 	local cityCards = {
@@ -108,15 +131,15 @@ for r = 1, 6 do
 				label = "Show your licence and hold the cordon",
 				hint = "Keep people back until {gAssoc} arrives.",
 				hw = "held",
-				clash = check("willpower", r, 1 + r, "Holding a cordon"),
-				win = { charisma = 2, money = share(pay, 0.1), log = "You held the line at the tape until the Association's van pulled up. They thanked you and took your licence number." },
+				clash = party(check("willpower", r, 1 + r, "Holding a cordon"), r, "city"),
+				win = { charisma = 2, money = share(pay, 0.1), meet = { role = "a measurement technician from the {gRank} Gate in {gCity}", rank = 0, work = "Gate measurement technician", chance = 0.3, bond = { 24, 36 }, age = { 23, 50 } }, log = "You held the line at the tape until the Association's van pulled up. They thanked you and took your licence number." },
 				lose = { sanity = -3, log = "People pushed past you to get a look. The Association team arrived to a mess, and said so." },
 			},
 			{
 				label = "Go in before the Association arrives",
 				hint = "Entering a Gate you don't hold the rights to is against the law. Whatever's inside is {gRank}.",
 				hw = "entered",
-				clash = monster(r, 1.1),
+				clash = monster(r, 1.1, { party = { rank = r, kind = "city" } }),
 				win = { strength = 2, money = share(pay, 0.6), sanity = -2, loot = { rank = r, chance = 0.4 }, log = "You came out with a pack of mana crystals and an Association officer waiting with a citation. The fine took a third of it." },
 				lose = { vitality = hurt(r, 0.8), sanity = -6, log = "You got three rooms in before you knew you'd made a mistake. The measurement team found you at the entrance.", cause = "Killed alone inside an unregistered Gate" },
 			},
@@ -140,7 +163,7 @@ for r = 1, 6 do
 		label = "Run",
 		hint = "Away from the noise. Don't stop.",
 		hw = "fled",
-		clash = check("agility", r, 1 + r * 2, "{gMonster} in the street"),
+		clash = party(check("agility", r, 1 + r * 2, "{gMonster} in the street"), r, "break"),
 		win = { sanity = -2 - r, log = "You ran until your lungs gave out, and then you walked. You were alive when the all-clear came." },
 		lose = { vitality = hurt(r, 0.6), sanity = -6, log = "Something caught up with you at the corner.", cause = "Killed in a Dungeon Break" },
 	}
@@ -151,16 +174,16 @@ for r = 1, 6 do
 				label = "Get inside and keep quiet",
 				hint = "A locked door, a basement, a stairwell. Wait it out.",
 				hw = "sheltered",
-				clash = check("luck", r, 1 + r, "{gMonster} searching the block"),
-				win = { sanity = -3 - r, log = "You sat in the dark with strangers and listened to it go past the door. Twice." },
+				clash = party(check("luck", r, 1 + r, "{gMonster} searching the block"), r, "break"),
+				win = { sanity = -3 - r, meet = { role = "someone you sat out the {gPlace} break with, in the dark", chance = 0.3, bond = { 26, 38 } }, log = "You sat in the dark with strangers and listened to it go past the door. Twice." },
 				lose = { vitality = hurt(r, 0.32), sanity = -8, log = "The door didn't hold. You got out through a back window, hurt.", cause = "Found by monsters in a Dungeon Break" },
 			},
 			{
 				label = "Pull a stranger out with you",
 				hint = "A kid has frozen in the middle of the road.",
 				hw = "helped",
-				clash = check("agility", r, 1 + r * 2, "{gMonster} closing in"),
-				win = { charisma = 3, willpower = 2, sanity = 1, log = "You grabbed the kid and didn't let go until you found their mother at the evacuation point." },
+				clash = party(check("agility", r, 1 + r * 2, "{gMonster} closing in"), r, "break"),
+				win = { charisma = 3, willpower = 2, sanity = 1, meet = { role = "the parent of the child you pulled out of the {gPlace} break", rank = 0, chance = 0.7, bond = { 42, 56 }, age = { 28, 46 }, traits = { "kind" } }, log = "You grabbed the kid and didn't let go until you found their mother at the evacuation point." },
 				lose = { vitality = hurt(r, 0.7), sanity = -6, log = "You got the kid clear. You didn't get yourself clear.", cause = "Killed saving a child in a Dungeon Break" },
 			},
 		} },
@@ -169,24 +192,24 @@ for r = 1, 6 do
 				label = "Fight them",
 				hint = "These are {gTrueRank} monsters, and they're already out.",
 				hw = "fought",
-				clash = monster(r, 1),
-				win = { strength = 2 + math.floor(r / 2), money = share(pay, 0.5), sanity = -2, loot = { rank = r, chance = 0.3 }, log = "You put down what was in your street. The Association's response team arrived to find you sitting on a bus bench, shaking." },
+				clash = monster(r, 1, { party = { rank = r, kind = "break" } }),
+				win = { strength = 2 + math.floor(r / 2), money = share(pay, 0.5), sanity = -2, loot = { rank = r, chance = 0.3 }, meet = { role = "a Hunter who fought beside you when {gPlace} broke", hunter = true, rank = { lo(r), hi(r) }, chance = 0.35, bond = { 26, 40 }, age = { 19, 46 } }, log = "You put down what was in your street. The Association's response team arrived to find you sitting on a bus bench, shaking." },
 				lose = { vitality = hurt(r, 1), sanity = -8, log = "There were more of them than you.", cause = "Killed fighting a Dungeon Break" },
 			},
 			{
 				label = "Hold the line while people get out",
 				hint = "Don't win. Just don't move.",
 				hw = "held",
-				clash = monster(r, 0.85, { stat = "vitality" }),
-				win = { vitality = { 1, 3 }, willpower = 3, charisma = 2, money = share(pay, 0.3), log = "You held a street corner for eleven minutes. Every one of the people behind you got out." },
+				clash = monster(r, 0.85, { stat = "vitality", party = { rank = r, kind = "break" } }),
+				win = { vitality = { 1, 3 }, willpower = 3, charisma = 2, money = share(pay, 0.3), meet = { role = "a shop owner from the corner you held during the {gPlace} break", rank = 0, chance = 0.4, bond = { 36, 50 }, age = { 30, 64 }, work = "Runs a shop on the corner you held" }, log = "You held a street corner for eleven minutes. Every one of the people behind you got out." },
 				lose = { vitality = hurt(r, 1.05), sanity = -6, log = "The line broke. You were where it broke.", cause = "Killed holding the line in a Dungeon Break" },
 			},
 			{
 				label = "Guide the evacuation",
 				hint = "You know how monsters move; the officers don't.",
 				hw = "helped",
-				clash = check("intelligence", r, 1 + r * 2, "A street in panic"),
-				win = { intelligence = 2, charisma = 2, money = share(pay, 0.15), log = "You read where they were going and sent the crowd the other way. The police captain asked your name." },
+				clash = party(check("intelligence", r, 1 + r * 2, "A street in panic"), r, "break"),
+				win = { intelligence = 2, charisma = 2, money = share(pay, 0.15), meet = { role = "the police captain from the evacuation at {gPlace}", rank = 0, chance = 0.3, bond = { 26, 40 }, age = { 36, 56 }, work = "Police captain" }, log = "You read where they were going and sent the crowd the other way. The police captain asked your name." },
 				lose = { vitality = hurt(r, 0.5), sanity = -4, log = "You sent them the wrong way. You'll think about it for a long time.", cause = "Killed guiding an evacuation" },
 			},
 			breakRun,
@@ -216,8 +239,8 @@ for r = 1, 6 do
 				hint = "A boss, fought in turns. Friends on the server can join you. The kill is yours, and so is the best of the drop.",
 				hw = "raided",
 				battle = RAID_BOSS[r],
-				clash = monster(r, 0.95, { boss = true }),
-				win = { strength = 2 + math.floor(r / 2), willpower = 1 + math.floor(r / 3), money = share(pay, 1.5), sanity = 1, charisma = 1 + math.floor(FAME[r] / 6), loot = { rank = r, chance = 0.85, shinyBoost = 1.5 }, log = "You took the boss. The Gate shivered when it died, and an hour later it folded shut behind the collection team. Your name went on the report first." },
+				clash = monster(r, 0.95, { boss = true, party = { rank = r, kind = "raid" } }),
+				win = { strength = 2 + math.floor(r / 2), willpower = 1 + math.floor(r / 3), money = share(pay, 1.5), sanity = 1, charisma = 1 + math.floor(FAME[r] / 6), loot = { rank = r, chance = 0.85, shinyBoost = 1.5 }, meet = { role = "a Hunter from the boss room at {gPlace}", hunter = true, rank = { r, hi(r) }, chance = 0.3, bond = { 28, 42 }, age = { 21, 48 } }, log = "You took the boss. The Gate shivered when it died, and an hour later it folded shut behind the collection team. Your name went on the report first." },
 				lose = { vitality = hurt(r, 1), sanity = -7, log = "The boss put you through a wall. The rest of the team finished it while a healer kept you breathing.", cause = "Killed by a Gate's boss" },
 				fled = { sanity = -4, log = "You backed out of the boss room. The team finished it without you, and the share reflected it." },
 			},
@@ -225,16 +248,16 @@ for r = 1, 6 do
 				label = "Join the raid",
 				hint = "Front line with the team. The share is by contribution.",
 				hw = "raided",
-				clash = monster(r, 0.72),
-				win = { strength = 1 + math.floor(r / 2), agility = 1, money = pay, sanity = 1, loot = { rank = r, chance = 0.45 }, log = "The boss went down in the last chamber. The Gate started to close an hour after, with the collection team still filling crates." },
+				clash = monster(r, 0.72, { party = { rank = r, kind = "raid" } }),
+				win = { strength = 1 + math.floor(r / 2), agility = 1, money = pay, sanity = 1, loot = { rank = r, chance = 0.45 }, meet = { role = "a Hunter from the raid team at {gPlace}", hunter = true, rank = { lo(r), r }, chance = 0.4, bond = { 22, 36 }, age = { 19, 48 } }, log = "The boss went down in the last chamber. The Gate started to close an hour after, with the collection team still filling crates." },
 				lose = { vitality = hurt(r, 0.7), sanity = -5, log = "You were carried out by the healer before the boss room.", cause = "Killed on a Gate raid" },
 			},
 			{
 				label = "Take the rear: collection and support",
 				hint = "Carry, mine crystals, watch the flanks. Safer, and it pays less.",
 				hw = "raided",
-				clash = check("intelligence", r, r * 2, "The dungeon's stragglers"),
-				win = { intelligence = 1, money = share(pay, 0.35), loot = { rank = r, chance = 0.15 }, log = "You mined the boss room's crystals while the strikers rested. Honest work, and nobody bled for it." },
+				clash = party(check("intelligence", r, r * 2, "The dungeon's stragglers"), r, "raid"),
+				win = { intelligence = 1, money = share(pay, 0.35), loot = { rank = r, chance = 0.15 }, meet = { role = "a porter from the collection team at {gPlace}", rank = 1, chance = 0.35, bond = { 26, 38 }, age = { 18, 40 }, work = "Porter" }, log = "You mined the boss room's crystals while the strikers rested. Honest work, and nobody bled for it." },
 				lose = { vitality = hurt(r, 0.35), sanity = -3, log = "A straggler came out of a side tunnel at the collection team. You took the worst of it.", cause = "Killed on a collection team" },
 			},
 			{
@@ -259,24 +282,24 @@ for r = 1, 6 do
 				hint = "The only way out is through it, in turns, with whoever's left. This is {gTrueRank} now.",
 				hw = "fought",
 				battle = RED_BOSS[math.min(6, r + 1)],
-				clash = monster(math.min(6, r + 1), 0.8, { boss = true }),
+				clash = monster(math.min(6, r + 1), 0.8, { boss = true, party = { rank = math.min(6, r + 1), kind = "red" } }),
 				fled = { sanity = -10, log = "You fell back from the throne room. Someone else ended it, days later by the Gate's clock. You were alive to see the sky go blue." },
-				win = { strength = 3, willpower = 3, money = share(PAY[math.min(6, r + 1)], 1.2), sanity = -6, loot = { rank = math.min(6, r + 1), chance = 1, minStars = 2, shinyBoost = 2 }, log = "You were there when the boss fell. The red went out of the sky, the Gate opened, and you walked out into an afternoon that hadn't noticed you were gone." },
+				win = { strength = 3, willpower = 3, money = share(PAY[math.min(6, r + 1)], 1.2), sanity = -6, loot = { rank = math.min(6, r + 1), chance = 1, minStars = 2, shinyBoost = 2 }, meet = { role = "someone who came out of the Red Gate with you", hunter = true, rank = { r, hi(r) }, chance = 0.6, bond = { 42, 58 }, age = { 19, 50 } }, log = "You were there when the boss fell. The red went out of the sky, the Gate opened, and you walked out into an afternoon that hadn't noticed you were gone." },
 				lose = { vitality = hurt(math.min(6, r + 1), 1), sanity = -10, log = "You didn't reach the boss.", cause = "Lost inside a Red Gate" },
 			},
 			{
 				label = "Hold a shelter and keep the group alive",
 				hint = "Ration, keep watch, keep people sane. Wait for the strikers.",
 				hw = "held",
-				clash = check("willpower", math.min(6, r + 1), 3 + r * 3, "The cold and the dark"),
-				win = { willpower = 4, charisma = 2, sanity = -4, money = share(pay, 0.5), log = "You kept a fire going and nine people talking. When the Gate opened, all nine walked out." },
+				clash = party(check("willpower", math.min(6, r + 1), 3 + r * 3, "The cold and the dark"), r + 1, "red"),
+				win = { willpower = 4, charisma = 2, sanity = -4, money = share(pay, 0.5), meet = { role = "one of the nine you kept alive inside the Red Gate", hunter = true, rank = { 1, r }, chance = 0.7, bond = { 50, 64 }, age = { 18, 40 } }, log = "You kept a fire going and nine people talking. When the Gate opened, all nine walked out." },
 				lose = { vitality = hurt(r, 0.8), sanity = -12, log = "The things outside the shelter found a way in.", cause = "Lost inside a Red Gate" },
 			},
 			{
 				label = "Search for another way out",
 				hint = "There isn't one. Everyone knows there isn't one.",
 				hw = "fled",
-				clash = check("luck", math.min(6, r + 1), 6 + r * 4, "A Red Gate's walls"),
+				clash = party(check("luck", math.min(6, r + 1), 6 + r * 4, "A Red Gate's walls"), r + 1, "red"),
 				win = { luck = 2, sanity = -6, log = "There was no other way out. But the search kept you away from where the worst of it happened." },
 				lose = { vitality = hurt(r, 0.9), sanity = -10, log = "You wandered too far from the others.", cause = "Lost inside a Red Gate" },
 			},
@@ -295,16 +318,16 @@ for r = 1, 6 do
 				label = "Go through",
 				hint = "The others are going. What's inside reads like {gTrueRank}.",
 				hw = "entered",
-				clash = monster(math.min(6, r + 3), 0.7),
-				win = { strength = 3, willpower = 4, intelligence = 2, luck = 2, money = share(PAY[math.min(6, r + 2)], 1), sanity = -12, loot = { rank = math.min(6, r + 2), chance = 1, minStars = 2, shinyBoost = 6 }, log = "You came out. Most of them didn't. You don't talk about the room at the end, even to the Association's investigators." },
+				clash = monster(math.min(6, r + 3), 0.7, { party = { rank = math.min(6, r + 3), kind = "double" } }),
+				win = { strength = 3, willpower = 4, intelligence = 2, luck = 2, money = share(PAY[math.min(6, r + 2)], 1), sanity = -12, loot = { rank = math.min(6, r + 2), chance = 1, minStars = 2, shinyBoost = 6 }, meet = { role = "the only other one who came back out of the Double Dungeon", hunter = true, rank = { r, hi(r) }, chance = 0.5, bond = { 46, 60 }, age = { 20, 50 } }, log = "You came out. Most of them didn't. You don't talk about the room at the end, even to the Association's investigators." },
 				lose = { vitality = hurt(math.min(6, r + 3), 1), sanity = -14, log = "Nobody who went through that door with you came back to say what happened.", cause = "Killed in a Double Dungeon" },
 			},
 			{
 				label = "Study it before anyone moves",
 				hint = "There's a pattern to the room. If you can find it before someone triggers it...",
 				hw = "helped",
-				clash = check("intelligence", math.min(6, r + 2), 4 + r * 3, "A room built to kill"),
-				win = { intelligence = 4, willpower = 2, sanity = -6, log = "You saw it a second before anyone else did and shouted. Half the party made it back to the first dungeon because of you." },
+				clash = party(check("intelligence", math.min(6, r + 2), 4 + r * 3, "A room built to kill"), r + 2, "double"),
+				win = { intelligence = 4, willpower = 2, sanity = -6, meet = { role = "a Hunter who made it back to the first dungeon because you shouted", hunter = true, rank = { lo(r), r }, chance = 0.5, bond = { 40, 54 }, age = { 19, 48 } }, log = "You saw it a second before anyone else did and shouted. Half the party made it back to the first dungeon because of you." },
 				lose = { vitality = hurt(math.min(6, r + 2), 0.8), sanity = -12, log = "You were still working it out when it started.", cause = "Killed in a Double Dungeon" },
 			},
 			{

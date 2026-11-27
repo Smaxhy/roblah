@@ -9,6 +9,8 @@ local Renown = require(script.Parent.Renown)
 local Avatar = require(script.Parent.Avatar)
 local Expedition = require(script.Parent.Expedition)
 local Jobs = require(script.Parent.Jobs)
+-- (v0.19) the party (pack.party): nil everywhere for a pack without one
+local Party: any = require(script.Parent.Party) :: any
 
 local View = {}
 
@@ -104,6 +106,8 @@ function View.view(self: any, life: any): any
 		story = self:storyView(life),
 		known = self:knownView(life),
 		perkTrait = if life.perkTrait and self:traitDef(life.perkTrait) then self:traitDef(life.perkTrait).name else nil,
+		-- (v0.19) your party, for the life screen's PARTY button (Engine/Party)
+		party = Party.summary(self, life),
 	}
 	for _, a in life.ambitions or {} do
 		local def = self:ambitionDef(a.id)
@@ -196,9 +200,19 @@ function View.view(self: any, life: any): any
 		})
 	end
 	v.relations = {}
+	local partyOn = Party.enabled(self)
 	for _, rel in life.relations do
 		local def = pack.relationKinds[rel.kind] or {}
+		if partyOn and rel.userId == nil then
+			Party.ensure(self, life, rel)
+		end
 		table.insert(v.relations, {
+			-- (v0.19) who they are as a Hunter, and whether they're in your party
+			rank = if partyOn then rel.rank else nil,
+			rankLetter = if partyOn and (rel.rank or 0) > 0 then Party.letter(rel.rank) else nil,
+			className = if partyOn and (rel.rank or 0) > 0 then Party.CLASS_NAMES[rel.class or "fighter"] else nil,
+			inParty = if partyOn and Party.memberOf(life, rel.id) then true else nil,
+			roster = rel.roster,
 			id = rel.id,
 			kind = rel.kind,
 			kindName = if rel.userId then "Linked friend" elseif rel.married and pack.marriage and pack.marriage.on then (pack.marriage.word or "Spouse") elseif rel.formerRival then "Friend (once a rival)" else (def.name or rel.kind),
@@ -242,17 +256,33 @@ function View.view(self: any, life: any): any
 		end
 		for i, c in event.choices do
 			local ok, why = Conditions.check(c.requires, life, pack, { noChance = true })
+			-- (v0.19) your party in this fight: who's there and what they add, on the hint; the
+			-- chips are what you'd really get (their shares out, what they take off a loss)
+			local partyLine: string? = nil
+			local shown = c
+			if c.clash and c.clash.party and ok then
+				local sup = Party.support(self, life, c.clash)
+				partyLine = Party.supportText(self, sup)
+				if c.battle and pack.bosses and pack.bosses[c.battle] and sup then
+					partyLine = (partyLine or "") .. " In the boss room they fight beside you, every turn."
+				end
+				shown = Party.displayChoice(self, life, c)
+			end
+			local hint = if c.battle and pack.bosses and pack.bosses[c.battle]
+				then ((if c.hint then self:render(life, c.hint) .. " " else "") .. "A battle in turns: every turn, you choose.")
+				elseif c.hint then self:render(life, c.hint)
+				else nil
+			if partyLine then
+				hint = (if hint then hint .. " " else "") .. partyLine
+			end
 			table.insert(choices, {
 				index = i,
 				label = self:render(life, c.label),
-				hint = if c.battle and pack.bosses and pack.bosses[c.battle]
-					then ((if c.hint then self:render(life, c.hint) .. " " else "") .. "A battle in turns: every turn, you choose.")
-					elseif c.hint then self:render(life, c.hint)
-					else nil,
+				hint = hint,
 				enabled = ok,
 				reason = why,
 				clash = if c.clash and ok then self:clashPreview(life, c.clash) else nil,
-				stakes = if c.clash and ok then self:stakesView(c, life, sceneCtx) else nil,
+				stakes = if c.clash and ok then self:stakesView(shown, life, sceneCtx) else nil,
 				-- (v0.16) a battle in turns: the way you fight is picked every turn, not here
 				battle = if c.battle and pack.bosses and pack.bosses[c.battle] then (pack.bosses[c.battle].name or true) else nil,
 				-- a plain choice says what it gives too

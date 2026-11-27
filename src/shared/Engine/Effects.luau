@@ -304,8 +304,14 @@ function Effects.apply(engine, life, result, report, extraCtx)
 		engine:highlight(life, ((edef and edef.name) or "An episode") .. ": " .. ending)
 	end
 	-- (v0.12) people you've met (Engine/People.luau): a new face, or one becoming a friend
+	-- (v0.19) a meeting can say who they are: meet = { role, rank, class, kind, chance... }
 	if result.meet and engine.meetSomeone then
-		engine:meetSomeone(life, extra, if type(result.meet) == "string" then result.meet else nil)
+		engine:meetSomeone(life, extra, if type(result.meet) == "string" or type(result.meet) == "table" then result.meet else nil)
+	end
+	-- (v0.19) the party (Engine/Party.luau): loyalty, partyLoyalty, partyJoin, partyLeave,
+	-- partyShare, partyRecover
+	if engine.partyEffect and (result.loyalty ~= nil or result.partyLoyalty ~= nil or result.partyJoin or result.partyLeave or result.partyShare ~= nil or result.partyRecover ~= nil or result.partyPay ~= nil) then
+		engine:partyEffect(life, result, target, extra)
 	end
 	if result.befriend and type(target) == "table" and target.alive and target.kind == "acquaintance" then
 		target.kind = "friend"

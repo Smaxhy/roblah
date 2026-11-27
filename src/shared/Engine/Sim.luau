@@ -40,6 +40,8 @@ local Turf: any = require(script.Parent.Turf) :: any
 local Cases: any = require(script.Parent.Cases) :: any
 local Feats: any = require(script.Parent.Feats) :: any
 local Battle: any = require(script.Parent.Battle) :: any
+-- (v0.19) bonds with everyone you meet, and a party of NPCs (pack.party; off without it)
+local Party: any = require(script.Parent.Party) :: any
 
 local HunterWorld = require(script.Parent.HunterWorld)
 
@@ -947,6 +949,12 @@ end
 
 function Sim:addRelation(life, spec)
 	local pack = self.pack
+	-- (v0.19) a roster NPC (spec.roster) is met once, and brings its own name and age
+	local known = Party.existing(self, life, spec)
+	if known then
+		return known
+	end
+	spec = Party.prepare(self, life, spec)
 	local kindDef = pack.relationKinds[spec.kind] or {}
 	local first, last
 	if spec.name then
@@ -987,6 +995,8 @@ function Sim:addRelation(life, spec)
 		self:highlight(life, first .. " became part of your family.")
 		self:news(life, life.first .. " took in a child, " .. first .. ".")
 	end
+	-- (v0.19) their rank, class and personality (the roster's, or their own): Engine/Party
+	Party.onAdd(self, life, rel, spec)
 	return rel
 end
 
@@ -1104,6 +1114,8 @@ function Sim:relationDied(life, rel, extra, how: string?, fate: string?)
 	if kindDef.family and self.pack.conditions and self.pack.conditions.grief then
 		self:addCondition(life, "grief", extra)
 	end
+	-- (v0.19) out of the party, whatever it was
+	Party.onDeath(self, life, rel, extra)
 end
 
 function Sim:killRelation(life, spec: any, extra)
@@ -1909,8 +1921,18 @@ function Sim:applyResult(life: any, result: any, report: any)
 	self:resolveOption(life, { result = result }, report, nil, self:workCtx(life))
 	self:advance(life, report)
 end
-function Sim:meetSomeone(life: any, extra: any, role: string?): any
+function Sim:meetSomeone(life: any, extra: any, role: any): any
 	return People.meet(self, life, extra, role)
+end
+-- (v0.19) what a result does to the party (loyalty, partyLoyalty, partyLeave...): Engine/Party
+function Sim:partyEffect(life: any, result: any, target: any, extra: any)
+	Party.effect(self, life, result, target, extra)
+end
+function Sim:partyView(life: any): any
+	return Party.view(self, life)
+end
+function Sim:npcProfile(life: any, relId: number): any
+	return Party.profileView(self, life, self:relationById(life, relId))
 end
 function Sim:moveIntoHome(life: any, id: string, extra: any)
 	Market.moveIn(self, life, id, extra)
@@ -4916,6 +4938,10 @@ function Sim:advance(life: any, report: any)
 			HunterWorld.onShow(self, life, event)
 		end
 		if event then
+			-- (v0.19) who of your party is there, and who a party card is about
+			Party.onShow(self, life, event)
+		end
+		if event then
 			life.history[id] = life.age
 			-- (v0.13) how many times this life has seen it (Sim:eventWeight makes a repeat rarer)
 			life.timesSeen = life.timesSeen or {}
@@ -5052,6 +5078,8 @@ function Sim:ageUp(life: any)
 	self:rollReprisal(life, report)
 	Known.learnPlace(self, life)
 	People.yearly(self, life, report)
+	-- (v0.19) a year in your party: healing, growing, pay, and who stays (Engine/Party)
+	Party.yearly(self, life, report)
 	if life.alive then
 		self:rollNextStory(life, report)
 		Jobs.roll(self, life)
@@ -5278,6 +5306,14 @@ function Sim:clashSides(life: any, spec: any, approachId: string?)
 		local officeBase = Office.fightBonus(self, life)
 		bonus.base += officeBase
 	end
+	-- (v0.19) your party, the ones who are with you for this (a clash with `party`)
+	local sup = if spec.party then Party.support(self, life, spec) else nil
+	if sup then
+		bonus.base += sup.base
+		bonus.coins += sup.coins
+		headsBonus += sup.heads
+		player.party = sup
+	end
 	-- Resonance: a talent of one of your sins steadies your hand
 	if self:resonates(life) then
 		headsBonus += (self.pack.affinityResonance or 3)
@@ -5316,6 +5352,11 @@ function Sim:clashSides(life: any, spec: any, approachId: string?)
 		end
 	end
 	local foe = Clash.foeSide(spec)
+	-- (v0.19) a foe named with tokens ({gMonster} on a Gate card, {rel} on a party card) is
+	-- named by them, on the odds and on the fight screen
+	if type(foe.name) == "string" and string.find(foe.name, "{", 1, true) then
+		foe.name = self:render(life, foe.name)
+	end
 	if spec.fight then
 		self:foeAbilities(spec, foe)
 	end
@@ -5492,6 +5533,8 @@ function Sim:clashPreview(life: any, spec: any): any
 		first = Clash.firstStrike(player, foe),
 		backer = player.backer,
 		natural = player.natural,
+		-- (v0.19) the party members fighting with you, and what they add (Engine/Party)
+		party = player.party,
 		abilities = self:abilitiesView(player.abilities),
 		foeAbilities = self:abilitiesView(foe.abilities),
 	}
@@ -5633,7 +5676,16 @@ function Sim:resolveOption(life: any, option: any, report: any, approachId: stri
 				end
 			end
 		end
+		-- (v0.19) a party: a Tanker and a Healer take some of a loss; their shares come out of a win
+		local sup = res.player.party
+		if sup and not res.won then
+			outcome = Party.absorbed(self, outcome, sup)
+		end
+		local moneyBefore = life.money
 		Effects.apply(self, life, outcome, report, extraCtx)
+		if sup then
+			Party.afterClash(self, life, option.clash, sup, res.won, report, approachId, life.money - moneyBefore)
+		end
 		if approach and approach.after and life.alive then
 			Effects.apply(self, life, approach.after, report)
 		end
@@ -5694,7 +5746,7 @@ function Sim:choose(life: any, index: number, approachId: string?)
 	end
 	-- a scene with someone: what it does to the bond lands on them
 	local sceneCtx = nil
-	if life.sceneRel and event.social then
+	if life.sceneRel and (event.social or event.partyCard) then
 		local rel = self:relationById(life, life.sceneRel)
 		if rel then
 			sceneCtx = self:interactionTokens(life, rel)
@@ -5723,6 +5775,8 @@ function Sim:choose(life: any, index: number, approachId: string?)
 	if life.gw then
 		HunterWorld.afterChoice(self, life, event, choice, report)
 	end
+	-- (v0.19) the people this card introduces, and the party card it was
+	Party.afterChoice(self, life, event, index, report)
 	life.sceneRel = nil
 	life.scene = nil
 	life.focusLink = nil
@@ -5990,11 +6044,25 @@ function Sim:interactionState(life, rel, id: string): (boolean, boolean, string?
 	if def.relMaxAge and rel.age > def.relMaxAge then
 		return false, false, nil
 	end
+	-- (v0.19) a party interaction has its own say: members only, Hunters only, a full party...
+	local partyWhy: string? = nil
+	if def.party then
+		local pv, pe, pw = Party.gate(self, life, rel, def)
+		if not pv then
+			return false, false, nil
+		end
+		if not pe then
+			partyWhy = pw or "Not right now"
+		end
+	end
 	if not life.alive then
 		return true, false, "This life is over"
 	end
 	if life.pending then
 		return true, false, "Decide first"
+	end
+	if partyWhy then
+		return true, false, partyWhy
 	end
 	if def.online and not rel.online then
 		return true, false, "They're away"
@@ -6069,13 +6137,38 @@ function Sim:pickSocialScene(life: any, rel: any): any
 	return if idx then list[idx] else nil
 end
 
+-- (v0.19) the order interactions are listed in: pack.interactions.order, except where a def
+-- says `sort = n` (a pack adding its own after the kit's: their order is the pack's to set)
+function Sim:interactionOrder(): { string }
+	if self._interactionOrder then
+		return self._interactionOrder
+	end
+	local defs = self.pack.interactions or {}
+	local order = table.clone(defs.order or {})
+	local at = {}
+	for i, id in order do
+		at[id] = i
+	end
+	table.sort(order, function(a, b)
+		local da, db = defs[a], defs[b]
+		local sa = (type(da) == "table" and da.sort) or at[a]
+		local sb = (type(db) == "table" and db.sort) or at[b]
+		if sa ~= sb then
+			return sa < sb
+		end
+		return at[a] < at[b]
+	end)
+	self._interactionOrder = order
+	return order
+end
+
 function Sim:interactionsFor(life, rel)
 	local list = {}
 	local pack = self.pack
 	if not pack.interactions then
 		return list
 	end
-	for _, id in pack.interactions.order or {} do
+	for _, id in self:interactionOrder() do
 		local visible, enabled, why = self:interactionState(life, rel, id)
 		if visible then
 			local def = pack.interactions[id]
@@ -6084,24 +6177,35 @@ function Sim:interactionsFor(life, rel)
 			-- an evening that opens a scene gives what you choose in it, not the plain result
 			local scene = def.scenes == true and #self:socialSceneList(life, rel) > 0
 			local with = { target = rel }
+			-- (v0.19) a party interaction: its clash is fought with this person's numbers (a
+			-- spar, a raid together), and its words say the odds of a yes, the gift, the story
+			local src = def
+			local desc = self:render(life, def.desc, tokens)
+			local info = nil
+			if def.party and Party.enabled(self) then
+				local opt = Party.optionFor(self, life, rel, def)
+				src = if opt then Party.displayChoice(self, life, opt) else def
+				desc, info = Party.describe(self, life, rel, def, desc)
+			end
 			table.insert(list, {
 				id = id,
 				name = self:render(life, def.name, tokens),
-				desc = self:render(life, def.desc, tokens),
+				desc = desc,
 				enabled = enabled,
 				reason = why,
-				cost = def.cost,
-				clash = if def.clash and enabled then self:clashPreview(life, def.clash) else nil,
+				cost = if info and info.cost then info.cost else def.cost,
+				clash = if src.clash and enabled then self:clashPreview(life, src.clash) else nil,
 				scene = scene or nil,
-				gains = if scene then nil elseif def.result then self:stakesOf(def.result, nil, nil, life, with) elseif def.win then self:stakesOf(def.win, nil, nil, life, with) else nil,
-				stakes = if def.clash and enabled and not scene then self:stakesView(def, life, with) else nil,
+				gains = if scene then nil elseif src.result then self:stakesOf(src.result, nil, nil, life, with) elseif src.win then self:stakesOf(src.win, nil, nil, life, with) else nil,
+				stakes = if src.clash and enabled and not scene then self:stakesView(src, life, with) else nil,
+				party = info,
 			})
 		end
 	end
 	return list
 end
 
-function Sim:interact(life: any, relId: number, id: string, approachId: string?)
+function Sim:interact(life: any, relId: number, id: string, approachId: string?, arg: any?)
 	local rel = self:relationById(life, relId)
 	local def = self.pack.interactions and self.pack.interactions[id]
 	if not rel or not def then
@@ -6158,7 +6262,10 @@ function Sim:interact(life: any, relId: number, id: string, approachId: string?)
 		option.result = table.clone(def.result)
 		option.result.log = swap
 	end
-	self:resolveOption(life, option, report, approachId, tokens)
+	-- (v0.19) a party interaction runs its own way (ask, gift, the past, a spar, a raid...)
+	if not (def.party and Party.interact(self, life, rel, def, option, report, tokens, approachId, arg)) then
+		self:resolveOption(life, option, report, approachId, tokens)
+	end
 	life.focusLink = nil
 	self:advance(life, report)
 	self:checkAmbitions(life, report)
