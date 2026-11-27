@@ -139,7 +139,7 @@ function HunterLive.install(S)
 		return {
 			id = inc.id, rank = inc.readRank, trueRank = inc.rank, kind = inc.kind, stage = inc.stage,
 			pos = { inc.pos.X, inc.pos.Y, inc.pos.Z }, label = inc.label, red = inc.red == true,
-			broke = inc.broke == true, closing = inc.closing == true, sealed = inc.sealed == true,
+			broke = inc.breakOut == true, closing = inc.closing == true, sealed = inc.sealed == true,
 			monsters = inc.monstersLeft or 0, startedAt = inc.wallStart, outcome = inc.outcome,
 			police = inc.police == true, assoc = inc.assoc == true, raid = inc.raidSent == true, inside = inc.inside == true,
 			headline = inc.headline,
@@ -345,6 +345,7 @@ function HunterLive.install(S)
 		-- the break
 		if A.breakAt and t >= A.breakAt and not inc.broken then
 			inc.broken = true
+			inc.breakOut = true -- what the street sees (inc.broke is the engine's plan)
 			local count = ({ 7, 6, 5, 4, 3, 2 })[inc.rank]
 			if inc.outcome == "break_spread" then
 				count += 2
@@ -513,7 +514,7 @@ function HunterLive.install(S)
 		model:SetAttribute("HunterLive", true)
 		model:SetAttribute("Rank", prank)
 		local spot = Map.spawns[math.random(1, math.max(1, #Map.spawns))] or Vector3.new(0, 4, 0)
-		model:PivotTo(CFrame.new(spot + Vector3.new(math.random(-6, 6), 0, math.random(-6, 6))))
+		model:PivotTo(CFrame.new(spot + Vector3.new(math.random(-6, 6), 1, math.random(-6, 6))))
 		model.Parent = Workspace
 		player.Character = model
 		pcall(function()
@@ -700,7 +701,8 @@ function HunterLive.install(S)
 			return { ok = false, error = "You're too young. Get to an adult and a shelter." }
 		end
 		local prank = HW.playerRank(sim, life)
-		local prefix = if inc.broken then cfg.cards.breakOut elseif inc.red then cfg.cards.red else cfg.cards.cityGate
+		-- (outside a Red Gate you see a sealed Gate in the street: the inside card is for the raid)
+		local prefix = if inc.broken then cfg.cards.breakOut else cfg.cards.cityGate
 		local rank = if inc.broken then inc.rank else inc.readRank
 		local eventId = prefix .. HW.rankLetter(rank)
 		if prank > 0 and sim.eventsById[eventId .. "_h"] then

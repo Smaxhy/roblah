@@ -89,7 +89,8 @@ Npcs.animate = animate
 
 local function spawnRig(look: any, at: Vector3, name: string, civilian: boolean): Model
 	local model = R6Rig.build(look, { name = name, npc = true, civilian = civilian })
-	R6Rig.pose(model, CFrame.new(at + Vector3.new(0, 0.1, 0)))
+	-- (the rig's pivot is its root, three studs above its feet)
+	R6Rig.pose(model, CFrame.new(at + Vector3.new(0, 3.2, 0)))
 	model.Parent = folder
 	local root = model:FindFirstChild("HumanoidRootPart") :: BasePart
 	pcall(function()
@@ -117,7 +118,8 @@ function Npcs.spawnCivilians(n: number, waypoints: { Vector3 })
 	end
 end
 
--- a phone in the hand of someone filming
+-- a phone in the hand of someone filming (their arm comes up; raisedArm keeps where it was)
+local raisedArm: { [Model]: CFrame } = setmetatable({}, { __mode = "k" }) :: any
 local function phone(model: Model)
 	if model:FindFirstChild("Phone") then
 		return
@@ -129,7 +131,8 @@ local function phone(model: Model)
 	R6Rig.shell(model, arm, "Phone", Vector3.new(0.5, 0.9, 0.12), CFrame.new(0, -1.1, -0.4) * CFrame.Angles(math.rad(-70), 0, 0), Color3.fromRGB(20, 20, 24), Enum.Material.Glass)
 	local torsoPart = model:FindFirstChild("Torso")
 	local shoulder = torsoPart and torsoPart:FindFirstChild("Right Shoulder") :: Motor6D?
-	if shoulder then
+	if shoulder and not raisedArm[model] then
+		raisedArm[model] = shoulder.C0
 		shoulder.C0 = shoulder.C0 * CFrame.Angles(0, 0, math.rad(80))
 	end
 end
@@ -239,6 +242,14 @@ function Npcs.stepCivilians(waypoints: { Vector3 })
 			if ph then
 				ph:Destroy()
 			end
+			-- the arm comes back down
+			local was = raisedArm[c.model]
+			local torsoPart = c.model:FindFirstChild("Torso")
+			local shoulder = torsoPart and torsoPart:FindFirstChild("Right Shoulder") :: Motor6D?
+			if was and shoulder then
+				shoulder.C0 = was
+			end
+			raisedArm[c.model] = nil
 			animate(c.model, "walk")
 		end
 		if c.state == "walk" then
@@ -438,7 +449,8 @@ Npcs.monsterModel = monsterModel
 
 function Npcs.spawnMonster(rank: number, at: Vector3, incidentId: number): any
 	local model, hum = monsterModel(rank)
-	model:PivotTo(CFrame.new(at + Vector3.new(rng:NextNumber(-3, 3), 0, rng:NextNumber(-3, 3))))
+	-- (its pivot is its root: lift it so the feet start above the street, never under it)
+	model:PivotTo(CFrame.new(at + Vector3.new(rng:NextNumber(-3, 3), 3 * MONSTER[rank].size + 1, rng:NextNumber(-3, 3))))
 	model:SetAttribute("Incident", incidentId)
 	model:SetAttribute("Rank", rank)
 	model.Parent = folder

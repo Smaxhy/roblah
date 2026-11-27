@@ -47,7 +47,7 @@ world behaves, not only in numbers:
 | | Normal World | High-Danger World |
 |---|---|---|
 | Gates near you a year | about 6 | about 10, leaning higher-rank |
-| Gates opening in streets | fewer | more than twice as many |
+| Gates opening in streets | fewer | noticeably more (cityShare 0.10 vs 0.24) |
 | Break clock | about 4 to 9 days | shorter (instability) |
 | Association response | fast, usually enough | slower, stretched, sometimes not enough |
 | Share of Gates that break (measured) | about 8% (1% in streets) | about 23% (12% in streets) |
@@ -55,6 +55,7 @@ world behaves, not only in numbers:
 | Breaks put down before they spread | usually | often not; an S-rank break can take a whole area |
 | Wounds, foes | as written | heavier, stronger |
 | The live city | a new Gate every few minutes | about twice as often |
+| How long lives last (headless) | a careful player: median 75; choosing at random: about 31 | choosing at random: about 22 |
 
 ## The world simulation (Engine/HunterWorld.luau)
 

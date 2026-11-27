@@ -81,8 +81,9 @@ local function runWorld(modeId: string)
 		if inc.outcome == "zone_lost" then
 			out.lost += 1
 		end
+		-- how long the Association takes once it knows (discovery is measured separately)
 		if inc.responseDay then
-			out.respond += inc.responseDay
+			out.respond += inc.responseDay - (inc.foundDay or 0)
 			out.respondN += 1
 		end
 		out.dead += inc.casualties or 0
