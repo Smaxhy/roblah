@@ -10,7 +10,7 @@ Three tools for working on BitLeveling outside the code:
 - **Connecting an AI or a terminal to Studio**: Studio's own MCP server, or this repo's small
   bridge.
 
-![The monsters with the mesh kit](images/blender_monsters.jpg)
+![All 172 monsters with the mesh kit, E to S](images/blender_monsters.jpg)
 
 ## The Studio plugin
 
