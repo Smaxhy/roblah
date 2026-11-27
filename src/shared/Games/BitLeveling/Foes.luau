@@ -1,6 +1,12 @@
 --[[
 	FOES: what stands across the fight screen. gate_<rank> is what a Gate of that rank's
 	monsters look like in a fight (creature shapes: client/UI/CreatureView). ORIGINAL looks.
+
+	The bestiary's families (Hunter/Bestiary.luau) each have a foe here too, foe_<family>
+	(and foe_<family>_<rank> where a family spans low and high ranks), for boss rooms and
+	family Gates: Hunter/Bestiary.FOES maps a family to its foe. Goblins, orcs, high orcs, ice
+	elves, ice bears, giants, giant ants, lizardmen, naga, golems, wyverns, dragon-kin, demons
+	and undead-like knights are canon TYPES (in this game's own looks); the rest are ORIGINAL.
 ]]
 return {
 	{ id = "gate_e", name = "Goblin pack", kind = "creature", shape = "swarm", color = { 96, 130, 70 }, eye = { 255, 220, 80 }, temper = "quick", ability = { id = "bleed", potency = 1 }, barks = { start = { "*chattering*" }, win = { "*cackling*" }, lose = { "*scattering*" } } },
@@ -10,4 +16,51 @@ return {
 	{ id = "gate_a", name = "Stone golem", kind = "creature", shape = "armor", color = { 120, 116, 110 }, eye = { 255, 170, 60 }, temper = "cunning", ability = { id = "guard", potency = 3 }, barks = { start = { "*grinding stone*" } } },
 	{ id = "gate_s", name = "Something from the deep Gate", kind = "creature", shape = "serpent", color = { 40, 30, 60 }, eye = { 255, 60, 90 }, temper = "cunning", ability = { id = "burn", potency = 3 }, barks = { start = { "*the air goes heavy*" } } },
 	{ id = "rogue_hunter", name = "Rogue Hunter", temper = "cunning", ability = { id = "bleed", potency = 2 }, look = { skin = "sand", hair = "crop", hairColor = "ink", eyes = "brown", outfit = "hoodie", mark = "scar" }, barks = { start = { "You're not taking my licence." }, win = { "Stay out of my way." }, lose = { "Fine! Fine." } } },
+
+	-- ── the bestiary's families ──────────────────────────────────────────────
+	-- E and D
+	{ id = "foe_goblins", name = "Goblin warband", kind = "creature", shape = "swarm", color = { 104, 124, 64 }, eye = { 255, 220, 80 }, temper = "quick", ability = { id = "bleed", potency = 1 }, barks = { start = { "*a shrill war cry*" }, win = { "*cackling*" }, lose = { "*scattering into the dark*" } } },
+	{ id = "foe_kobolds", name = "Kobold miners", kind = "creature", shape = "swarm", color = { 196, 92, 48 }, eye = { 255, 200, 60 }, temper = "quick", ability = { id = "tremor", potency = 1 }, barks = { start = { "*picks on stone, everywhere*" }, win = { "*yipping*" }, lose = { "*a scramble for the tunnels*" } } },
+	{ id = "foe_vermin", name = "Cave vermin", kind = "creature", shape = "swarm", color = { 90, 80, 74 }, eye = { 255, 60, 60 }, temper = "quick", ability = { id = "bleed", potency = 1 }, barks = { start = { "*squealing in the dark*" } } },
+	{ id = "foe_slimes", name = "Mana slimes", kind = "creature", shape = "blob", color = { 80, 200, 160 }, eye = { 20, 40, 30 }, temper = "brute", ability = { id = "sinking", potency = 1 }, barks = { start = { "*a wet wobble*" }, lose = { "*it splits, and splits again, and stops*" } } },
+	{ id = "foe_spiders", name = "Giant spiders", kind = "creature", shape = "machine", color = { 40, 36, 40 }, eye = { 255, 40, 40 }, temper = "cunning", ability = { id = "sinking", potency = 1 }, barks = { start = { "*clicking, from every wall*" } } },
+	{ id = "foe_beetles", name = "Armoured beetles", kind = "creature", shape = "crab", color = { 60, 66, 90 }, eye = { 140, 220, 255 }, temper = "brute", ability = { id = "guard", potency = 1 }, barks = { start = { "*shells grinding*" } } },
+	{ id = "foe_wolves", name = "Wolf pack", kind = "creature", shape = "beast", color = { 80, 78, 84 }, eye = { 255, 220, 120 }, temper = "quick", ability = { id = "bleed", potency = 1 }, barks = { start = { "*a howl, then another*" }, win = { "*snarling*" }, lose = { "*a yelp, and they're gone*" } } },
+	{ id = "foe_boars", name = "Razorback boars", kind = "creature", shape = "rustback", color = { 70, 52, 44 }, eye = { 255, 90, 60 }, temper = "brute", ability = { id = "crush", potency = 1 }, barks = { start = { "*a squeal and hooves*" } } },
+	{ id = "foe_undead_low", name = "Skeleton soldiers", kind = "creature", shape = "armor", color = { 226, 218, 196 }, eye = { 120, 200, 255 }, temper = "cunning", ability = { id = "guard", potency = 1 }, barks = { start = { "*bones rattling into line*" }, lose = { "*a heap of bones*" } } },
+	{ id = "foe_dwarves_low", name = "Dwarf miners", kind = "creature", shape = "tall", color = { 150, 120, 80 }, eye = { 255, 190, 90 }, temper = "brute", ability = { id = "tremor", potency = 1 }, barks = { start = { "*silence, and picks raised*" } } },
+	{ id = "foe_lizardfolk", name = "Lizardmen", kind = "creature", shape = "tall", color = { 70, 120, 90 }, eye = { 255, 230, 60 }, temper = "quick", ability = { id = "reach", potency = 1 }, barks = { start = { "*a hiss from the reeds*" } } },
+	{ id = "foe_plants", name = "Living plants", kind = "creature", shape = "bloomer", color = { 80, 140, 60 }, eye = { 220, 255, 120 }, temper = "cunning", ability = { id = "sinking", potency = 1 }, barks = { start = { "*a scream from under the soil*" } } },
+	{ id = "foe_imps", name = "Imps", kind = "creature", shape = "swarm", color = { 200, 60, 50 }, eye = { 255, 200, 60 }, temper = "quick", ability = { id = "burn", potency = 1 }, barks = { start = { "*giggling, and the smell of smoke*" } } },
+	-- C and B
+	{ id = "foe_orcs", name = "Orc war band", kind = "creature", shape = "tall", color = { 92, 120, 70 }, eye = { 255, 80, 60 }, temper = "brute", ability = { id = "crush", potency = 2 }, barks = { start = { "*a war cry*" }, win = { "*roaring*" }, lose = { "*a horn, falling back*" } } },
+	{ id = "foe_trolls", name = "Cave trolls", kind = "creature", shape = "mass", color = { 110, 110, 96 }, eye = { 255, 150, 60 }, temper = "brute", ability = { id = "drink", potency = 2 }, barks = { start = { "*a slow, wet laugh*" }, lose = { "*it stays down, this time*" } } },
+	{ id = "foe_forest_elves", name = "Forest elf rangers", kind = "creature", shape = "tall", color = { 80, 112, 62 }, eye = { 170, 255, 140 }, temper = "quick", ability = { id = "volley", potency = 2 }, barks = { start = { "*a bowstring, somewhere in the trees*" } } },
+	{ id = "foe_dwarves", name = "Dwarf shield wall", kind = "creature", shape = "armor", color = { 160, 150, 130 }, eye = { 255, 190, 90 }, temper = "cunning", ability = { id = "guard", potency = 2 }, barks = { start = { "*shields locking*" }, lose = { "*the wall breaks*" } } },
+	{ id = "foe_naga", name = "Naga", kind = "creature", shape = "serpent", color = { 60, 130, 120 }, eye = { 255, 240, 120 }, temper = "cunning", ability = { id = "sinking", potency = 2 }, barks = { start = { "*a low, sweet song*" } } },
+	{ id = "foe_insects", name = "Mantises and scorpions", kind = "creature", shape = "mantis", color = { 96, 160, 70 }, eye = { 255, 80, 60 }, temper = "quick", ability = { id = "pierce", potency = 2 }, barks = { start = { "*a scythe unfolding*" } } },
+	{ id = "foe_ants", name = "Giant ant colony", kind = "creature", shape = "mantis", color = { 120, 46, 34 }, eye = { 255, 200, 80 }, temper = "brute", ability = { id = "rupture", potency = 2 }, barks = { start = { "*mandibles, thousands of them*" }, lose = { "*the colony pulls back to its nest*" } } },
+	{ id = "foe_harpies", name = "Harpies", kind = "creature", shape = "bird", color = { 150, 120, 100 }, eye = { 255, 210, 80 }, temper = "quick", ability = { id = "quick", potency = 2 }, barks = { start = { "*a scream from above*" } } },
+	{ id = "foe_bears", name = "Ice bears", kind = "creature", shape = "beast", color = { 226, 232, 240 }, eye = { 120, 200, 255 }, temper = "brute", ability = { id = "crush", potency = 2 }, barks = { start = { "*a roar that shakes the ice*" } } },
+	{ id = "foe_great_cats", name = "Great cats", kind = "creature", shape = "shadowhound", color = { 60, 56, 70 }, eye = { 200, 255, 120 }, temper = "quick", ability = { id = "bleed", potency = 2 }, barks = { start = { "*nothing, and then a pounce*" } } },
+	{ id = "foe_elementals", name = "Elementals", kind = "creature", shape = "jellyfish", color = { 255, 120, 40 }, eye = { 255, 240, 200 }, temper = "cunning", ability = { id = "burn", potency = 2 }, barks = { start = { "*the air shimmers*" } } },
+	{ id = "foe_constructs", name = "Guardian constructs", kind = "creature", shape = "armor", color = { 110, 112, 120 }, eye = { 120, 200, 255 }, temper = "cunning", ability = { id = "guard", potency = 2 }, barks = { start = { "*empty armour, turning to face you*" } } },
+	{ id = "foe_ogres", name = "Ogres", kind = "creature", shape = "mass", color = { 150, 120, 90 }, eye = { 255, 120, 60 }, temper = "brute", ability = { id = "tremor", potency = 2 }, barks = { start = { "*a bellow and a thrown rock*" } } },
+	{ id = "foe_centaurs", name = "Centaur riders", kind = "creature", shape = "beast", color = { 120, 84, 56 }, eye = { 255, 220, 120 }, temper = "quick", ability = { id = "reach", potency = 2 }, barks = { start = { "*hooves, and a volley*" } } },
+	{ id = "foe_aquatic", name = "Things from the deep", kind = "creature", shape = "jellyfish", color = { 120, 60, 110 }, eye = { 255, 230, 100 }, temper = "cunning", ability = { id = "sinking", potency = 2 }, barks = { start = { "*the water rises around your ankles*" } } },
+	{ id = "foe_hounds", name = "Hell-hounds", kind = "creature", shape = "shadowhound", color = { 50, 36, 34 }, eye = { 255, 160, 40 }, temper = "quick", ability = { id = "burn", potency = 2 }, barks = { start = { "*a growl with a fire behind it*" } } },
+	{ id = "foe_lycans", name = "Lycan pack", kind = "creature", shape = "beast", color = { 108, 104, 110 }, eye = { 255, 210, 80 }, temper = "quick", ability = { id = "bleed", potency = 2 }, barks = { start = { "*a howl on two legs*" } } },
+	-- B to S
+	{ id = "foe_high_orcs", name = "High orc war band", kind = "creature", shape = "tall", color = { 70, 92, 58 }, eye = { 255, 60, 40 }, temper = "cunning", ability = { id = "crush", potency = 3 }, barks = { start = { "*drums, and a drilled shout*" }, lose = { "*they retreat in order*" } } },
+	{ id = "foe_ice_elves", name = "Ice elf hunt", kind = "creature", shape = "tall", color = { 214, 228, 240 }, eye = { 120, 220, 255 }, temper = "quick", ability = { id = "volley", potency = 3 }, barks = { start = { "*the snow goes quiet*" }, win = { "*a word you don't know*" } } },
+	{ id = "foe_dark_elves", name = "Dark elf house", kind = "creature", shape = "tall", color = { 96, 84, 120 }, eye = { 220, 80, 255 }, temper = "cunning", ability = { id = "bleed", potency = 3 }, barks = { start = { "*a whisper behind you*" } } },
+	{ id = "foe_golems", name = "Golems", kind = "creature", shape = "scrapgolem", color = { 120, 116, 110 }, eye = { 255, 170, 60 }, temper = "brute", ability = { id = "guard", potency = 3 }, barks = { start = { "*stone grinding on stone*" } } },
+	{ id = "foe_drakes", name = "Wyverns", kind = "creature", shape = "bird", color = { 80, 110, 80 }, eye = { 255, 230, 80 }, temper = "quick", ability = { id = "burn", potency = 3 }, barks = { start = { "*a scream from very high up*" } } },
+	{ id = "foe_minotaurs", name = "Minotaurs", kind = "creature", shape = "beast", color = { 110, 76, 56 }, eye = { 255, 60, 60 }, temper = "brute", ability = { id = "charge", potency = 3 }, barks = { start = { "*a snort, and the ground shakes*" } } },
+	{ id = "foe_basilisks", name = "Basilisks", kind = "creature", shape = "rustback", color = { 90, 110, 70 }, eye = { 255, 255, 120 }, temper = "cunning", ability = { id = "sinking", potency = 3 }, barks = { start = { "*don't look at its eyes*" } } },
+	{ id = "foe_undead_high", name = "The restless dead", kind = "creature", shape = "watcher", color = { 50, 40, 70 }, eye = { 120, 220, 255 }, temper = "cunning", ability = { id = "sinking", potency = 3 }, barks = { start = { "*a cold that isn't the weather*" } } },
+	{ id = "foe_demons", name = "Demon host", kind = "creature", shape = "tall", color = { 150, 40, 40 }, eye = { 255, 200, 60 }, temper = "brute", ability = { id = "burn", potency = 3 }, barks = { start = { "*iron, fire, and a horn*" } } },
+	{ id = "foe_giants", name = "Giants", kind = "creature", shape = "mass", color = { 170, 200, 230 }, eye = { 140, 230, 255 }, temper = "brute", ability = { id = "tremor", potency = 3 }, barks = { start = { "*footsteps you feel through the floor*" } } },
+	{ id = "foe_dragonkin", name = "Dragon-kin", kind = "creature", shape = "serpent", color = { 46, 34, 66 }, eye = { 255, 60, 90 }, temper = "cunning", ability = { id = "burn", potency = 3 }, barks = { start = { "*a roar you feel in your teeth*" } } },
+	{ id = "foe_wyrms", name = "Sand wyrms", kind = "creature", shape = "serpent", color = { 190, 160, 110 }, eye = { 255, 120, 60 }, temper = "brute", ability = { id = "tremor", potency = 3 }, barks = { start = { "*the sand starts to move*" } } },
 }

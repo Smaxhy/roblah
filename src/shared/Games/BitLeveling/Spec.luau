@@ -533,15 +533,24 @@ return {
 			},
 			-- inside: environments and monsters (ORIGINAL pools; goblins, orcs, high orcs and
 			-- ice bears appear in canon Gates; Jeju's ants and Tokyo's giants stay with their
-			-- canon incidents; steel-fanged lycans were the System's, so they're not here)
-			envs = { "a limestone cave", "a dark forest under a second sky", "a sunken ruin", "a frozen cavern", "a swamp that smells of copper", "a maze of black stone", "a crystal-lined mine", "a desert of red sand", "a fortress of rotted timber" },
+			-- canon incidents; steel-fanged lycans were the System's, so they're not here).
+			-- The families are the bestiary's (Hunter/Bestiary.luau): ice elves, lizardmen,
+			-- naga, golems, wyverns, dragon-kin, demons and undead-like knights are canon TYPES;
+			-- kobolds, dwarves, forest and dark elves, treants and the rest are this game's own.
+			envs = {
+				"a limestone cave", "a dark forest under a second sky", "a sunken ruin", "a frozen cavern", "a swamp that smells of copper",
+				"a maze of black stone", "a crystal-lined mine", "a desert of red sand", "a fortress of rotted timber",
+				"a snowfield under a white sun", "a flooded temple", "a volcanic cavern", "a crypt under a dead kingdom",
+				"a rune-carved hall under a mountain", "a forest of mushrooms taller than houses", "a castle of black iron",
+				"a labyrinth that moves when nobody watches", "a plain of floating rocks", "a jungle under a green sky",
+			},
 			monsters = {
-				E = { "goblins", "giant rats", "cave insects the size of dogs" },
-				D = { "goblins and their shamans", "armoured beetles", "hobgoblins" },
-				C = { "orcs", "lizardmen", "cave trolls" },
-				B = { "ice bears", "ogres", "naga" },
-				A = { "high orcs and a shaman", "stone golems", "wyverns" },
-				S = { "a horde led by something that spoke", "dragon-kin", "something nobody had a name for" },
+				E = { "goblins", "goblins and their shaman", "kobold miners", "giant rats", "cave bats", "mana slimes", "cave crawlers", "skeleton soldiers", "screaming mandrakes", "a mud golem", "mana wisps" },
+				D = { "hobgoblins", "goblin wolf riders", "kobolds and their foreman", "armoured beetles", "giant spiders", "dire wolves", "dwarf miners", "lizardman skirmishers", "skeleton archers", "acid slimes", "razorback boars", "a mimic in a treasure room" },
+				C = { "orcs", "an orc war band with a shaman", "lizardmen", "naga", "cave trolls", "forest elf rangers", "a dwarf shield wall", "blade mantises", "sand scorpions", "harpies", "fire elementals", "gaunt ghouls", "centaur skirmishers" },
+				B = { "ice bears", "ogres", "high orcs", "naga sirens", "dark elf stalkers", "frost trolls", "iron golems", "wraiths", "treants", "kraken spawn", "minotaur raiders", "a dwarf runesmith's hall", "two-headed hounds" },
+				A = { "high orcs and a shaman", "stone golems", "wyverns", "ice elf hunters", "a dwarf forge-lord's hall", "dark elf sorceresses", "minotaurs", "grave knights", "demon knights", "a basilisk", "thunder tigers", "centaur lancers" },
+				S = { "a horde led by something that spoke", "dragon-kin", "something nobody had a name for", "a lich and its grave knights", "a demon noble's host", "an abyssal serpent", "a three-headed warhound", "a colossus" },
 			},
 			countries = {
 				korea = {

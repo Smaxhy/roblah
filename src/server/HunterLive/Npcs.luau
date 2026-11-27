@@ -4,8 +4,10 @@
 		            they do when a Gate opens near them (ORIGINAL): most flee, some freeze, some
 		            help others, some shelter in a doorway, a few stand and film it.
 		responders  police at the cordon, the Association's measurement team, Hunters going in
-		monsters    what comes out in a Dungeon Break: by rank (ORIGINAL looks), with hit points,
-		            chasing the nearest living thing
+		monsters    what comes out in a Dungeon Break: one family a Gate, in a pack fit for its
+		            rank (a leader, a shaman or an archer, fighters, weaker kin), each fighting
+		            its own way (server/HunterLive/MonsterAI: specials with wind-ups the
+		            client draws, ranged kinds that keep their distance, healers, summoners)
 	Adults only: no child NPC is ever put in danger.
 ]]
 
@@ -350,9 +352,12 @@ function Npcs.removeResponder(r: any)
 end
 
 -- ── monsters ──
--- 24 kinds, four a rank (server/HunterLive/Monsters.luau), each with its own body and joints
+-- About 180 kinds in 40 families (Hunter/Monsters, through server/HunterLive/Monsters), each with
+-- its own body and joints; how they fight is server/HunterLive/MonsterAI.
 local Monsters = require(script.Parent:WaitForChild("Monsters"))
+local MonsterAI = require(script.Parent:WaitForChild("MonsterAI"))
 Npcs.Monsters = Monsters
+Npcs.MonsterAI = MonsterAI
 -- (the old one-a-rank table, kept for anything that reads it: the first kind of each rank)
 Npcs.MONSTER = {}
 for r = 1, 6 do
@@ -362,19 +367,87 @@ function Npcs.monsterModel(rank: number, kind: string?): (Model, Humanoid)
 	return Monsters.build(kind or Monsters.KINDS[math.clamp(rank, 1, 6)][1])
 end
 
-function Npcs.spawnMonster(rank: number, at: Vector3, incidentId: number, kind: string?): any
-	kind = kind or Monsters.KINDS[math.clamp(rank, 1, 6)][rng:NextInteger(1, #Monsters.KINDS[math.clamp(rank, 1, 6)])]
+-- A Gate lets out one family: the first kind out of it names the family, and the rest follow
+-- that family's pack for the Gate's rank (Monsters.packFor: fighters, a shaman or an archer,
+-- the leader if it has one, weaker kin), whatever kinds the caller asks for after.
+Npcs.packs = {} :: { [number]: { seq: { string }, i: number } }
+local PACK_LEN = 16
+local summonsLive = 0
+
+local function place(model: Model, at: Vector3, size: number)
+	-- (its pivot is its root: lift it so it starts above the street, never under it)
+	local cf = CFrame.new(at + Vector3.new(rng:NextNumber(-3, 3), 4 * size + 1, rng:NextNumber(-3, 3)))
+	local ok = pcall(function()
+		model:PivotTo(cf)
+	end)
+	if not ok and model.PrimaryPart then
+		-- (no PivotTo offline: move the root, and every part with it)
+		local from = model.PrimaryPart.CFrame
+		for _, d in model:GetDescendants() do
+			if d:IsA("BasePart") then
+				d.CFrame = cf * from:ToObjectSpace(d.CFrame)
+			end
+		end
+	end
+end
+
+-- spawn one monster of a break. `kind` is what the caller would like; for an incident it is
+-- only honoured for the first one out (or always, with exact = true: tests, admin tools).
+function Npcs.spawnMonster(rank: number, at: Vector3, incidentId: number, kind: string?, exact: boolean?): any
+	local r = math.clamp(rank, 1, 6)
+	local list = Monsters.KINDS[r]
+	if not exact and incidentId then
+		local pack = Npcs.packs[incidentId]
+		if not pack then
+			local first = if kind and Monsters.DEFS[kind] and Monsters.DEFS[kind].rank == r then kind else list[rng:NextInteger(1, #list)]
+			pack = {
+				seq = Monsters.packFor(first, r, PACK_LEN, function(a, b)
+					return rng:NextInteger(a, b)
+				end),
+				i = 0,
+			}
+			Npcs.packs[incidentId] = pack
+		end
+		pack.i += 1
+		kind = pack.seq[(pack.i - 1) % #pack.seq + 1]
+	end
+	kind = if kind and Monsters.DEFS[kind] then kind else list[rng:NextInteger(1, #list)]
 	local def = Monsters.DEFS[kind :: string]
 	local model, hum = Monsters.build(kind :: string)
-	-- (its pivot is its root: lift it so it starts above the street, never under it)
-	model:PivotTo(CFrame.new(at + Vector3.new(rng:NextNumber(-3, 3), 4 * def.size + 1, rng:NextNumber(-3, 3))))
+	place(model, at, def.size)
 	model:SetAttribute("Incident", incidentId)
 	model.Parent = folder
 	pcall(function()
 		(model.PrimaryPart :: BasePart):SetNetworkOwner(nil)
 	end)
-	local m = { model = model, hum = hum, rank = def.rank, kind = kind, def = def, incident = incidentId, cool = 0, target = nil, home = at }
+	-- (its own copy of the numbers: a special scales its blow through def.dmg for a moment)
+	local m = { model = model, hum = hum, rank = def.rank, kind = kind, def = table.clone(def), incident = incidentId, cool = 0, target = nil, home = at }
+	MonsterAI.prepare(m, os.clock())
 	table.insert(Npcs.monsters, m)
+	return m
+end
+
+-- a whole pack at once (what a break could call instead of choosing kinds itself)
+function Npcs.spawnPack(rank: number, at: Vector3, incidentId: number, count: number): { any }
+	local out = {}
+	for _ = 1, count do
+		table.insert(out, Npcs.spawnMonster(rank, at, incidentId))
+	end
+	return out
+end
+
+-- something a monster called up (or split into): it leaves no crystal, fades when its master's
+-- Gate is done, and doesn't outlast a minute
+function Npcs.spawnSummon(kind: string, at: Vector3, master: any): any?
+	if summonsLive >= 24 or not Monsters.DEFS[kind] then
+		return nil
+	end
+	local m = Npcs.spawnMonster(Monsters.DEFS[kind].rank, at - Vector3.new(0, 4 * Monsters.DEFS[kind].size + 1, 0) + Vector3.new(0, 2, 0), master.incident, kind, true)
+	m.summoned = true
+	m.master = master
+	m.expires = os.clock() + 60
+	m.model:SetAttribute("Summoned", true)
+	summonsLive += 1
 	return m
 end
 
@@ -382,65 +455,183 @@ function Npcs.removeMonster(m: any)
 	local i = table.find(Npcs.monsters, m)
 	if i then
 		table.remove(Npcs.monsters, i)
+		if m.summoned then
+			summonsLive = math.max(0, summonsLive - 1)
+		end
 	end
 	if m.model then
 		m.model:Destroy()
 	end
+	-- (the incident's last monster gone: forget its pack)
+	if m.incident and Npcs.packs[m.incident] then
+		local any = false
+		for _, o in Npcs.monsters do
+			if o.incident == m.incident then
+				any = true
+				break
+			end
+		end
+		if not any then
+			Npcs.packs[m.incident] = nil
+		end
+	end
 end
+
+-- the live FX channel (Remotes.HunterLive, created by the director before the city is built)
+local fxEvent: RemoteEvent? = nil
+local function fireFx(data: any)
+	if not fxEvent then
+		local shared = ReplicatedStorage:FindFirstChild("LifeSim")
+		local remotes = shared and shared:FindFirstChild("Remotes")
+		local ev = remotes and remotes:FindFirstChild("HunterLive")
+		if ev and ev:IsA("RemoteEvent") then
+			fxEvent = ev
+		end
+	end
+	if fxEvent then
+		fxEvent:FireAllClients(data)
+	end
+end
+Npcs.fireFx = fireFx
+
+local function rootOf(kind: string?, victim: any): BasePart?
+	if kind == "player" then
+		local ch = victim.Character
+		return ch and ch:FindFirstChild("HumanoidRootPart") :: BasePart?
+	end
+	return victim and victim.model and victim.model.PrimaryPart
+end
+
+-- everyone a monster's blow can reach in a circle: players walking the city, Hunters, civilians
+function Npcs.targetsNear(pos: Vector3, radius: number): { any }
+	local out = {}
+	for _, player in Players:GetPlayers() do
+		local ch = player.Character
+		local hrp = ch and ch:FindFirstChild("HumanoidRootPart") :: BasePart?
+		local h = ch and ch:FindFirstChildOfClass("Humanoid")
+		if hrp and h and h.Health > 0 and ch:GetAttribute("HunterLive") and (hrp.CFrame.Position - pos).Magnitude <= radius then
+			table.insert(out, { kind = "player", victim = player, pos = hrp.CFrame.Position })
+		end
+	end
+	for _, r in Npcs.responders do
+		local rr = r.model and r.model.PrimaryPart
+		if rr and r.hum.Health > 0 and r.kind == "hunter" and (rr.CFrame.Position - pos).Magnitude <= radius then
+			table.insert(out, { kind = "responder", victim = r, pos = rr.CFrame.Position })
+		end
+	end
+	for _, c in Npcs.civilians do
+		local cr = c.model and c.model.PrimaryPart
+		if cr and c.state ~= "down" and c.state ~= "shelter" and (cr.CFrame.Position - pos).Magnitude <= radius then
+			table.insert(out, { kind = "civilian", victim = c, pos = cr.CFrame.Position })
+		end
+	end
+	return out
+end
+
+-- the one context MonsterAI works with (one object: what's in flight reads its clock)
+local aiCtx: any = {
+	now = 0,
+	onHit = function() end,
+	targets = Npcs.targetsNear,
+	allies = function(m: any, radius: number): { any }
+		local out = {}
+		local root = m.model.PrimaryPart
+		if not root then
+			return out
+		end
+		for _, o in Npcs.monsters do
+			local orr = o.model.PrimaryPart
+			if o ~= m and o.incident == m.incident and orr and o.hum.Health > 0 and (orr.CFrame.Position - root.CFrame.Position).Magnitude <= radius then
+				table.insert(out, o)
+			end
+		end
+		return out
+	end,
+	spawn = function(kind: string, at: Vector3, master: any): any?
+		return Npcs.spawnSummon(kind, at, master)
+	end,
+	fx = fireFx,
+	move = function(m: any, pos: Vector3)
+		m.hum:MoveTo(pos)
+	end,
+	whereIs = function(kind: string?, victim: any): Vector3?
+		local r = rootOf(kind, victim)
+		return r and r.CFrame.Position
+	end,
+	rand = function(): number
+		return rng:NextNumber()
+	end,
+}
+Npcs.aiCtx = aiCtx
 
 -- hits: a callback the director gives, (attacker, victimKind, victim) -> ()
 function Npcs.stepMonsters(onHit: (any, string, any) -> ())
 	local now = os.clock()
+	aiCtx.now = now
+	aiCtx.onHit = onHit
+	pcall(MonsterAI.update, Npcs.monsters, aiCtx)
 	for _, m in table.clone(Npcs.monsters) do
 		local root = m.model.PrimaryPart
+		-- (what was called up goes when it's dead, when its time is up, or when its Gate is done)
+		if m.summoned then
+			local orphan = true
+			for _, o in Npcs.monsters do
+				if o.incident == m.incident and not o.summoned and o.hum.Health > 0 then
+					orphan = false
+					break
+				end
+			end
+			if m.hum.Health <= 0 or now > (m.expires or math.huge) or orphan then
+				if not m.goneAt then
+					m.goneAt = now + 1.2
+					if m.hum.Health > 0 then
+						m.hum.Health = 0
+					end
+					local p = root and root.CFrame.Position
+					if p then
+						fireFx({ fx = "kill", at = { p.X, p.Y, p.Z }, rank = m.rank })
+					end
+				elseif now >= m.goneAt then
+					Npcs.removeMonster(m)
+				end
+				continue
+			end
+		end
 		if not root or m.hum.Health <= 0 then
 			continue
 		end
-		-- the nearest living thing: a player character, a responder, a civilian (or whoever
-		-- provoked it, for a few seconds)
-		local best, bd, bk = nil, 90, nil
+		-- the nearest living thing it can sense: a player character, a Hunter, a civilian (or
+		-- whoever provoked it, for a few seconds)
+		local best, bd, bk = nil, m.def.aggro or 90, nil
 		local pv = Npcs.provoked and Npcs.provoked[m]
-		if pv and pv.untilT > now and pv.player.Character and pv.player.Character:FindFirstChild("HumanoidRootPart") then
-			best, bd, bk = pv.player, ((pv.player.Character.HumanoidRootPart :: BasePart).Position - root.Position).Magnitude, "player"
-		end
-		for _, player in Players:GetPlayers() do
-			local ch = player.Character
-			local hrp = ch and ch:FindFirstChild("HumanoidRootPart") :: BasePart?
-			local h = ch and ch:FindFirstChildOfClass("Humanoid")
-			if hrp and h and h.Health > 0 and ch:GetAttribute("HunterLive") and not (pv and pv.untilT > now) then
-				local d = (hrp.Position - root.Position).Magnitude
-				if d < bd then
-					best, bd, bk = player, d, "player"
-				end
-			end
-		end
-		for _, r in Npcs.responders do
-			local rr = r.model.PrimaryPart
-			if rr and r.hum.Health > 0 and r.kind == "hunter" and not (pv and pv.untilT > now) then
-				local d = (rr.Position - root.Position).Magnitude
-				if d < bd then
-					best, bd, bk = r, d, "responder"
-				end
-			end
-		end
-		for _, c in Npcs.civilians do
-			local cr = c.model.PrimaryPart
-			if cr and c.state ~= "down" and c.state ~= "shelter" and not (pv and pv.untilT > now) then
-				local d = (cr.Position - root.Position).Magnitude
-				if d < bd then
-					best, bd, bk = c, d, "civilian"
-				end
-			end
-		end
-		if best then
-			local pos = if bk == "player" then (best.Character.HumanoidRootPart :: BasePart).Position else best.model.PrimaryPart.Position
-			m.hum:MoveTo(pos)
-			if bd < 5 + m.def.size * 2 and now > m.cool then
-				m.cool = now + 1.1
-				onHit(m, bk :: string, best)
-			end
+		local forced = pv and pv.untilT > now and pv.player.Character and pv.player.Character:FindFirstChild("HumanoidRootPart")
+		if forced then
+			best, bd, bk = pv.player, ((pv.player.Character.HumanoidRootPart :: BasePart).CFrame.Position - root.CFrame.Position).Magnitude, "player"
 		else
-			m.hum:MoveTo(m.home)
+			for _, v in Npcs.targetsNear(root.CFrame.Position, bd) do
+				local d = (v.pos - root.CFrame.Position).Magnitude
+				if d < bd then
+					best, bd, bk = v.victim, d, v.kind
+				end
+			end
+		end
+		local pos = if best then (rootOf(bk, best) :: BasePart).CFrame.Position else nil
+		local ok, err = pcall(MonsterAI.step, m, best, bk, pos, bd, aiCtx)
+		if not ok then
+			-- (if its own way of fighting fails, it still chases and strikes)
+			if not m.warned then
+				m.warned = true
+				warn("[Npcs] " .. tostring(m.kind) .. ": " .. tostring(err))
+			end
+			if best and pos then
+				m.hum:MoveTo(pos)
+				if bd < m.def.reach and now > m.cool then
+					m.cool = now + 1.1
+					onHit(m, bk :: string, best)
+				end
+			else
+				m.hum:MoveTo(m.home)
+			end
 		end
 	end
 end
