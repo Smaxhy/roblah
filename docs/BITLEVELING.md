@@ -111,17 +111,53 @@ brings you down, your life takes the injury, and it can kill you.
 Admins (and anyone in Studio) get **TEST GATE**, **TEST BREAK** and **TEST RED GATE** buttons on
 the dock, which open one at the site nearest them.
 
-## The opening and the Gates
+## The opening, the title and the menu
 
-When you join, a short cutscene plays (`client/OpeningCutscene.luau`, Skip ends it): a night
-street behind police tape, people filming at the cordon, the Association's van, and a raid party
-of five (Tanker in front, then Fighter, Mage, Assassin, Healer) walking into a Gate one at a time.
+**The opening** (`client/OpeningCutscene.luau`, about 52 seconds, Skip ends it) plays when you
+join:
+- The sky tears open over the city: a Gate in the clouds, lightning, mana falling like meteors.
+- A Gate opens in a street at night with a shockwave and glowing cracks, and people run past the
+  camera.
+- The Association's van brakes in behind the police cordon.
+- Six Hunters walk up, each a different class in that class's outfit preset with a weapon, and
+  each gets a moment and a class card:
+  - Tanker: a shield slam
+  - Fighter: a greatsword slash
+  - Mage: a magic circle and a fireball
+  - Assassin: vanishes in smoke and reappears with afterimages
+  - Ranger: an arrow into the sky
+  - Healer: a pillar of light
+- A High Orc Warlord forces its way out of the Gate, and the party throws it back with a taunt,
+  a fireball and a charge.
+- They walk in one by one, the camera dives through the whirlpool's tunnel, and BITLEVELING drops
+  in letter by letter.
 
-Every Gate in the live city is drawn by `client/GateVfx.luau` as canon draws them: a **standing
-whirlpool**, a vertical disc of spiral arms turning around a dark eye, with a bright rim, an inner
-horizon, mana drawn in from around it, and a light. It swirls faster as a break nears, surges and
-cracks the street when it breaks, turns red when a raid is sealed in, and collapses when it
-closes. `tools/vfx/gate_sheet.luau` renders it offline.
+`tests/cutscene_check` plays the whole thing on a fake clock.
+
+**The title** (`client/UI/TitleMenu.luau`) is live 3D: the Gate swirling behind six Hunters in
+their class gear, mana drifting, the camera turning. Press PLAY (or any key) to open **the main
+menu**:
+
+| Entry | What it does |
+|---|---|
+| CONTINUE | Back into the life you're living. |
+| NEW LIFE | Pick the world (the Normal World at the manhwa's pace, or the High-Danger World with Gates everywhere), solo or with friends, then BEGIN. |
+| CHARACTER | Your Hunter's look for the live city, and your life's talent and class leanings. |
+| SPINS | The talent spin and the family name spin. |
+| WALK THE CITY | Straight into the live city. |
+| NEWS, ENDINGS, MARKET, GUIDE, SETTINGS | The rest. |
+
+Your Hunter turns on a podium on the right. The kit's own intro and mode select still work for
+packs without the live city (`Config.hunterLive.titleMenu = false` brings them back here too).
+
+![The title](images/title_screen.jpg)
+![The main menu](images/main_menu.jpg)
+
+**Gates** in the live city are drawn by `client/GateVfx.luau` as canon draws them: a **standing
+whirlpool**. It's a vertical disc of spiral arms turning around a dark eye, with a bright rim, an
+inner horizon, mana drawn in from around it, and a light. It swirls faster as a break nears,
+surges and cracks the street when it breaks, turns red when a raid is sealed in, and collapses
+when it closes.
 
 ## Weapons, rarities and the market
 

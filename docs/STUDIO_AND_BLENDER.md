@@ -67,6 +67,41 @@ tools/blender/run.sh                 # sets up Blender on first run, then does a
 
 ![The kit, one mesh per role](images/blender_kit.jpg)
 
+**The second set: shapes a part asks for.**
+A builder can request a mesh by name with the part's `MeshRole` attribute, and the outfits and
+weapons do. Those meshes are:
+- shields (round, kite, tower, buckler)
+- curved and wide blades, a double axe, a leaf spearhead, a trident, a flanged mace, an orb cage,
+  a staff crescent, a war fan
+- robe skirts and wide sleeves, a cowl, a spiked pauldron, winged and horned helms, a crown, a
+  gauntlet, a boot, a belt pouch
+- two pieces of cloth with bones
+
+That's 79 meshes in all.
+
+**Cloth that swings (SmartBone).**
+- **The meshes.** The cape and the scarf in the kit are skinned in Blender: an armature (the cape
+  has 3 chains of 4 bones, the scarf 1 chain of 4), with weights painted across the cloth and
+  exported with the FBX. Studio's importer turns them into MeshParts with Bones.
+- **In the game.** Hanging capes, banners, veils, robe tails and scarves wear them.
+  `Hunter/MeshLibrary` moves the bones when a cape is resized and tags the cloth the way
+  [SmartBone](https://devforum.roblox.com/t/smartbone-2-simulated-physics-and-collision-solution-for-bones/2728928)
+  expects (the CollectionService tag `SmartBone` and a `Roots` attribute).
+- **The physics.** `client/ClothPhysics.luau` runs it: each bone chain is a little rope that
+  keeps its momentum, so the cape trails behind a running Hunter. It falls under gravity, is blown
+  by a gentle wind, springs back toward its shape, and stays out of the body.
+- **The real SmartBone.** If you install SmartBone 2 in the game (as `ReplicatedStorage.SmartBone`),
+  ClothPhysics stands aside and SmartBone drives the same cloth.
+
+`tests/cloth_check` checks that the cloth hangs, trails, settles, and that its bones scale and
+get tagged.
+
+**Animated.** The monsters wear the kit and still move: their meshes ride on the jointed parts
+that `client/MonsterAnim` animates. `tools/blender/run.sh preview.py anim` renders them walking,
+trotting, crawling, flying and coiling in Blender with the game's own gaits.
+
+![The monsters walking, rendered in Blender](images/blender_monsters_walk.gif)
+
 **How the game uses it.** Every part with a role gets the kit's mesh for that role (a MeshPart
 the part's size, colour and material, welded over it), and the part goes invisible. A MeshPart
 stretches its mesh to its Size, so one mesh fits every part that plays the role. A goblin's head
@@ -134,6 +169,7 @@ scripts like `tools/blender`), there is
 
 ```
 lune run tests/plugin_check          # needs build/BitLevelingStudio.rbxmx (bash tools/build_plugin.sh)
+lune run tests/cloth_check           # the cloth physics and skinned kit meshes
 python3 tests/bridge_check.py
 lune run tests/live_build_check      # includes the mesh kit dressing every monster, weapon and outfit
 ```
