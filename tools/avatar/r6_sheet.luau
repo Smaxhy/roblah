@@ -125,19 +125,47 @@ local function readAll(real)
 	end
 	return out
 end
+local process = require("@lune/process")
+local weaponSheet = table.find(process.args, "weapons") ~= nil
 local function viewportOf(vp)
 	local parts = {}
+	local function emit(d, size, cf, shape)
+		table.insert(parts, {
+			class = d.ClassName,
+			shape = shape,
+			size = ENCODE.Vector3(size),
+			cframe = ENCODE.CFrame(cf),
+			color = ENCODE.Color3(d.Color),
+			material = d.Material.Name,
+			transparency = num(d.Transparency),
+		})
+	end
 	for _, d in vp:GetDescendants() do
 		if d:IsA("BasePart") then
-			table.insert(parts, {
-				class = d.ClassName,
-				shape = if d:IsA("Part") then d.Shape.Name else "Block",
-				size = ENCODE.Vector3(d.Size),
-				cframe = ENCODE.CFrame(d.CFrame),
-				color = ENCODE.Color3(d.Color),
-				material = d.Material.Name,
-				transparency = num(d.Transparency),
-			})
+			local size, cf = d.Size, d.CFrame
+			local shape = if d:IsA("Part") then d.Shape.Name else "Block"
+			-- (weapons sheet) the renderer draws boxes, balls and cylinders: a SpecialMesh scales
+			-- its part (a mesh-kit socket is scaled to nothing: its cover parts draw it), and a
+			-- WedgePart is drawn as a stair of slices along its slope
+			local mesh = if weaponSheet then d:FindFirstChildOfClass("SpecialMesh") else nil
+			if mesh then
+				local sc = mesh.Scale
+				if sc.X * sc.Y * sc.Z < 1e-3 then
+					continue
+				end
+				size = size * sc
+				cf = cf * roblox.CFrame.new(mesh.Offset)
+			end
+			if weaponSheet and d:IsA("WedgePart") then
+				local n = math.clamp(math.ceil(size.Z / 0.08), 3, 10)
+				for k = 1, n do
+					local zc = -size.Z / 2 + (k - 0.5) * size.Z / n
+					local h = size.Y * (zc + size.Z / 2) / size.Z
+					emit(d, roblox.Vector3.new(size.X, h, size.Z / n), cf * roblox.CFrame.new(0, -size.Y / 2 + h / 2, zc), "Block")
+				end
+			else
+				emit(d, size, cf, shape)
+			end
 		end
 	end
 	local cam = vp:FindFirstChildOfClass("Camera")
@@ -150,9 +178,7 @@ local function rand(a, b)
 	seed = (seed * 48271) % 2147483647
 	return a + seed % (b - a + 1)
 end
-local process = require("@lune/process")
 local Weapons = Loader.require(shared.Hunter.Weapons)
-local weaponSheet = table.find(process.args, "weapons") ~= nil
 local cells = {
 	{ label = "Default", look = Looks.DEFAULT },
 	{ label = "Tank (bulwark, ★★★)", look = { skin = "tan", top = "tactical", topColor = "olive", trim = "gold", bottom = "armored", bottomColor = "charcoal", armor = "heavy", armorColor = "slate", hair = 0, hairDye = "jet", shoes = "boots", build = "broad" }, weapon = { base = "bulwark", stars = 3 } },
@@ -185,18 +211,113 @@ if presetSheet then
 		end
 	end
 end
+-- (weapons sheet) every weapon, by class and family, its stars cycling ★..★★★, every ninth Shiny.
+-- Options after "weapons": fam=<family>[,<family>...] (only those), stars=<1..3> (all at that),
+-- shiny (all Shiny), big (larger cells, a closer camera), fx (client/WeaponFx instead: one swing
+-- per family and one hit per element, frozen at their first frame; particles and lights aren't drawn)
+local weaponOpts = { fams = nil :: { [string]: boolean }?, stars = nil :: number?, shiny = false, big = false, fx = false }
+for _, a in process.args do
+	local fams = string.match(a, "^fam=(.+)$")
+	if fams then
+		weaponOpts.fams = {}
+		for f in string.gmatch(fams, "[^,]+") do
+			(weaponOpts.fams :: any)[f] = true
+		end
+	end
+	local st = string.match(a, "^stars=(%d)$")
+	if st then
+		weaponOpts.stars = tonumber(st)
+	end
+	if a == "shiny" then
+		weaponOpts.shiny = true
+	elseif a == "big" then
+		weaponOpts.big = true
+	elseif a == "fx" then
+		weaponOpts.fx = true
+	end
+end
+local WeaponFx: any = nil
+if weaponSheet and weaponOpts.fx then
+	-- the client module, offline: tweens don't play and nothing is cleaned up, so each effect
+	-- is drawn at its first frame
+	local noop = function() end
+	local scratch = I.new("Folder")
+	Loader.globals.TweenInfo = { new = function(...)
+		return { ... }
+	end }
+	Loader.globals.task = { delay = noop, spawn = noop, defer = noop, wait = function()
+		return 0
+	end }
+	Loader.globals.game = { GetService = function(_, name)
+		if name == "TweenService" then
+			return { Create = function()
+				return { Play = noop, Cancel = noop }
+			end }
+		elseif name == "Debris" then
+			return { AddItem = noop }
+		elseif name == "Workspace" then
+			return scratch
+		elseif name == "ReplicatedStorage" then
+			return { WaitForChild = function()
+				return shared
+			end }
+		end
+		return {}
+	end }
+	local client = Loader.preload(Loader.node("src/client", "Client", nil))
+	WeaponFx = Loader.require(client.WeaponFx)
+end
 if weaponSheet then
 	cells = {}
-	for i, w in Weapons.list do
-		local stars = (i % 3) + 1
-		table.insert(cells, { label = Weapons.STARS[stars].label .. " " .. w.name, look = { skin = "light", top = "tactical", topColor = "charcoal", trim = "mana", bottom = "cargo", bottomColor = "black", hair = 9243992729, hairDye = "jet", shoes = "boots" }, weapon = { base = w.id, stars = stars, shiny = i % 9 == 0 } })
+	local ordered = {}
+	for fi, f in Weapons.FAMILY_ORDER do
+		for _, w in Weapons.list do
+			if w.family == f and (weaponOpts.fams == nil or (weaponOpts.fams :: any)[f]) then
+				table.insert(ordered, { w = w, key = fi * 100 + w.grade })
+			end
+		end
+	end
+	table.sort(ordered, function(a, b)
+		return a.key < b.key
+	end)
+	for i, o in ordered do
+		local w = o.w
+		local stars = weaponOpts.stars or ((i % 3) + 1)
+		local shiny = weaponOpts.shiny or i % 9 == 0
+		table.insert(cells, { label = (if shiny then "S " else "") .. Weapons.STARS[stars].label .. " " .. w.name, look = { skin = "light", top = "tactical", topColor = "charcoal", trim = "mana", bottom = "cargo", bottomColor = "black", hair = 9243992729, hairDye = "jet", shoes = "boots" }, weapon = { base = w.id, stars = stars, shiny = shiny } })
+	end
+	if weaponOpts.fx then
+		-- one swing per family (its first weapon, ★★★), then one hit per element
+		local look = { skin = "light", top = "tactical", topColor = "charcoal", trim = "mana", bottom = "cargo", bottomColor = "black", hair = 9243992729, hairDye = "jet", shoes = "boots" }
+		cells = {}
+		local seen = {}
+		for _, o in ordered do
+			if not seen[o.w.family] then
+				seen[o.w.family] = true
+				local fam = Weapons.FAMILIES[o.w.family]
+				table.insert(cells, { label = fam.fx .. " · " .. fam.name .. " (" .. o.w.element .. ")", look = look, weapon = { base = o.w.id, stars = weaponOpts.stars or 3, shiny = weaponOpts.shiny }, fx = "swing" })
+			end
+		end
+		for _, e in Weapons.ELEMENT_LIST do
+			local base = "shortsword"
+			for _, w in Weapons.list do
+				if w.element == e then
+					base = w.id
+					break
+				end
+			end
+			table.insert(cells, { label = "hit · " .. e, look = look, weapon = { base = base, stars = 1 }, fx = "hit", element = e })
+		end
 	end
 	turn = -62
 end
 
 local cols, cellW, cellH, gap, labelH, titleH = 8, 150, 230, 6, 14, 30
 if weaponSheet then
-	cols, cellW, cellH = 10, 150, 190
+	cols, cellW, cellH = 12, 150, 196
+	if weaponOpts.big then
+		cols, cellW, cellH = 6, 260, 300
+	end
 elseif presetSheet then
 	cols, cellW, cellH = 10, 150, 200
 end
@@ -211,7 +332,7 @@ back.Size = roblox.UDim2.fromScale(1, 1)
 back.BackgroundColor3 = roblox.Color3.fromRGB(8, 10, 16)
 back.BorderSizePixel = 0
 back.Parent = gui
-label(back, if presetSheet then "BITLEVELING · OUTFIT PRESETS, SCARS AND MARKS, HEADWEAR, BACK ITEMS" elseif weaponSheet then "BITLEVELING · EVERY WEAPON (★ to ★★★, every ninth one Shiny)" else "BITLEVELING · R6 LOOKS (block hair stands in for the hair accessories)", gap, 6, W - 2 * gap, 16, roblox.Color3.fromRGB(170, 150, 255))
+label(back, if presetSheet then "BITLEVELING · OUTFIT PRESETS, SCARS AND MARKS, HEADWEAR, BACK ITEMS" elseif weaponSheet then string.format("BITLEVELING · EVERY WEAPON: %d in %d families, by class (★ to ★★★; S = Shiny)", #cells, #Weapons.FAMILY_ORDER) else "BITLEVELING · R6 LOOKS (block hair stands in for the hair accessories)", gap, 6, W - 2 * gap, 16, roblox.Color3.fromRGB(170, 150, 255))
 local total = 0
 for i, cell in cells do
 	local c, r = (i - 1) % cols, (i - 1) // cols
@@ -238,10 +359,55 @@ for i, cell in cells do
 	-- (the sheet renderer draws cameras looking along a world axis reliably; turn the rig instead)
 	cam.CFrame = roblox.CFrame.new(target + roblox.Vector3.new(0, 0.6, -dist)) * roblox.CFrame.Angles(0, math.pi, 0)
 	local spin = if cell.back then 160 elseif cell.face then -20 else turn
+	if weaponSheet then
+		-- the weapon's side: the right one, or the left for a shield or a bow
+		local fam = Weapons.byId[cell.weapon.base].family
+		local leftHanded = fam == "shield" or fam == "buckler" or fam == "towershield" or fam == "bow" or fam == "longbow"
+		spin = if leftHanded then -64 else 66
+	end
 	for _, d in model:GetDescendants() do
 		if d:IsA("BasePart") then
 			d.CFrame = roblox.CFrame.Angles(0, math.rad(spin), 0) * d.CFrame
 		end
+	end
+	if cell.fx and WeaponFx then
+		-- the effect, drawn into the rig's model (so it's framed with it): long-range ones are
+		-- shortened to fit the cell
+		local root = model:FindFirstChild("HumanoidRootPart") or model:FindFirstChild("Torso")
+		local rcf = root.CFrame
+		if cell.fx == "swing" then
+			local style = WeaponFx.styleOf(model)
+			local far = style == "shot" or style == "throw" or style == "spell"
+			WeaponFx.swing(model, { parent = model, reach = if far then 8 elseif style == "lash" or style == "gust" then 7 else nil, target = if far then rcf.Position + rcf.LookVector * 8 else nil, power = 12 })
+		else
+			WeaponFx.hit(rcf.Position + rcf.LookVector * 3.5, cell.element, 12, { parent = model })
+		end
+	end
+	if weaponSheet then
+		-- frame the rig and its weapon: the camera looks along +Z at the middle of their box
+		local lo, hi = roblox.Vector3.new(math.huge, math.huge, math.huge), roblox.Vector3.new(-math.huge, -math.huge, -math.huge)
+		for _, d in model:GetDescendants() do
+			if d:IsA("BasePart") and d.Name ~= "HumanoidRootPart" and d.Transparency < 0.95 then
+				local mesh = d:FindFirstChildOfClass("SpecialMesh")
+				if not (mesh and mesh.Scale.X < 0.01) then
+					local h = d.Size / 2
+					for _, sx in { -1, 1 } do
+						for _, sy in { -1, 1 } do
+							for _, sz in { -1, 1 } do
+								local pt = d.CFrame * roblox.Vector3.new(h.X * sx, h.Y * sy, h.Z * sz)
+								lo = lo:Min(pt)
+								hi = hi:Max(pt)
+							end
+						end
+					end
+				end
+			end
+		end
+		local mid = (lo + hi) / 2
+		local half = (hi - lo) / 2
+		local tanV = math.tan(math.rad(cam.FieldOfView / 2))
+		local fit = math.max(math.max(half.Y, 3.4) * 1.1 / tanV, half.X * 1.1 / (tanV * cellW / cellH))
+		cam.CFrame = roblox.CFrame.new(mid.X, mid.Y, lo.Z - fit + half.Z * 0.2) * roblox.CFrame.Angles(0, math.pi, 0)
 	end
 	cam.Parent = vp
 	vp.CurrentCamera = cam
