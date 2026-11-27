@@ -10,9 +10,16 @@
 	              Association's van, Hunters walking in.
 	  Fights      slashes, hits, kills and the player's own swings.
 	  Walk mode   the life's UI steps aside, the camera follows your character, and a small HUD
-	              shows your rank, health, the incidents near you, and what you can do:
-	              Respond (the incident becomes a card in your life), Help (a frozen bystander),
-	              Attack (Hunters only; F or click), Back to my life.
+	              shows your rank, health, mana, the incidents near you, and what you can do:
+	              Respond (the incident becomes a card in your life), Help (a frozen bystander;
+	              H), Attack (Hunters only; F or click), Skills (the loadout; K), Back to my life.
+	  Skill bar   five slots, Q E R T and the ultimate on G (keys or the on-screen buttons),
+	              each with its move's tier, mana cost and a cooldown sweep. E is a prompt's
+	              key while a ProximityPrompt is showing (crystals, caches). The loadout panel
+	              lists every move the class can reach for a slot (search, filter by class,
+	              school, art or craft); any unlocked one can be equipped (server: hwSkillBar).
+	  Moves       every move's effect is client/SkillFx (fx "ability", "abilityTick",
+	              "abilityCast" from the server).
 	  Dock        NEWS (the Hunter news board), WALK THE CITY, R6 LOOK (the creator).
 ]]
 
@@ -24,15 +31,19 @@ local UserInputService = game:GetService("UserInputService")
 local Lighting = game:GetService("Lighting")
 local Debris = game:GetService("Debris")
 local Workspace = game:GetService("Workspace")
+local ProximityPromptService = game:GetService("ProximityPromptService")
 
 local Theme = require(script.Parent:WaitForChild("UI"):WaitForChild("Theme"))
 local GateVfx = require(script.Parent:WaitForChild("GateVfx"))
 local MonsterAnim = require(script.Parent:WaitForChild("MonsterAnim"))
+local SkillFx = require(script.Parent:WaitForChild("SkillFx"))
 local C, F = Theme.colors, Theme.fonts
 
 local HunterLive = {
 	walking = false,
 	useAbility = nil :: ((string) -> ())?,
+	onBar = nil :: ((any) -> ())?,
+	openLoadout = nil :: (() -> ())?,
 	setWalking = nil :: ((boolean) -> ())?,
 	call = nil :: any,
 	toast = nil :: any,
@@ -41,7 +52,6 @@ local started = false
 
 local BLUE = Color3.fromRGB(70, 150, 255)
 local RED = Color3.fromRGB(255, 50, 50)
-local SPARKLE = "rbxasset://textures/particles/sparkles_main.dds"
 local PING = "rbxasset://sounds/electronicpingshort.wav"
 local SLASH = "rbxasset://sounds/swordslash.wav"
 
@@ -312,146 +322,28 @@ function HunterLive.start(opts: any?)
 		Debris:AddItem(p, 3)
 	end
 
-	-- a ring of light that grows along the ground (slams, novas, sanctuaries)
-	local function ring(at: Vector3, radius: number, color: Color3, life: number, height: number?)
-		local p = fxPart({ Shape = Enum.PartType.Cylinder, Size = Vector3.new(height or 0.4, 2, 2), CFrame = CFrame.new(at.X, at.Y - 2.6, at.Z) * CFrame.Angles(0, 0, math.rad(90)), Color = color, Material = Enum.Material.Neon, Transparency = 0.15 }, fxRoot)
-		TweenService:Create(p, TweenInfo.new(life, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), { Size = Vector3.new(height or 0.4, radius * 2, radius * 2), Transparency = 1 }):Play()
-		Debris:AddItem(p, life + 0.1)
-	end
-	-- a ball that flies from a to b, then bursts
-	local function bolt(a: Vector3, b: Vector3, color: Color3, size: number, speed: number, onLand: (() -> ())?)
-		local p = fxPart({ Shape = Enum.PartType.Ball, Size = Vector3.one * size, Position = a, Color = color, Material = Enum.Material.Neon }, fxRoot)
-		make("PointLight", { Color = color, Range = size * 6, Brightness = 3 }, p)
-		make("ParticleEmitter", { Texture = SPARKLE, Color = ColorSequence.new(color), LightEmission = 1, Rate = 60, Lifetime = NumberRange.new(0.2, 0.4), Speed = NumberRange.new(0, 1), Size = NumberSequence.new(size * 0.5, 0) }, p)
-		local t = math.max(0.08, (b - a).Magnitude / speed)
-		TweenService:Create(p, TweenInfo.new(t, Enum.EasingStyle.Linear), { Position = b }):Play()
-		task.delay(t, function()
-			p:Destroy()
-			if onLand then
-				onLand()
-			end
-		end)
-	end
-	local ABILITY_FX = {
-		cleave = function(at, dir, d)
-			local right = dir:Cross(Vector3.yAxis)
-			for k = -2, 2 do
-				arc(at + dir * 4 + right * k * 2.2 + Vector3.new(0, 2.5 + k * 0.3, 0), at + dir * 8 + right * k * 3 + Vector3.new(0, 1.5, 0), Color3.fromRGB(255, 200, 120), 0.7)
-			end
-			sound(SLASH, at, 0.7, 0.8)
-			local _ = d
+	-- every move's effect (client/SkillFx): drawn here, in this client's effect folder
+	SkillFx.init({
+		root = fxRoot,
+		me = player.UserId,
+		shake = shakeNear,
+		sound = sound,
+		characterOf = function(userId: number): Model?
+			local who = Players:GetPlayerByUserId(userId)
+			return who and who.Character
 		end,
-		slam = function(at)
-			ring(at, 18, Color3.fromRGB(255, 170, 80), 0.6, 0.8)
-			ring(at, 12, Color3.fromRGB(255, 230, 180), 0.4)
-			flash(at, Color3.fromRGB(255, 180, 100), 10, 0.4)
-			shakeNear(at, 1.5, 80)
-		end,
-		bolt = function(at, _, d)
-			local to = if d.to then v3(d.to) else at
-			bolt(at + Vector3.new(0, 2.5, 0), to + Vector3.new(0, 2, 0), Color3.fromRGB(110, 180, 255), 1.2, 140, function()
-				flash(to + Vector3.new(0, 2, 0), Color3.fromRGB(150, 200, 255), 7, 0.35)
-			end)
-		end,
-		nova = function(at)
-			ring(at, 20, Color3.fromRGB(170, 230, 255), 0.7, 1.2)
-			for k = 0, 9 do
-				local a = k / 10 * math.pi * 2
-				local p = fxPart({ Size = Vector3.new(0.8, 3.5, 0.8), CFrame = CFrame.new(at + Vector3.new(math.cos(a) * 8, -1.5, math.sin(a) * 8)) * CFrame.Angles(math.rad(math.random(-20, 20)), a, math.rad(math.random(-20, 20))), Color = Color3.fromRGB(200, 240, 255), Material = Enum.Material.Ice, Transparency = 0.2 }, fxRoot)
-				TweenService:Create(p, TweenInfo.new(1.2), { Transparency = 1 }):Play()
-				Debris:AddItem(p, 1.3)
-			end
-			flash(at, Color3.fromRGB(200, 240, 255), 12, 0.5)
-		end,
-		step = function(at, _, d)
-			local to = if d.to then v3(d.to) else at
-			arc(at + Vector3.new(0, 2.5, 0), to + Vector3.new(0, 2.5, 0), Color3.fromRGB(170, 90, 255), 1.2)
-			flash(at + Vector3.new(0, 2.5, 0), Color3.fromRGB(120, 60, 200), 5, 0.4)
-			flash(to + Vector3.new(0, 2.5, 0), Color3.fromRGB(200, 120, 255), 6, 0.4)
-			-- the one who stepped lands behind the target (the client moves its own character)
-			if d.player == player.UserId and d.to then
-				local ch = player.Character
-				local hrp = ch and ch:FindFirstChild("HumanoidRootPart") :: BasePart?
-				if hrp then
-					local dir = (to - at)
-					dir = Vector3.new(dir.X, 0, dir.Z)
-					if dir.Magnitude > 0.5 then
-						hrp.CFrame = CFrame.lookAt(to + dir.Unit * 4 + Vector3.new(0, 0.5, 0), to)
-					end
-				end
-			end
-		end,
-		flurry = function(at, _, d)
-			local to = if d.to then v3(d.to) else at
-			for k = 0, 5 do
-				task.delay(k * 0.07, function()
-					local o = Vector3.new(math.random() - 0.5, math.random() - 0.5, math.random() - 0.5) * 4
-					arc(to + o + Vector3.new(0, 3, 0), to - o + Vector3.new(0, 2, 0), Color3.fromRGB(230, 60, 80), 0.35)
-				end)
-			end
-			sound(SLASH, to, 0.6, 1.3)
-		end,
-		bash = function(at, dir)
-			flash(at + dir * 4 + Vector3.new(0, 2.5, 0), Color3.fromRGB(220, 220, 240), 8, 0.3)
-			ring(at + dir * 4, 7, Color3.fromRGB(200, 210, 230), 0.35)
-			shakeNear(at, 1, 40)
-		end,
-		provoke = function(at)
-			ring(at, 45, Color3.fromRGB(255, 70, 60), 0.9, 0.6)
-			flash(at + Vector3.new(0, 3, 0), Color3.fromRGB(255, 80, 60), 9, 0.6)
-		end,
-		pierce = function(at, _, d)
-			local to = if d.to then v3(d.to) else at
-			local a, b = at + Vector3.new(0, 2.5, 0), to + Vector3.new(0, 2.5, 0)
-			local beam = fxPart({ Size = Vector3.new(0.5, 0.5, (b - a).Magnitude), CFrame = CFrame.lookAt((a + b) / 2, b), Color = Color3.fromRGB(170, 255, 170), Material = Enum.Material.Neon }, fxRoot)
-			TweenService:Create(beam, TweenInfo.new(0.35), { Transparency = 1, Size = Vector3.new(0.1, 0.1, (b - a).Magnitude) }):Play()
-			Debris:AddItem(beam, 0.4)
-		end,
-		rain = function(_, _, d)
-			local c = if d.to then v3(d.to) else Vector3.zero
-			for k = 1, 22 do
-				task.delay(math.random() * 0.6, function()
-					local o = Vector3.new((math.random() - 0.5) * 26, 0, (math.random() - 0.5) * 26)
-					local p = fxPart({ Size = Vector3.new(0.15, 0.15, 3), CFrame = CFrame.lookAt(c + o + Vector3.new(0, 30, 0), c + o), Color = Color3.fromRGB(190, 255, 190), Material = Enum.Material.Neon }, fxRoot)
-					TweenService:Create(p, TweenInfo.new(0.25, Enum.EasingStyle.Linear), { CFrame = CFrame.lookAt(c + o + Vector3.new(0, 1, 0), c + o - Vector3.new(0, 1, 0)) }):Play()
-					task.delay(0.26, function()
-						p:Destroy()
-						flash(c + o + Vector3.new(0, 0.5, 0), Color3.fromRGB(190, 255, 190), 2.5, 0.2)
-					end)
-				end)
-				local _ = k
-			end
-		end,
-		mend = function(at, _, d)
-			for _, hp in d.healed or {} do
-				local p = v3(hp)
-				flash(p + Vector3.new(0, 2, 0), Color3.fromRGB(120, 255, 180), 5, 0.6)
-				local holder = fxPart({ Size = Vector3.one, Position = p, Transparency = 1 }, fxRoot)
-				local pe = make("ParticleEmitter", { Texture = SPARKLE, Color = ColorSequence.new(Color3.fromRGB(140, 255, 190)), LightEmission = 1, Rate = 0, Lifetime = NumberRange.new(0.8, 1.4), Speed = NumberRange.new(2, 4), SpreadAngle = Vector2.new(30, 30), EmissionDirection = Enum.NormalId.Top, Size = NumberSequence.new(0.5, 0) }, holder)
-				pe:Emit(30)
-				Debris:AddItem(holder, 1.6)
-			end
-			local _ = at
-		end,
-		sanctuary = function(at)
-			local dome = fxPart({ Shape = Enum.PartType.Ball, Size = Vector3.one * 4, Position = at, Color = Color3.fromRGB(140, 255, 210), Material = Enum.Material.ForceField, Transparency = 0.2 }, fxRoot)
-			TweenService:Create(dome, TweenInfo.new(0.8, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), { Size = Vector3.one * 52 }):Play()
-			task.delay(4, function()
-				TweenService:Create(dome, TweenInfo.new(1), { Transparency = 1 }):Play()
-			end)
-			Debris:AddItem(dome, 5.2)
-			ring(at, 26, Color3.fromRGB(140, 255, 210), 1)
-		end,
-	}
+	})
 
 	local function onFx(d: any)
 		local kind = d.fx
 		if kind == "ability" then
-			local draw = ABILITY_FX[d.ability]
-			if draw then
-				local ok = pcall(draw, v3(d.at), v3(d.dir), d)
-				local _ = ok
-			end
+			SkillFx.play(d)
+			return
+		elseif kind == "abilityTick" then
+			SkillFx.tick(d)
+			return
+		elseif kind == "abilityCast" then
+			SkillFx.cast(d)
 			return
 		end
 		if kind == "slash" then
@@ -529,6 +421,10 @@ function HunterLive.start(opts: any?)
 		end
 		if d.walk ~= nil and HunterLive.setWalking then
 			HunterLive.setWalking(d.walk == true)
+		end
+		-- the skill bar: what's in it, a cooldown the server started, mana, a cast refused
+		if HunterLive.onBar then
+			HunterLive.onBar(d)
 		end
 	end)
 	task.spawn(function()
@@ -655,7 +551,8 @@ function HunterLive.start(opts: any?)
 	end)
 
 	-- ── walk mode ──
-	local hud = make("Frame", { Name = "WalkHud", Visible = false, AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, -16), Size = UDim2.fromOffset(820, 132), BackgroundColor3 = C.panel, BackgroundTransparency = 0.12 }, gui)
+	local hud = make("Frame", { Name = "WalkHud", Visible = false, AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, -16), Size = UDim2.new(1, -24, 0, 132), BackgroundColor3 = C.panel, BackgroundTransparency = 0.12 }, gui)
+	make("UISizeConstraint", { MaxSize = Vector2.new(860, 132) }, hud)
 	make("UICorner", { CornerRadius = UDim.new(0, 8) }, hud)
 	make("UIStroke", { Color = C.accent, Transparency = 0.5 }, hud)
 	local rankLabel = make("TextLabel", { Position = UDim2.fromOffset(14, 8), Size = UDim2.new(0.5, 0, 0, 22), BackgroundTransparency = 1, TextXAlignment = Enum.TextXAlignment.Left, Text = "", TextColor3 = C.accentHi, FontFace = F.display, TextSize = 18 }, hud)
@@ -663,11 +560,18 @@ function HunterLive.start(opts: any?)
 	make("UICorner", { CornerRadius = UDim.new(1, 0) }, hpBack)
 	local hpFill = make("Frame", { Size = UDim2.fromScale(1, 1), BackgroundColor3 = Color3.fromRGB(214, 96, 88) }, hpBack)
 	make("UICorner", { CornerRadius = UDim.new(1, 0) }, hpFill)
-	local nearLabel = make("TextLabel", { Position = UDim2.fromOffset(14, 50), Size = UDim2.new(1, -28, 0, 30), BackgroundTransparency = 1, TextWrapped = true, TextXAlignment = Enum.TextXAlignment.Left, Text = "The city is quiet.", TextColor3 = C.sub, FontFace = F.uiMedium, TextSize = 14 }, hud)
-	local row = make("Frame", { Position = UDim2.new(0, 14, 1, -46), Size = UDim2.new(1, -28, 0, 38), BackgroundTransparency = 1 }, hud)
-	make("UIListLayout", { FillDirection = Enum.FillDirection.Horizontal, Padding = UDim.new(0, 8) }, row)
+	local manaBack = make("Frame", { Position = UDim2.fromOffset(14, 46), Size = UDim2.new(1, -28, 0, 6), BackgroundColor3 = C.panelLo }, hud)
+	make("UICorner", { CornerRadius = UDim.new(1, 0) }, manaBack)
+	local manaFill = make("Frame", { Size = UDim2.fromScale(1, 1), BackgroundColor3 = Color3.fromRGB(80, 150, 255) }, manaBack)
+	make("UICorner", { CornerRadius = UDim.new(1, 0) }, manaFill)
+	local manaLabel = make("TextLabel", { AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, -14, 0, 10), Size = UDim2.new(0.5, -14, 0, 20), BackgroundTransparency = 1, TextXAlignment = Enum.TextXAlignment.Right, Text = "", TextColor3 = Color3.fromRGB(140, 190, 255), FontFace = F.uiBold, TextSize = 13 }, hud)
+	local nearLabel = make("TextLabel", { Position = UDim2.fromOffset(14, 55), Size = UDim2.new(1, -28, 0, 28), BackgroundTransparency = 1, TextWrapped = true, TextXAlignment = Enum.TextXAlignment.Left, Text = "The city is quiet.", TextColor3 = C.sub, FontFace = F.uiMedium, TextSize = 13 }, hud)
+	local row = make("ScrollingFrame", { Position = UDim2.new(0, 14, 1, -46), Size = UDim2.new(1, -28, 0, 40), BackgroundTransparency = 1, ScrollBarThickness = 2, ScrollingDirection = Enum.ScrollingDirection.X, AutomaticCanvasSize = Enum.AutomaticSize.X, CanvasSize = UDim2.new() }, hud)
+	make("UIListLayout", { FillDirection = Enum.FillDirection.Horizontal, Padding = UDim.new(0, 8), SortOrder = Enum.SortOrder.LayoutOrder }, row)
+	local hudOrder = 0
 	local function hudButton(text: string, color: Color3, onClick: () -> ()): TextButton
-		local b = make("TextButton", { Size = UDim2.fromOffset(124, 38), BackgroundColor3 = color, Text = text, TextColor3 = Color3.new(1, 1, 1), FontFace = F.display, TextSize = 15, AutoButtonColor = true }, row)
+		hudOrder += 1
+		local b = make("TextButton", { LayoutOrder = hudOrder, Size = UDim2.fromOffset(122, 38), BackgroundColor3 = color, Text = text, TextColor3 = Color3.new(1, 1, 1), FontFace = F.display, TextSize = 15, AutoButtonColor = true }, row)
 		make("UICorner", { CornerRadius = UDim.new(0, 6) }, b)
 		b.Activated:Connect(onClick)
 		return b
@@ -681,7 +585,7 @@ function HunterLive.start(opts: any?)
 			end
 		end
 	end)
-	local _helpBtn = hudButton("HELP [E]", Color3.fromRGB(60, 130, 90), function()
+	local _helpBtn = hudButton("HELP [H]", Color3.fromRGB(60, 130, 90), function()
 		local res = call("hwHelp")
 		if res then
 			toast(res.toast or res.error or "", if res.ok then C.good else C.sub)
@@ -690,28 +594,388 @@ function HunterLive.start(opts: any?)
 	local attackBtn = hudButton("ATTACK [F]", Color3.fromRGB(40, 90, 200), function()
 		Event:FireServer("attack")
 	end)
-	-- the class's two abilities, with their cooldowns counted down on the button
-	local cooldown = { Q = 0, R = 0 }
-	local function useAbility(slot: string)
+
+	-- ── the skill bar: five slots (Q E R T, and the ultimate on G), keys and on-screen buttons ──
+	-- The server says what's in each slot and what's unlocked (hwSkillBar); every move's numbers
+	-- and looks come from Hunter/Abilities. Cooldowns sweep down each button; mana is a bar.
+	local Abilities = require(Hunter:WaitForChild("Abilities"))
+	local barState: any = { slots = {}, unlocked = {}, locked = {}, class = nil, rank = 0 }
+	local readyAt: { [string]: number } = {}
+	local cdLength: { [string]: number } = {}
+	local manaSeen = { value = 0, max = 0, regen = 0, t = os.clock() }
+	local function elColor(element: string?, which: string?): Color3
+		local c = Abilities.colorOf(element, which)
+		return Color3.fromRGB(c[1], c[2], c[3])
+	end
+	local function manaNow(): number
+		return math.min(manaSeen.max, manaSeen.value + manaSeen.regen * (os.clock() - manaSeen.t))
+	end
+	local function seeMana(value: number?, max: number?, regen: number?)
+		if type(value) == "number" then
+			manaSeen.value = value
+			manaSeen.t = os.clock()
+		end
+		if type(max) == "number" then
+			manaSeen.max = max
+		end
+		if type(regen) == "number" then
+			manaSeen.regen = regen
+		end
+	end
+	local function slotMove(slot: string): any
+		local ch = player.Character
+		local id = barState.slots[slot] or (ch and ch:GetAttribute("AbilityId" .. slot))
+		return id and Abilities.byId[id]
+	end
+
+	local barFrame = make("Frame", { Name = "SkillBar", Visible = false, AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, -156), Size = UDim2.fromOffset(5 * 74 + 4 * 8, 84), BackgroundTransparency = 1 }, gui)
+	make("UIListLayout", { FillDirection = Enum.FillDirection.Horizontal, Padding = UDim.new(0, 8), HorizontalAlignment = Enum.HorizontalAlignment.Center, SortOrder = Enum.SortOrder.LayoutOrder }, barFrame)
+	local slotUi: { [string]: any } = {}
+	local useAbility: (string) -> ()
+	for i, slot in Abilities.SLOTS do
+		local b = make("TextButton", { Name = "Slot" .. slot, LayoutOrder = i, Size = UDim2.fromOffset(74, 84), BackgroundColor3 = C.panel, BackgroundTransparency = 0.06, AutoButtonColor = true, Text = "", ClipsDescendants = true }, barFrame)
+		make("UICorner", { CornerRadius = UDim.new(0, 8) }, b)
+		local stroke = make("UIStroke", { Color = C.stroke, Thickness = if slot == "G" then 2 else 1.4, Transparency = 0.1 }, b)
+		local icon = make("Frame", { Position = UDim2.fromOffset(5, 5), Size = UDim2.new(1, -10, 0, 44), BackgroundColor3 = C.panelHi, BorderSizePixel = 0 }, b)
+		make("UICorner", { CornerRadius = UDim.new(0, 6) }, icon)
+		local glyph = make("TextLabel", { Size = UDim2.fromScale(1, 1), BackgroundTransparency = 1, Text = "", TextColor3 = Color3.new(1, 1, 1), FontFace = F.display, TextSize = 24 }, icon)
+		local tier = make("TextLabel", { Position = UDim2.fromOffset(3, 1), Size = UDim2.fromOffset(16, 14), BackgroundTransparency = 1, Text = "", TextColor3 = Color3.new(1, 1, 1), FontFace = F.display, TextSize = 12, TextXAlignment = Enum.TextXAlignment.Left }, icon)
+		make("TextLabel", { AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, -3, 0, 1), Size = UDim2.fromOffset(16, 14), BackgroundTransparency = 1, Text = slot, TextColor3 = C.accentHi, FontFace = F.display, TextSize = 13, TextXAlignment = Enum.TextXAlignment.Right }, icon)
+		local name = make("TextLabel", { Position = UDim2.fromOffset(3, 50), Size = UDim2.new(1, -6, 0, 16), BackgroundTransparency = 1, Text = "", TextColor3 = C.text, FontFace = F.uiBold, TextSize = 11, TextTruncate = Enum.TextTruncate.AtEnd }, b)
+		local cost = make("TextLabel", { Position = UDim2.fromOffset(3, 66), Size = UDim2.new(1, -6, 0, 14), BackgroundTransparency = 1, Text = "", TextColor3 = Color3.fromRGB(120, 180, 255), FontFace = F.uiMedium, TextSize = 10 }, b)
+		-- the cooldown sweep: a shade over the icon that drains from the top as it comes back
+		local sweep = make("Frame", { AnchorPoint = Vector2.new(0, 1), Position = UDim2.new(0, 0, 1, 0), Size = UDim2.fromScale(1, 0), BackgroundColor3 = Color3.new(0, 0, 0), BackgroundTransparency = 0.35, BorderSizePixel = 0, ZIndex = 3 }, icon)
+		local count = make("TextLabel", { Size = UDim2.fromScale(1, 1), BackgroundTransparency = 1, Text = "", TextColor3 = Color3.new(1, 1, 1), FontFace = F.display, TextSize = 20, ZIndex = 4 }, icon)
+		b.Activated:Connect(function()
+			useAbility(slot)
+		end)
+		slotUi[slot] = { button = b, stroke = stroke, icon = icon, glyph = glyph, tier = tier, name = name, cost = cost, sweep = sweep, count = count }
+	end
+	local function paintBar()
+		for _, slot in Abilities.SLOTS do
+			local u = slotUi[slot]
+			local ab = slotMove(slot)
+			if ab then
+				local col = elColor(ab.element, "core")
+				u.stroke.Color = col
+				u.icon.BackgroundColor3 = col:Lerp(Color3.new(0, 0, 0), 0.45)
+				u.glyph.Text = string.upper(string.sub(ab.name, 1, 1)) .. string.lower(string.sub(ab.name, 2, 2))
+				u.tier.Text = Abilities.TIER_LETTER[ab.tier] or ""
+				u.name.Text = ab.name
+				u.cost.Text = string.format("%d MP%s", ab.mana, if ab.cast > 0 then string.format(" · %.1fs", ab.cast) else "")
+			else
+				u.stroke.Color = C.stroke
+				u.icon.BackgroundColor3 = C.panelHi
+				u.glyph.Text = ""
+				u.tier.Text = ""
+				u.name.Text = if slot == "G" then "Ultimate" else "Empty"
+				u.cost.Text = ""
+			end
+		end
+	end
+	local function stepBar()
+		local now = os.clock()
+		local mana = manaNow()
+		for _, slot in Abilities.SLOTS do
+			local u = slotUi[slot]
+			local ab = slotMove(slot)
+			local left = (readyAt[slot] or 0) - now
+			if left > 0 and ab then
+				u.sweep.Size = UDim2.fromScale(1, math.clamp(left / math.max(0.1, cdLength[slot] or ab.cd), 0, 1))
+				u.count.Text = if left >= 10 then string.format("%d", math.ceil(left)) else string.format("%.1f", left)
+			else
+				u.sweep.Size = UDim2.fromScale(1, 0)
+				u.count.Text = ""
+			end
+			u.cost.TextColor3 = if ab and mana < ab.mana then C.crimsonHi else Color3.fromRGB(120, 180, 255)
+		end
+	end
+
+	-- where the player is aiming (the mouse; on touch, the server aims ahead of you)
+	local aimParams = RaycastParams.new()
+	aimParams.FilterType = Enum.RaycastFilterType.Exclude
+	local function aimPoint(): { number }?
+		local cam = Workspace.CurrentCamera
+		if not cam or not UserInputService.MouseEnabled then
+			return nil
+		end
+		local mp = UserInputService:GetMouseLocation()
+		local ray = cam:ViewportPointToRay(mp.X, mp.Y)
+		aimParams.FilterDescendantsInstances = { player.Character :: Instance, fxRoot }
+		local hit = Workspace:Raycast(ray.Origin, ray.Direction * 500, aimParams)
+		local p = if hit then hit.Position else ray.Origin + ray.Direction * 60
+		return { p.X, p.Y, p.Z }
+	end
+	local lastNoMana = 0
+	useAbility = function(slot: string)
 		local ch = player.Character
 		if not ch or not ch:GetAttribute("Class") then
 			return
 		end
-		if cooldown[slot] > os.clock() then
+		local ab = slotMove(slot)
+		if not ab or (readyAt[slot] or 0) > os.clock() then
 			return
 		end
-		cooldown[slot] = os.clock() + (ch:GetAttribute("Cooldown" .. slot) or 5) * 0.6
-		Event:FireServer("skill", { slot = slot })
+		if manaNow() < ab.mana then
+			if os.clock() - lastNoMana > 1.5 then
+				lastNoMana = os.clock()
+				toast(string.format("Not enough mana for %s (%d MP).", ab.name, ab.mana), C.crimsonHi)
+			end
+			return
+		end
+		-- a guess until the server answers with the real cooldown
+		readyAt[slot] = os.clock() + math.max(0.4, ab.cd * 0.5)
+		cdLength[slot] = ab.cd
+		Event:FireServer("skill", { slot = slot, aim = aimPoint() })
 	end
-	local qBtn = hudButton("Q", Color3.fromRGB(120, 70, 190), function()
-		useAbility("Q")
-	end)
-	local rBtn = hudButton("R", Color3.fromRGB(170, 60, 120), function()
-		useAbility("R")
-	end)
-	qBtn.Size = UDim2.fromOffset(112, 38)
-	rBtn.Size = UDim2.fromOffset(112, 38)
 	HunterLive.useAbility = useAbility
+
+	-- ── the loadout panel: pick any unlocked move for each slot; search, and filter by group ──
+	local panel = make("Frame", { Name = "Loadout", Visible = false, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.46), Size = UDim2.new(1, -24, 0.78, 0), BackgroundColor3 = C.panel, BackgroundTransparency = 0.03, ZIndex = 20 }, gui)
+	make("UISizeConstraint", { MaxSize = Vector2.new(680, 560) }, panel)
+	make("UICorner", { CornerRadius = UDim.new(0, 10) }, panel)
+	make("UIStroke", { Color = C.accent, Transparency = 0.35, Thickness = 1.4 }, panel)
+	make("TextLabel", { Position = UDim2.fromOffset(16, 10), Size = UDim2.new(1, -70, 0, 24), BackgroundTransparency = 1, Text = "SKILL LOADOUT", TextColor3 = C.accentHi, FontFace = F.display, TextSize = 20, TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 21 }, panel)
+	local subtitle = make("TextLabel", { Position = UDim2.fromOffset(16, 34), Size = UDim2.new(1, -32, 0, 16), BackgroundTransparency = 1, Text = "", TextColor3 = C.sub, FontFace = F.uiMedium, TextSize = 12, TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 21 }, panel)
+	local closeBtn = make("TextButton", { AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, -10, 0, 10), Size = UDim2.fromOffset(34, 30), BackgroundColor3 = C.panelHi, Text = "X", TextColor3 = C.text, FontFace = F.display, TextSize = 16, ZIndex = 21 }, panel)
+	make("UICorner", { CornerRadius = UDim.new(0, 6) }, closeBtn)
+	-- the five slots, as tabs
+	local tabs = make("Frame", { Position = UDim2.fromOffset(12, 56), Size = UDim2.new(1, -24, 0, 44), BackgroundTransparency = 1, ZIndex = 21 }, panel)
+	make("UIListLayout", { FillDirection = Enum.FillDirection.Horizontal, Padding = UDim.new(0, 6), SortOrder = Enum.SortOrder.LayoutOrder }, tabs)
+	-- a search box and the group chips
+	local search = make("TextBox", { Position = UDim2.fromOffset(12, 106), Size = UDim2.new(0.4, -12, 0, 30), BackgroundColor3 = C.panelLo, Text = "", PlaceholderText = "Search moves...", PlaceholderColor3 = C.faint, TextColor3 = C.text, FontFace = F.uiMedium, TextSize = 13, ClearTextOnFocus = false, TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 21 }, panel)
+	make("UICorner", { CornerRadius = UDim.new(0, 6) }, search)
+	make("UIPadding", { PaddingLeft = UDim.new(0, 8) }, search)
+	local chips = make("ScrollingFrame", { Position = UDim2.new(0.4, 6, 0, 106), Size = UDim2.new(0.6, -18, 0, 30), BackgroundTransparency = 1, ScrollBarThickness = 3, ScrollingDirection = Enum.ScrollingDirection.X, AutomaticCanvasSize = Enum.AutomaticSize.X, CanvasSize = UDim2.new(), ZIndex = 21 }, panel)
+	make("UIListLayout", { FillDirection = Enum.FillDirection.Horizontal, Padding = UDim.new(0, 5), SortOrder = Enum.SortOrder.LayoutOrder }, chips)
+	local list = make("ScrollingFrame", { Position = UDim2.fromOffset(12, 144), Size = UDim2.new(1, -24, 1, -190), BackgroundColor3 = C.panelLo, BackgroundTransparency = 0.2, ScrollBarThickness = 6, AutomaticCanvasSize = Enum.AutomaticSize.Y, CanvasSize = UDim2.new(), ZIndex = 21 }, panel)
+	make("UICorner", { CornerRadius = UDim.new(0, 6) }, list)
+	make("UIListLayout", { Padding = UDim.new(0, 4), SortOrder = Enum.SortOrder.LayoutOrder }, list)
+	make("UIPadding", { PaddingTop = UDim.new(0, 4), PaddingBottom = UDim.new(0, 4), PaddingLeft = UDim.new(0, 4), PaddingRight = UDim.new(0, 8) }, list)
+	local bestBtn = make("TextButton", { AnchorPoint = Vector2.new(0, 1), Position = UDim2.new(0, 12, 1, -8), Size = UDim2.fromOffset(200, 30), BackgroundColor3 = C.panelHi, Text = "USE THE BEST FOR THIS SLOT", TextColor3 = C.accentHi, FontFace = F.display, TextSize = 13, ZIndex = 21 }, panel)
+	make("UICorner", { CornerRadius = UDim.new(0, 6) }, bestBtn)
+	local footer = make("TextLabel", { AnchorPoint = Vector2.new(1, 1), Position = UDim2.new(1, -12, 1, -8), Size = UDim2.new(1, -230, 0, 30), BackgroundTransparency = 1, Text = "", TextColor3 = C.faint, FontFace = F.uiMedium, TextSize = 11, TextWrapped = true, TextXAlignment = Enum.TextXAlignment.Right, ZIndex = 21 }, panel)
+
+	local pickSlot, pickGroup = "Q", "all"
+	local tabUi: { [string]: any } = {}
+	local chipUi: { [string]: any } = {}
+	local rebuild: () -> ()
+	for i, slot in Abilities.SLOTS do
+		local t = make("TextButton", { LayoutOrder = i, Size = UDim2.new(0.2, -5, 1, 0), BackgroundColor3 = C.panelHi, Text = "", AutoButtonColor = true, ZIndex = 22 }, tabs)
+		make("UICorner", { CornerRadius = UDim.new(0, 6) }, t)
+		local st = make("UIStroke", { Color = C.stroke, Thickness = 1.2 }, t)
+		local top = make("TextLabel", { Position = UDim2.fromOffset(6, 3), Size = UDim2.new(1, -12, 0, 18), BackgroundTransparency = 1, Text = slot .. " · " .. Abilities.SLOT_INFO[slot].name, TextColor3 = C.accentHi, FontFace = F.display, TextSize = 13, TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 23 }, t)
+		local cur = make("TextLabel", { Position = UDim2.fromOffset(6, 21), Size = UDim2.new(1, -12, 0, 18), BackgroundTransparency = 1, Text = "", TextColor3 = C.text, FontFace = F.uiMedium, TextSize = 11, TextXAlignment = Enum.TextXAlignment.Left, TextTruncate = Enum.TextTruncate.AtEnd, ZIndex = 23 }, t)
+		t.Activated:Connect(function()
+			pickSlot = slot
+			rebuild()
+		end)
+		tabUi[slot] = { button = t, stroke = st, top = top, cur = cur }
+	end
+	local function chip(id: string, text: string, order: number)
+		local c = make("TextButton", { LayoutOrder = order, Size = UDim2.fromOffset(0, 26), AutomaticSize = Enum.AutomaticSize.X, BackgroundColor3 = C.panelHi, Text = text, TextColor3 = C.sub, FontFace = F.uiBold, TextSize = 11, ZIndex = 22 }, chips)
+		make("UICorner", { CornerRadius = UDim.new(1, 0) }, c)
+		make("UIPadding", { PaddingLeft = UDim.new(0, 10), PaddingRight = UDim.new(0, 10) }, c)
+		c.Activated:Connect(function()
+			pickGroup = id
+			rebuild()
+		end)
+		chipUi[id] = c
+	end
+	local function refreshChips()
+		for _, c in chipUi do
+			c:Destroy()
+		end
+		table.clear(chipUi)
+		chip("all", "All", 0)
+		chip("unlocked", "Unlocked", 1)
+		-- only the groups this class can reach
+		local seen = {}
+		for _, id in barState.unlocked or {} do
+			local ab = Abilities.byId[id]
+			if ab then
+				seen[ab.group] = true
+			end
+		end
+		for id in barState.locked or {} do
+			local ab = Abilities.byId[id]
+			if ab then
+				seen[ab.group] = true
+			end
+		end
+		for i, g in Abilities.groups() do
+			if seen[g.id] then
+				chip(g.id, g.name, 1 + i)
+			end
+		end
+		if not chipUi[pickGroup] then
+			pickGroup = "all"
+		end
+	end
+	local function equip(slot: string, id: string?)
+		local res = call("hwSkillBar", { slot = slot, id = id })
+		if res and res.ok and res.bar then
+			HunterLive.onBar({ bar = res.bar })
+		elseif res and res.error then
+			toast(res.error, C.crimsonHi)
+		end
+	end
+	local function statLine(ab: any): string
+		local parts = { string.format("%d MP", ab.mana), string.format("%gs cooldown", ab.cd) }
+		table.insert(parts, if ab.cast > 0 then string.format("%gs cast", ab.cast) else "instant")
+		local el = Abilities.ELEMENTS[ab.element]
+		table.insert(parts, (if el then el.name else ab.element) .. " " .. ab.shape)
+		if ab.mult > 0 then
+			table.insert(parts, string.format("x%.1f power", ab.mult))
+		end
+		if ab.heal then
+			table.insert(parts, string.format("heals %d%%", math.floor(ab.heal * 100 + 0.5)))
+		end
+		if ab.guard then
+			table.insert(parts, string.format("-%d%% damage", math.floor((1 - ab.guard) * 100 + 0.5)))
+		end
+		return table.concat(parts, " · ")
+	end
+	rebuild = function()
+		for _, c in list:GetChildren() do
+			if c:IsA("GuiObject") then
+				c:Destroy()
+			end
+		end
+		local cls = barState.class
+		local rankLetter = ({ "E", "D", "C", "B", "A", "S" })[barState.rank or 0] or "?"
+		subtitle.Text = if cls
+			then string.format("%s · %s-rank · %d moves unlocked, %d more to learn · pick one for each slot", string.upper(cls), rankLetter, #(barState.unlocked or {}), (function()
+				local n = 0
+				for _ in barState.locked or {} do
+					n += 1
+				end
+				return n
+			end)())
+			else "Only awakened Hunters have moves."
+		for slot, t in tabUi do
+			local ab = barState.slots and barState.slots[slot] and Abilities.byId[barState.slots[slot]]
+			t.cur.Text = if ab then ab.name else "(empty)"
+			t.stroke.Color = if slot == pickSlot then C.accentHi else C.stroke
+			t.stroke.Thickness = if slot == pickSlot then 2 else 1.2
+		end
+		for id, c in chipUi do
+			c.BackgroundColor3 = if id == pickGroup then C.accentLo else C.panelHi
+			c.TextColor3 = if id == pickGroup then C.text else C.sub
+		end
+		local q = string.lower(search.Text or "")
+		local rows = {}
+		local function consider(id: string, unlocked: boolean, why: string?)
+			local ab = Abilities.byId[id]
+			if not ab or ab.slot ~= pickSlot then
+				return
+			end
+			if pickGroup == "unlocked" and not unlocked then
+				return
+			end
+			if pickGroup ~= "all" and pickGroup ~= "unlocked" and ab.group ~= pickGroup then
+				return
+			end
+			if q ~= "" then
+				local el = Abilities.ELEMENTS[ab.element]
+				local hay = string.lower(ab.name .. " " .. ab.desc .. " " .. ab.group .. " " .. ab.shape .. " " .. (if el then el.name else ""))
+				if not string.find(hay, q, 1, true) then
+					return
+				end
+			end
+			table.insert(rows, { ab = ab, unlocked = unlocked, why = why })
+		end
+		for _, id in barState.unlocked or {} do
+			consider(id, true, nil)
+		end
+		for id, why in barState.locked or {} do
+			consider(id, false, why)
+		end
+		table.sort(rows, function(a, b)
+			if a.unlocked ~= b.unlocked then
+				return a.unlocked
+			end
+			if a.ab.tier ~= b.ab.tier then
+				return a.ab.tier > b.ab.tier
+			end
+			return a.ab.name < b.ab.name
+		end)
+		footer.Text = string.format("%d %s moves shown. Keys: Q E R T G. Higher tiers hit harder and cost more mana.", #rows, Abilities.SLOT_INFO[pickSlot].name)
+		for i, r in rows do
+			if i > 80 then
+				break
+			end
+			local ab = r.ab
+			local equipped = barState.slots and barState.slots[pickSlot] == ab.id
+			local col = elColor(ab.element, "core")
+			local rowF = make("Frame", { LayoutOrder = i, Size = UDim2.new(1, 0, 0, 62), BackgroundColor3 = if equipped then C.panelHi:Lerp(col, 0.18) else C.panel, BackgroundTransparency = if r.unlocked then 0 else 0.35, ZIndex = 22 }, list)
+			make("UICorner", { CornerRadius = UDim.new(0, 6) }, rowF)
+			make("Frame", { Size = UDim2.new(0, 4, 1, 0), BackgroundColor3 = col, BorderSizePixel = 0, ZIndex = 23 }, rowF)
+			make("TextLabel", { Position = UDim2.fromOffset(12, 4), Size = UDim2.new(1, -130, 0, 18), BackgroundTransparency = 1, Text = string.format("%s  [%s]  %s", ab.name, Abilities.TIER_LETTER[ab.tier], string.upper(ab.group)), TextColor3 = if r.unlocked then C.text else C.faint, FontFace = F.uiBold, TextSize = 13, TextXAlignment = Enum.TextXAlignment.Left, TextTruncate = Enum.TextTruncate.AtEnd, ZIndex = 23 }, rowF)
+			make("TextLabel", { Position = UDim2.fromOffset(12, 22), Size = UDim2.new(1, -130, 0, 16), BackgroundTransparency = 1, Text = statLine(ab), TextColor3 = col:Lerp(Color3.new(1, 1, 1), 0.35), FontFace = F.uiMedium, TextSize = 11, TextXAlignment = Enum.TextXAlignment.Left, TextTruncate = Enum.TextTruncate.AtEnd, ZIndex = 23 }, rowF)
+			make("TextLabel", { Position = UDim2.fromOffset(12, 38), Size = UDim2.new(1, -130, 0, 20), BackgroundTransparency = 1, Text = ab.desc, TextColor3 = C.sub, FontFace = F.serif, TextSize = 11, TextWrapped = true, TextXAlignment = Enum.TextXAlignment.Left, TextTruncate = Enum.TextTruncate.AtEnd, ZIndex = 23 }, rowF)
+			local act = make("TextButton", { AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, -8, 0.5, 0), Size = UDim2.fromOffset(110, 34), BackgroundColor3 = if equipped then C.accentLo elseif r.unlocked then C.accent else C.panelLo, AutoButtonColor = r.unlocked and not equipped, Text = if equipped then "EQUIPPED" elseif r.unlocked then "EQUIP" else (r.why or "LOCKED"), TextColor3 = if r.unlocked then C.ink else C.faint, FontFace = F.display, TextSize = if r.unlocked then 14 else 10, TextWrapped = true, ZIndex = 23 }, rowF)
+			make("UICorner", { CornerRadius = UDim.new(0, 6) }, act)
+			if r.unlocked and not equipped then
+				act.Activated:Connect(function()
+					equip(pickSlot, ab.id)
+				end)
+			end
+		end
+	end
+	search:GetPropertyChangedSignal("Text"):Connect(function()
+		if panel.Visible then
+			rebuild()
+		end
+	end)
+	closeBtn.Activated:Connect(function()
+		panel.Visible = false
+	end)
+	bestBtn.Activated:Connect(function()
+		equip(pickSlot, nil)
+	end)
+	local function openLoadout()
+		if panel.Visible then
+			panel.Visible = false
+			return
+		end
+		local res = call("hwSkillBar")
+		if res and res.bar then
+			barState = res.bar
+		end
+		refreshChips()
+		panel.Visible = true
+		rebuild()
+	end
+	HunterLive.openLoadout = openLoadout
+	local _skillsBtn = hudButton("SKILLS [K]", Color3.fromRGB(110, 70, 180), openLoadout)
+
+	-- what the server says: the bar, a cooldown it started, mana, a cast it refused
+	function HunterLive.onBar(d: any)
+		if type(d.bar) == "table" then
+			barState = d.bar
+			barState.slots = barState.slots or {}
+			paintBar()
+			if panel.Visible then
+				refreshChips()
+				rebuild()
+			end
+		end
+		if type(d.cooldown) == "table" and type(d.cooldown.slot) == "string" then
+			readyAt[d.cooldown.slot] = os.clock() + (tonumber(d.cooldown.left) or 0)
+			cdLength[d.cooldown.slot] = tonumber(d.cooldown.left) or 1
+		end
+		if type(d.mana) == "table" then
+			seeMana(d.mana.cur, d.mana.max, d.mana.regen)
+		end
+		if type(d.noMana) == "table" then
+			local slot = d.noMana.slot
+			if type(slot) == "string" then
+				readyAt[slot] = 0
+			end
+			seeMana(d.noMana.have, nil, nil)
+		end
+	end
 	hudButton("BACK TO LIFE", C.panelHi, function()
 		call("hwWalk", { on = false })
 	end)
@@ -724,6 +988,10 @@ function HunterLive.start(opts: any?)
 		end
 		HunterLive.walking = on
 		hud.Visible = on
+		barFrame.Visible = on
+		if not on then
+			panel.Visible = false
+		end
 		for _, b in Backdrops do
 			b.paused = on
 		end
@@ -774,7 +1042,24 @@ function HunterLive.start(opts: any?)
 		end
 	end
 
+	-- the cooldown sweeps, every frame
+	RunService.RenderStepped:Connect(function()
+		if HunterLive.walking and barFrame.Visible then
+			stepBar()
+		end
+	end)
+	-- a bar the character carries (set by the server on spawn) until the server's own view comes
+	player.CharacterAdded:Connect(function(ch)
+		task.defer(function()
+			if ch:GetAttribute("HunterLive") then
+				paintBar()
+			end
+		end)
+		ch:GetAttributeChangedSignal("AbilityIdQ"):Connect(paintBar)
+	end)
+
 	-- the HUD keeps up with you
+	local lastManaAttr: number? = nil
 	task.spawn(function()
 		while true do
 			task.wait(0.25)
@@ -787,15 +1072,22 @@ function HunterLive.start(opts: any?)
 					rankLabel.Text = if rank > 0 then (({ "E", "D", "C", "B", "A", "S" })[rank] .. "-RANK HUNTER") else "UNAWAKENED CIVILIAN"
 					attackBtn.Visible = rank > 0
 					local cls = ch:GetAttribute("Class")
-					qBtn.Visible = cls ~= nil
-					rBtn.Visible = cls ~= nil
-					if cls then
-						local now = os.clock()
-						local qLeft, rLeft = cooldown.Q - now, cooldown.R - now
-						qBtn.Text = if qLeft > 0 then string.format("%s %.0f", tostring(ch:GetAttribute("AbilityQ")), qLeft) else "[Q] " .. tostring(ch:GetAttribute("AbilityQ"))
-						rBtn.Text = if rLeft > 0 then string.format("%s %.0f", tostring(ch:GetAttribute("AbilityR")), rLeft) else "[R] " .. tostring(ch:GetAttribute("AbilityR"))
-						qBtn.TextSize = 13
-						rBtn.TextSize = 13
+					barFrame.Visible = cls ~= nil
+					_skillsBtn.Visible = cls ~= nil
+					-- mana: what the server last said, refilling at its rate
+					local mv, mm = ch:GetAttribute("Mana"), ch:GetAttribute("ManaMax")
+					if type(mv) == "number" and mv ~= lastManaAttr then
+						lastManaAttr = mv
+						seeMana(mv, mm, ch:GetAttribute("ManaRegen"))
+					elseif type(mm) == "number" then
+						seeMana(nil, mm, ch:GetAttribute("ManaRegen"))
+					end
+					manaBack.Visible = cls ~= nil
+					manaLabel.Visible = cls ~= nil
+					if cls and manaSeen.max > 0 then
+						local m = manaNow()
+						manaFill.Size = UDim2.fromScale(math.clamp(m / manaSeen.max, 0, 1), 1)
+						manaLabel.Text = string.format("MANA %d / %d", math.floor(m), manaSeen.max)
 					end
 					hpFill.Size = UDim2.fromScale(math.clamp(hum.Health / math.max(1, hum.MaxHealth), 0, 1), 1)
 					local best, bd = nil, 160
@@ -820,6 +1112,22 @@ function HunterLive.start(opts: any?)
 		end
 	end)
 
+	local KEY_SLOT = { { Enum.KeyCode.Q, "Q" }, { Enum.KeyCode.E, "E" }, { Enum.KeyCode.R, "R" }, { Enum.KeyCode.T, "T" }, { Enum.KeyCode.G, "G" } }
+	local function slotForKey(key: Enum.KeyCode): string?
+		for _, k in KEY_SLOT do
+			if k[1] == key then
+				return k[2]
+			end
+		end
+		return nil
+	end
+	local promptsShown = 0
+	ProximityPromptService.PromptShown:Connect(function()
+		promptsShown += 1
+	end)
+	ProximityPromptService.PromptHidden:Connect(function()
+		promptsShown = math.max(0, promptsShown - 1)
+	end)
 	UserInputService.InputBegan:Connect(function(input, processed)
 		if processed or not HunterLive.walking then
 			return
@@ -829,15 +1137,20 @@ function HunterLive.start(opts: any?)
 			if ch and (ch:GetAttribute("Rank") or 0) > 0 then
 				Event:FireServer("attack")
 			end
-		elseif input.KeyCode == Enum.KeyCode.Q then
-			useAbility("Q")
-		elseif input.KeyCode == Enum.KeyCode.R then
-			useAbility("R")
-		elseif input.KeyCode == Enum.KeyCode.E then
+		elseif slotForKey(input.KeyCode) then
+			local slot = slotForKey(input.KeyCode) :: string
+			-- (E also collects a crystal or opens a cache: while a prompt is up, E is the prompt's)
+			if slot == "E" and promptsShown > 0 then
+				return
+			end
+			useAbility(slot)
+		elseif input.KeyCode == Enum.KeyCode.H then
 			local res = call("hwHelp")
 			if res and (res.toast or res.error) then
 				toast(res.toast or res.error, if res.ok then C.good else C.sub)
 			end
+		elseif input.KeyCode == Enum.KeyCode.K then
+			openLoadout()
 		end
 	end)
 
