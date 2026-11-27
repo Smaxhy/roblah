@@ -1,0 +1,5 @@
+build/
+shots/
+tools/gui_render/out/
+node_modules/
+*.rbxl.lock

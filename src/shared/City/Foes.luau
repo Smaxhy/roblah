@@ -1,0 +1,337 @@
+--[[
+	FOES: who you see across the fight screen. A fight clash names one with `enemy = "<id>"`;
+	without it, the fight looks for a word from `match` in the clash's `foe` text, and
+	falls back to a stranger whose looks come from that text.
+	kind "human": `look` uses Cosmetics ids (any option, locked or not).
+	kind "creature": drawn as a shape: beast, tall, swarm, machine, blob, bird, mass.
+	barks: short lines the foe says when the fight starts (`start`), when it wins (`win`)
+	and when it goes down (`lose`). One is picked at random.
+]]
+
+local foes = {
+	-- kids and the street
+	{ id = "bully", name = "Bully", look = { skin = "sand", hair = "crop", hairColor = "umber", eyes = "brown", outfit = "hoodie" },
+		barks = { start = { "Hand it over.", "Wrong street, runt." }, win = { "Stay down." }, lose = { "Okay! Okay!" } } },
+	{ id = "street_kid", name = "Street Kid", look = { skin = "olive", hair = "messy", hairColor = "ink", eyes = "dark", outfit = "streetwear", mark = "freckles" },
+		barks = { start = { "This is our corner." }, win = { "Go cry about it." }, lose = { "I'm telling my brother." } } },
+	{ id = "thug", name = "Backstreets Thug", look = { skin = "amber", hair = "shorn", hairColor = "charcoal", eyes = "brown", outfit = "work_overalls", mark = "scar", weapon = "nail_bat" },
+		barks = { start = { "Wallet. Now.", "Nothing personal." }, win = { "Should've paid." }, lose = { "Fine, fine, keep it!" } } },
+	{ id = "rat", name = "Rat", look = { skin = "olive", hair = "shorn", hairColor = "ink", eyes = "brown", outfit = "rat_jacket", mark = "scar", weapon = "knife" },
+		barks = { start = { "Nice shoes.", "Alley toll." }, win = { "Thanks for the shoes." }, lose = { "Not worth it!" } } },
+	{ id = "rat_boss", name = "Rat Boss", look = { skin = "umber", hair = "sidecut", hairColor = "rust", eyes = "amber", outfit = "rat_jacket", accessory = "big_shades", weapon = "crowbar" },
+		barks = { start = { "You know whose alley this is?" }, win = { "Somebody drag that away." }, lose = { "Get out of my sight." } } },
+	{ id = "syndicate", name = "Syndicate Enforcer", look = { skin = "fair", hair = "slick", hairColor = "ink", eyes = "grey", outfit = "night_coat", accessory = "sunglasses", weapon = "revolver" },
+		barks = { start = { "The boss sends regards." }, win = { "Collected." }, lose = { "This isn't over." } } },
+	{ id = "workshop_brute", name = "Workshop Muscle", look = { skin = "bronze", hair = "crop", hairColor = "ash", eyes = "hazel", outfit = "mechanic", weapon = "wrench" },
+		barks = { start = { "Shop's closed." }, win = { "Out." }, lose = { "Take it, take it." } } },
+
+	-- the Fingers and the Clans
+	{ id = "thumb_soldato", name = "Thumb Soldato", look = { skin = "peach", hair = "slick", hairColor = "ink", eyes = "dark", outfit = "thumb_suit", accessory = "fedora", weapon = "thumb_rifle" },
+		barks = { start = { "You will address me properly.", "Manners first." }, win = { "Insolence, corrected." }, lose = { "The Thumb remembers." } } },
+	{ id = "thumb_capo", name = "Thumb Capo", look = { skin = "fair", hair = "slick", hairColor = "ash", eyes = "grey", outfit = "sottocapo_suit", accessory = "fedora", weapon = "revolver" },
+		barks = { start = { "Kneel, and this goes quickly." }, win = { "Clean this up." }, lose = { "You have made an enemy of a family." } } },
+	{ id = "middle_sibling", name = "Middle Little Sibling", look = { skin = "sand", hair = "crop", hairColor = "ink", eyes = "dark", outfit = "middle_jacket", weapon = "middle_chain" },
+		barks = { start = { "You touched one of us.", "Vengeance, sibling!" }, win = { "One mark settled." }, lose = { "The Middle never forgets a debt." } } },
+	{ id = "middle_big", name = "Middle Big Sibling", look = { skin = "umber", hair = "shorn", hairColor = "ink", eyes = "dark", outfit = "middle_jacket", weapon = "maul" },
+		barks = { start = { "My little ones told me about you." }, win = { "Paid in full." }, lose = { "The whole family will come." } } },
+	{ id = "index_proxy", name = "Index Proxy", look = { skin = "porcelain", hair = "long", hairColor = "snow", eyes = "light_gold", outfit = "index_whites", weapon = "index_blade" },
+		barks = { start = { "The Prescript names you.", "It was written." }, win = { "As written." }, lose = { "The Prescript did not say this." } } },
+	{ id = "index_messenger", name = "Index Messenger", look = { skin = "fair", hair = "bob", hairColor = "platinum", eyes = "grey", outfit = "index_whites", accessory = "monocle" },
+		barks = { start = { "A letter, for you." }, win = { "Delivered." }, lose = { "Then the letter waits." } } },
+	{ id = "ring_artist", name = "Ring Student", look = { skin = "pallid", hair = "curls", hairColor = "lilac", eyes = "green", outfit = "ring_smock", accessory = "mask", weapon = "ring_brush" },
+		barks = { start = { "Hold still. You're my canvas." }, win = { "A masterpiece." }, lose = { "An unfinished piece." } } },
+	{ id = "kurokumo", name = "Kurokumo Wakashu", look = { skin = "fair", hair = "ponytail", hairColor = "charcoal", eyes = "dark", outfit = "kurokumo_coat", weapon = "kurokumo_blade" },
+		barks = { start = { "Draw, if you're going to." }, win = { "Too slow." }, lose = { "The Clan will hear of this." } } },
+
+	-- Fixers and Associations
+	{ id = "fixer", name = "Fixer", look = { skin = "honey", hair = "slick", hairColor = "chestnut", eyes = "hazel", outfit = "fixer_coat", weapon = "blade" },
+		barks = { start = { "Nothing personal. It's a contract.", "You're on my list." }, win = { "Job done." }, lose = { "Not worth the fee." } } },
+	{ id = "zwei_fixer", name = "Zwei Fixer", look = { skin = "sand", hair = "crop", hairColor = "chestnut", eyes = "blue", outfit = "zwei_style", weapon = "tower_shield" },
+		barks = { start = { "Step back. This person is under Zwei protection." }, win = { "Protected." }, lose = { "Fall back and regroup." } } },
+	{ id = "shi_assassin", name = "Shi Fixer", look = { skin = "fair", hair = "bun", hairColor = "ink", eyes = "dark", outfit = "shi_robe", weapon = "shi_blade" },
+		barks = { start = { "..." }, win = { "One breath." }, lose = { "I'll remember your face." } } },
+	{ id = "liu_fixer", name = "Liu Fixer", look = { skin = "peach", hair = "braid", hairColor = "crimson", eyes = "amber", outfit = "liu_style", weapon = "twin_gauntlets" },
+		barks = { start = { "Burn bright!" }, win = { "Embers." }, lose = { "The fire's still going." } } },
+	{ id = "seven_fixer", name = "Seven Fixer", look = { skin = "olive", hair = "bob", hairColor = "ash", eyes = "grey", outfit = "seven_style", accessory = "glasses", weapon = "sword_cane" },
+		barks = { start = { "I've read your file." }, win = { "As predicted." }, lose = { "My notes were wrong." } } },
+
+	-- Wings, Corps, Bloodfiends
+	{ id = "wing_guard", name = "Wing Security", look = { skin = "fair", hair = "crop", hairColor = "ink", eyes = "blue", outfit = "nest_suit", accessory = "red_visor", weapon = "shock_baton" },
+		barks = { start = { "Papers. Now." }, win = { "Remove them from the Nest." }, lose = { "Calling it in!" } } },
+	{ id = "kcorp_staff", name = "K Corp Excision Staff", look = { skin = "porcelain", hair = "crop", hairColor = "mint", eyes = "green", outfit = "kcorp_whites", accessory = "half_mask", weapon = "injector" },
+		barks = { start = { "Unauthorized ampule use detected." }, win = { "Excised." }, lose = { "Requesting backup." } } },
+	{ id = "rcorp_rabbit", name = "R Corp Rabbit", look = { skin = "sand", hair = "crop", hairColor = "rust", eyes = "amber", outfit = "pack_fatigues", accessory = "red_visor", weapon = "rifle" },
+		barks = { start = { "Rabbit team, go!" }, win = { "Area clear." }, lose = { "Man down!" } } },
+	{ id = "wcorp_cleanup", name = "W Corp Cleanup Agent", look = { skin = "pallid", hair = "slick", hairColor = "midnight", eyes = "aug_blue", outfit = "cleanup_jumpsuit", weapon = "wcorp_baton" },
+		barks = { start = { "Please remain seated." }, win = { "Car cleaned." }, lose = { "Delay reported." } } },
+	{ id = "lcorp_agent", name = "L Corp Agent", look = { skin = "fair", hair = "messy", hairColor = "ink", eyes = "brown", outfit = "lcorp_suit", weapon = "green_baton" },
+		barks = { start = { "Face the fear." }, win = { "Suppressed." }, lose = { "Retreating!" } } },
+	{ id = "bloodfiend", name = "Bloodfiend", look = { skin = "pallid", hair = "long", hairColor = "bloodred", eyes = "bf_red", outfit = "bf_noble", weapon = "bf_scythe" },
+		barks = { start = { "How rude, to come in uninvited." }, win = { "Delicious." }, lose = { "Mmh. You'll keep." } } },
+	{ id = "inquisitor", name = "Inquisitor", look = { skin = "peach", hair = "hood", hairColor = "ash", eyes = "grey", outfit = "inquisitor_robe", weapon = "nail_and_hammer" },
+		barks = { start = { "Confess." }, win = { "Absolved." }, lose = { "Heresy..." } } },
+	{ id = "hunter", name = "Hunter", look = { skin = "bronze", hair = "cap", hairColor = "ink", eyes = "amber", outfit = "hunter_greatcoat", weapon = "crossbow" },
+		barks = { start = { "Good. You'll run." }, win = { "Bagged." }, lose = { "Next time." } } },
+
+	-- things that aren't people anymore
+	{ id = "sweeper", name = "Sweeper", kind = "creature", shape = "sweeper", color = { 34, 34, 40 }, eye = { 236, 70, 52 },
+		barks = { start = { "...cleaning..." }, win = { "...clean..." }, lose = { "..." } } },
+	{ id = "distortion", name = "Distortion", kind = "creature", shape = "mass", color = { 120, 34, 52 }, eye = { 250, 210, 90 },
+		barks = { start = { "WHY DOES IT STILL HURT" }, win = { "STAY. STAY WITH ME." }, lose = { "i only wanted..." } } },
+	{ id = "abnormality", name = "Abnormality", kind = "creature", shape = "blob", color = { 60, 70, 110 }, eye = { 230, 230, 255 },
+		barks = { start = { "..." }, win = { "..." }, lose = { "..." } } },
+	{ id = "ordeal", name = "Ordeal", kind = "creature", shape = "machine", color = { 64, 120, 70 }, eye = { 170, 255, 120 },
+		barks = { start = { "*grinding*" }, win = { "*whirr*" }, lose = { "*sparks*" } } },
+	{ id = "peccatula", name = "Peccatula", kind = "creature", shape = "swarm", color = { 90, 60, 40 }, eye = { 255, 160, 60 },
+		barks = { start = { "*chittering*" }, win = { "*chittering*" }, lose = { "*squeal*" } } },
+	{ id = "beast", name = "Stray Beast", kind = "creature", shape = "beast", color = { 70, 60, 54 }, eye = { 240, 200, 80 },
+		barks = { start = { "*growl*" }, win = { "*snarl*" }, lose = { "*yelp*" } } },
+	{ id = "crow", name = "Carrion Crows", kind = "creature", shape = "bird", color = { 24, 24, 30 }, eye = { 220, 60, 60 },
+		barks = { start = { "*caw*" }, win = { "*caw caw*" }, lose = { "*scatter*" } } },
+
+	-- v0.10: more people who fight
+	{ id = "cinq_duelist", name = "Cinq Duelist", faction = "fixers", speed = 14, look = { skin = "fair", hair = "ponytail", hairColor = "platinum", eyes = "blue", outfit = "cinq_style", weapon = "cinq_rapier" },
+		barks = { start = { "Your second, if you have one.", "By the rules, then." }, win = { "Touché." }, lose = { "Well fought. I concede." } } },
+	{ id = "hana_examiner", name = "Hana Examiner", faction = "fixers", look = { skin = "sand", hair = "bun", hairColor = "ash", eyes = "grey", outfit = "hana_formal", accessory = "glasses", weapon = "sword_cane" },
+		barks = { start = { "This will be graded." }, win = { "Insufficient." }, lose = { "Noted. You pass." } } },
+	{ id = "dieci_scholar", name = "Dieci Fixer", faction = "fixers", look = { skin = "olive", hair = "bob", hairColor = "chestnut", eyes = "hazel", outfit = "dieci_coat", accessory = "round_glasses", weapon = "dieci_key" },
+		barks = { start = { "I've read how this ends." }, win = { "As the text said." }, lose = { "A new footnote." } } },
+	{ id = "devyat_courier", name = "Devyat' Courier", faction = "fixers", speed = -6, look = { skin = "bronze", hair = "crop", hairColor = "rust", eyes = "brown", outfit = "devyat_style", weapon = "courier_trunk" },
+		barks = { start = { "This parcel gets delivered." }, win = { "On schedule." }, lose = { "Late. I'm going to be late." } } },
+	{ id = "oufi_enforcer", name = "Öufi Fixer", faction = "fixers", look = { skin = "fair", hair = "slick", hairColor = "ink", eyes = "grey", outfit = "oufi_suit", weapon = "halberd" },
+		barks = { start = { "Clause nine. You're in breach." }, win = { "Contract enforced." }, lose = { "We'll renegotiate." } } },
+	{ id = "index_proselyte", name = "Index Proselyte", faction = "index", look = { skin = "porcelain", hair = "bob", hairColor = "snow", eyes = "grey", outfit = "index_whites", weapon = "dagger" },
+		barks = { start = { "The will of the Prescript." }, win = { "It was written." }, lose = { "It wasn't written." } } },
+	{ id = "ring_docent", name = "Ring Docent", faction = "ring", look = { skin = "pallid", hair = "long", hairColor = "lilac", eyes = "green", outfit = "ring_smock", accessory = "half_mask", weapon = "ring_brush" },
+		barks = { start = { "Hold that pose.", "You'll be my best piece." }, win = { "Exquisite." }, lose = { "Philistine!" } } },
+	{ id = "thumb_gunner", name = "Thumb Soldato", faction = "thumb", look = { skin = "olive", hair = "slick", hairColor = "charcoal", eyes = "dark", outfit = "thumb_suit", weapon = "thumb_rifle" },
+		barks = { start = { "Stand straight when you're addressed." }, win = { "Corrected." }, lose = { "The ledger has your name." } } },
+	{ id = "salsu", name = "Old Salsu", look = { skin = "sand", hair = "topknot", hairColor = "ash", eyes = "dark", outfit = "blade_lineage", weapon = "katana" },
+		barks = { start = { "One cut.", "Draw, child." }, win = { "Too slow." }, lose = { "...Good." } } },
+	{ id = "kleinhammer", name = "Kleinhammer", faction = "wings", look = { skin = "peach", hair = "hood", hairColor = "ash", eyes = "grey", outfit = "inquisitor_robe", weapon = "nail_and_hammer" },
+		barks = { start = { "Impurity!", "Hold still for the nail." }, win = { "Purged." }, lose = { "The Hammer will hear of this." } } },
+	{ id = "tcorp_collector", name = "T Corp Collector", faction = "wings", look = { skin = "pallid", hair = "slick", hairColor = "ash", eyes = "grey", outfit = "tcorp_monochrome", accessory = "monocle", weapon = "briefcase" },
+		barks = { start = { "You're in arrears. On time." }, win = { "Collected: three weeks." }, lose = { "I'll bill you for this delay." } } },
+	{ id = "rcorp_reindeer", name = "R Corp Reindeer", faction = "wings", look = { skin = "fair", hair = "long", hairColor = "snow", eyes = "blue", outfit = "reindeer_mantle", weapon = "staff" },
+		barks = { start = { "Don't think. It only hurts." }, win = { "Shh." }, lose = { "My head..." } } },
+	{ id = "rcorp_rhino", name = "R Corp Rhino", faction = "wings", speed = -10, look = { skin = "bronze", hair = "shorn", hairColor = "ink", eyes = "amber", outfit = "rhino_plate", weapon = "twin_gauntlets" },
+		barks = { start = { "Charging." }, win = { "Flattened." }, lose = { "Suit breach!" } } },
+	{ id = "whaler", name = "Whaler", look = { skin = "bronze", hair = "cap", hairColor = "rust", eyes = "brown", outfit = "work_overalls", mark = "scar", weapon = "harpoon" },
+		barks = { start = { "Off my deck." }, win = { "Over the side with you." }, lose = { "Ah, keep it." } } },
+	{ id = "pirate", name = "Lake Pirate", look = { skin = "amber", hair = "sidecut", hairColor = "ink", eyes = "dark", outfit = "rat_jacket", accessory = "earring", weapon = "machete" },
+		barks = { start = { "Cargo, or toes." }, win = { "Fine haul." }, lose = { "Abandon ship!" } } },
+	{ id = "librarian", name = "Librarian", look = { skin = "porcelain", hair = "hime", hairColor = "midnight", eyes = "light_gold", outfit = "librarian_uniform", weapon = "greatsword" },
+		barks = { start = { "Welcome, dear guest.", "May you find your book." }, win = { "Shelved." }, lose = { "...You may take your book." } } },
+	-- (v0.12) the Family's ranks, as they come for whoever sold it out (Events/Bloodfiend_Hunt.luau)
+	{ id = "bf_fledgling", name = "Fledgling of the Family", faction = "bloodfiends", look = { skin = "pallid", hair = "messy", hairColor = "ink", eyes = "bf_red", outfit = "bf_formal", weapon = "knife" },
+		barks = { start = { "The Family sends its regards.", "You smell like a debt." }, win = { "That was only a greeting." }, lose = { "They'll send someone better." } } },
+	{ id = "bf_knight", name = "Hardblood Knight", faction = "bloodfiends", look = { skin = "pallid", hair = "long", hairColor = "bloodred", eyes = "bf_red", outfit = "bf_noble", weapon = "bf_scythe" },
+		barks = { start = { "In Ahn or in blood.", "Manners first. Then this." }, win = { "Paid, in part." }, lose = { "The Hand will come." } } },
+	{ id = "bf_hand", name = "The Elder's Hand", faction = "bloodfiends", look = { skin = "pallid", hair = "slick", hairColor = "charcoal", eyes = "bf_red", outfit = "bf_formal", weapon = "sword_cane" },
+		barks = { start = { "I speak with her voice.", "Stand, if you can." }, win = { "The Elder is answered." }, lose = { "She will hear that you stood." } } },
+	{ id = "bf_elder", name = "Family Elder", faction = "bloodfiends", look = { skin = "pallid", hair = "slick", hairColor = "snow", eyes = "bf_red", outfit = "bf_formal", weapon = "sword_cane" },
+		barks = { start = { "Such bad manners in the young." }, win = { "A poor vintage." }, lose = { "I have time. Do you?" } } },
+	{ id = "night_awl", name = "Night Awl", faction = "rats", speed = 10, look = { skin = "fair", hair = "slick", hairColor = "ink", eyes = "grey", outfit = "night_coat", accessory = "fedora", weapon = "twin_daggers" },
+		barks = { start = { "Evening." }, win = { "Nothing personal." }, lose = { "Another night, then." } } },
+	{ id = "scavenger", name = "Outskirts Scavenger", look = { skin = "umber", hair = "hood", hairColor = "charcoal", eyes = "amber", outfit = "scav_poncho", weapon = "pickaxe" },
+		barks = { start = { "That's my salvage." }, win = { "Finders keepers." }, lose = { "Take it! Take it!" } } },
+	{ id = "smiling_face", name = "A Smiling Stranger", look = { skin = "pallid", hair = "bowl", hairColor = "ash", eyes = "dark", outfit = "nest_formal", accessory = "mask", weapon = "umbrella" },
+		barks = { start = { "Lovely night for it." }, win = { "Do smile." }, lose = { "How rude." } } },
+
+	-- v0.10: more of what isn't people. Original shapes, by kind (Engine/Creatures.luau).
+	{ id = "trash_crab", name = "Trash Crab", kind = "creature", shape = "crab", color = { 122, 84, 62 }, eye = { 250, 220, 90 }, speed = -8,
+		barks = { start = { "*click click*" }, win = { "*snip*" }, lose = { "*scuttle*" } } },
+	{ id = "drain_thing", name = "The Thing in the Drains", kind = "creature", shape = "serpent", color = { 52, 70, 60 }, eye = { 170, 255, 150 },
+		barks = { start = { "*a long wet breath*" }, win = { "*gulp*" }, lose = { "*it slides back down*" } } },
+	{ id = "stormgut", name = "The Stormgut", kind = "creature", shape = "serpent", color = { 40, 60, 96 }, eye = { 150, 230, 255 }, speed = 8,
+		barks = { start = { "*the water crackles*" }, win = { "*thunder, underwater*" }, lose = { "*the Lake goes still*" } } },
+	{ id = "lamplighter", name = "The Lamplighter", kind = "creature", shape = "lamp", color = { 40, 38, 36 }, eye = { 255, 214, 130 },
+		barks = { start = { "*every streetlamp turns to face you*" }, win = { "*the lamps go out*" }, lose = { "*one lamp gutters*" } } },
+	{ id = "binder", name = "The Binder", kind = "creature", shape = "book", color = { 96, 60, 44 }, eye = { 236, 226, 190 },
+		barks = { start = { "*pages turning*", "*thread, pulled tight*" }, win = { "*a spine snaps shut*" }, lose = { "*loose pages, everywhere*" } } },
+	{ id = "doorkeeper", name = "The Doorkeeper", kind = "creature", shape = "door", color = { 92, 62, 44 }, eye = { 255, 120, 90 }, speed = -12,
+		barks = { start = { "*the door opens a hand's width*" }, win = { "*it shuts*" }, lose = { "*it swings wide and empty*" } } },
+	{ id = "puppet", name = "A Hung Puppet", kind = "creature", shape = "doll", color = { 176, 140, 104 }, eye = { 90, 200, 255 }, speed = 6,
+		barks = { start = { "*wooden clatter*" }, win = { "*a bow*" }, lose = { "*its strings go slack*" } } },
+	{ id = "hollow_armor", name = "Hollow Armor", kind = "creature", shape = "armor", color = { 104, 108, 118 }, eye = { 120, 190, 255 }, speed = -6,
+		barks = { start = { "*a visor lowers*" }, win = { "*it salutes*" }, lose = { "*plates, falling*" } } },
+	{ id = "branches", name = "A Corridor of Branches", kind = "creature", shape = "branches", color = { 74, 58, 46 }, eye = { 255, 190, 80 }, speed = -14,
+		barks = { start = { "*creaking*" }, win = { "*something ripens*" }, lose = { "*dry wood splitting*" } } },
+	{ id = "golden_bough_thing", name = "What the Bough Grew", kind = "creature", shape = "branches", color = { 110, 90, 40 }, eye = { 255, 230, 120 }, speed = -10,
+		barks = { start = { "*gold light, through bark*" }, win = { "*it grows*" }, lose = { "*the light goes in*" } } },
+	{ id = "watcher", name = "The Watcher", kind = "creature", shape = "watcher", color = { 70, 40, 70 }, eye = { 255, 220, 120 },
+		barks = { start = { "*it has already seen this*" }, win = { "*a slow blink*" }, lose = { "*it looks away*" } } },
+	{ id = "smoke_war_machine", name = "A Smoke War Weapon", kind = "creature", shape = "mantis", color = { 62, 78, 60 }, eye = { 255, 80, 60 }, speed = 12,
+		barks = { start = { "*old servos, waking*" }, win = { "*TARGET CLEARED*" }, lose = { "*it folds up, ticking*" } } },
+	{ id = "rustback", name = "Rustback", kind = "creature", shape = "rustback", color = { 110, 78, 58 }, eye = { 255, 170, 60 }, speed = -4,
+		barks = { start = { "*a snort like a furnace door*" }, win = { "*it paws the ground*" }, lose = { "*the herd moves off*" } } },
+	{ id = "laughing_umbrella", name = "The Laughing Umbrella", kind = "creature", shape = "parasol", color = { 150, 40, 60 }, eye = { 255, 240, 200 }, speed = 10,
+		barks = { start = { "*hee hee hee*" }, win = { "*HA HA HA*" }, lose = { "*it folds, sulking*" } } },
+	{ id = "streetlight_eater", name = "The Streetlight Eater", kind = "creature", shape = "lamp", color = { 24, 24, 34 }, eye = { 120, 160, 255 },
+		barks = { start = { "*the street goes dim*" }, win = { "*it swallows the last one*" }, lose = { "*every lamp comes back on*" } } },
+	{ id = "passenger", name = "What a Passenger Became", kind = "creature", shape = "mass", color = { 60, 90, 130 }, eye = { 120, 220, 255 },
+		barks = { start = { "*a voice, looped*" }, win = { "*next stop*" }, lose = { "*the doors close*" } } },
+	{ id = "vault_thing", name = "Something from the Vaults", kind = "creature", shape = "watcher", color = { 40, 70, 60 }, eye = { 110, 255, 150 },
+		barks = { start = { "*containment alarms, far off*" }, win = { "*it settles in*" }, lose = { "*it's back in its box*" } } },
+	{ id = "night_stalker", name = "A Thing of the Night", kind = "creature", shape = "tall", color = { 20, 20, 28 }, eye = { 255, 230, 120 }, speed = 8,
+		barks = { start = { "*three knocks*" }, win = { "*it tips its head*" }, lose = { "*it steps back out of the light*" } } },
+	{ id = "claw", name = "A Claw of the Head", look = { skin = "porcelain", hair = "long", hairColor = "snow", eyes = "light_gold", outfit = "color_coat", weapon = "claws" }, speed = 30,
+		barks = { start = { "Removing an impurity." }, win = { "Removed." }, lose = { "...Unexpected." } } },
+	-- (v0.17) more things in the City (Engine/Creatures17.luau)
+	{ id = "doll_spider", name = "The Spider Doll", kind = "creature", shape = "spiderdoll", color = { 240, 226, 218 }, eye = { 120, 200, 255 }, speed = 10,
+		barks = { start = { "(It tilts its porcelain head.)" }, win = { "(It giggles, somewhere inside.)" }, lose = { "(Its legs fold up like a deck chair.)" } } },
+	{ id = "shadow_hound", name = "A Shadow Hound", kind = "creature", shape = "shadowhound", color = { 24, 22, 30 }, eye = { 200, 120, 255 }, speed = 14,
+		barks = { start = { "(Six eyes open in the dark.)" }, win = { "(It pads away into the alley.)" }, lose = { "(It comes apart like smoke.)" } } },
+	{ id = "lamp_moth", name = "A Lamp Moth", kind = "creature", shape = "moth", color = { 170, 150, 120 }, eye = { 255, 220, 120 }, speed = 8,
+		barks = { start = { "(Dust falls off its wings like snow.)" }, win = { "(It flutters back to its streetlamp.)" }, lose = { "(Its wing-eyes go dark.)" } } },
+	{ id = "drift_jelly", name = "A Drifting Jelly", kind = "creature", shape = "jellyfish", color = { 150, 190, 240 }, eye = { 150, 255, 230 }, speed = -4,
+		barks = { start = { "(It drifts down the street at head height.)" }, win = { "(It drifts on.)" }, lose = { "(Its lights go out one by one.)" } } },
+	{ id = "stitched_giant", name = "The Stitched Giant", kind = "creature", shape = "stitched", color = { 186, 150, 132 }, eye = { 40, 34, 34 }, speed = -8,
+		barks = { start = { "(One button eye turns toward you.)" }, win = { "(It sits down, and stays sat.)" }, lose = { "(Its seams give.)" } } },
+	{ id = "eye_mound", name = "The Many-Eyed Mound", kind = "creature", shape = "eyestalks", color = { 90, 60, 80 }, eye = { 255, 230, 90 }, speed = -10,
+		barks = { start = { "(Every eye on it looks at you at once.)" }, win = { "(The eyes close, mostly.)" }, lose = { "(The eyes close, all of them.)" } } },
+	{ id = "scrap_golem", name = "The Scrap Golem", kind = "creature", shape = "scrapgolem", color = { 200, 200, 196 }, eye = { 120, 255, 160 }, speed = -6,
+		barks = { start = { "(The television in its head turns on.)" }, win = { "(Static, then a test pattern.)" }, lose = { "(The fridge door swings open. Nothing inside.)" } } },
+	{ id = "smiling_bloom", name = "The Smiling Bloom", kind = "creature", shape = "bloomer", color = { 220, 90, 130 }, eye = { 255, 240, 160 },
+		barks = { start = { "(It smiles wider.)" }, win = { "(It goes back to smiling at the sun lamp.)" }, lose = { "(Its petals drop.)" } } },
+	{ id = "lake_whale", name = "The Whale Over the Lake", kind = "creature", shape = "whale", color = { 70, 90, 120 }, eye = { 255, 240, 200 }, speed = -4,
+		barks = { start = { "(A shadow the size of a building passes over.)" }, win = { "(It swims back up into the fog.)" }, lose = { "(It sinks into the Lake, slowly.)" } } },
+
+	-- (v0.17) the extreme bosses (City/Bosses17.luau)
+	{ id = "color_umber", name = "The Umber Lantern", look = { skin = "deep", hair = "locs", hairColor = "charcoal", eyes = "amber", outfit = "color_coat", accessory = "scarf_grey", weapon = "lantern_pole" }, speed = 26,
+		barks = { start = { "Nothing personal. It's a contract." }, win = { "Contract closed." }, lose = { "Well. That's a story." } } },
+	{ id = "legend_hunter", name = "The Last Hunter", look = { skin = "olive", hair = "shaggy", hairColor = "ash", eyes = "grey", outfit = "hunter_greatcoat", mark = "scar", weapon = "crossbow" }, speed = 18,
+		barks = { start = { "Forty years I've looked for you." }, win = { "For my teacher." }, lose = { "Then tell them I got close." } } },
+	{ id = "clocktower", name = "The Stopped Clocktower", kind = "creature", shape = "clockwork", color = { 120, 96, 60 }, eye = { 255, 230, 160 }, speed = -6,
+		barks = { start = { "(Every clock strikes thirteen.)" }, win = { "(The clocks stop.)" }, lose = { "(The clocks start again.)" } } },
+	{ id = "aleph", name = "An ALEPH-class Abnormality", kind = "creature", shape = "aleph", color = { 230, 228, 236 }, eye = { 255, 80, 80 },
+		barks = { start = { "(The containment door is open.)" }, win = { "(It goes back into the dark.)" }, lose = { "(Silence, then alarms.)" } } },
+}
+
+-- the fight screen looks for these words (lowercase) in a clash's `foe` text, in this order
+local match = {
+	-- v0.10: named things first, then kinds (a Rat with a crowbar is a Rat, not a crow)
+	{ "crowbar", "rat" },
+	-- (v0.17) the new shapes
+	{ "clocktower", "clocktower" }, { "clock tower", "clocktower" }, { "moth", "lamp_moth" }, { "jelly", "drift_jelly" },
+	{ "spider", "doll_spider" }, { "porcelain", "doll_spider" }, { "hound", "shadow_hound" }, { "stitched", "stitched_giant" },
+	{ "patchwork", "stitched_giant" }, { "eyestalk", "eye_mound" }, { "many eyes", "eye_mound" }, { "scrap", "scrap_golem" },
+	{ "golem", "scrap_golem" }, { "flower", "smiling_bloom" }, { "bloom", "smiling_bloom" }, { "whale", "lake_whale" },
+	{ "stormgut", "stormgut" }, { "lamplighter", "lamplighter" }, { "binder", "binder" }, { "doorkeeper", "doorkeeper" },
+	{ "laughing umbrella", "laughing_umbrella" }, { "umbrella", "laughing_umbrella" }, { "streetlight", "streetlight_eater" },
+	{ "rustback", "rustback" }, { "trash crab", "trash_crab" }, { "crab", "trash_crab" },
+	{ "drain", "drain_thing" }, { "cistern", "drain_thing" }, { "sewer", "drain_thing" }, { "under the keel", "stormgut" }, { "great lake", "stormgut" },
+	{ "smoke war", "smoke_war_machine" }, { "war machine", "smoke_war_machine" },
+	{ "branches", "branches" }, { "bough", "golden_bough_thing" }, { "roots", "branches" },
+	{ "passenger", "passenger" }, { "vault", "vault_thing" }, { "containment", "vault_thing" },
+	{ "puppet", "puppet" }, { "marionette", "puppet" }, { "doll", "puppet" }, { "armor", "hollow_armor" }, { "armour", "hollow_armor" }, { "knight", "hollow_armor" },
+	{ "watcher", "watcher" }, { "the eye", "watcher" }, { "the dark", "night_stalker" }, { "night", "night_stalker" }, { "3:13", "night_stalker" },
+	{ "claw", "claw" }, { "arbiter", "claw" },
+	{ "cinq", "cinq_duelist" }, { "duelist", "cinq_duelist" }, { "duellist", "cinq_duelist" }, { "hana", "hana_examiner" }, { "examiner", "hana_examiner" },
+	{ "dieci", "dieci_scholar" }, { "devyat", "devyat_courier" }, { "courier", "devyat_courier" }, { "oufi", "oufi_enforcer" }, { "öufi", "oufi_enforcer" },
+	{ "proselyte", "index_proselyte" }, { "docent", "ring_docent" }, { "salsu", "salsu" }, { "swordsman", "salsu" }, { "blade lineage", "salsu" },
+	{ "kleinhammer", "kleinhammer" }, { "grosshammer", "kleinhammer" }, { "hammer of", "kleinhammer" }, { "nail of", "kleinhammer" },
+	{ "t corp", "tcorp_collector" }, { "time collector", "tcorp_collector" }, { "collector", "syndicate" }, { "reindeer", "rcorp_reindeer" }, { "rhino", "rcorp_rhino" },
+	{ "whaler", "whaler" }, { "pirate", "pirate" }, { "librarian", "librarian" }, { "elder", "bf_elder" }, { "night awl", "night_awl" }, { "awl", "night_awl" },
+	{ "scavenger", "scavenger" }, { "smiling", "smiling_face" },
+	-- things named in L Corp's files and on the street are drawn by their kind, not as likenesses
+	{ "dawn of", "ordeal" }, { "noon of", "ordeal" }, { "dusk of", "ordeal" }, { "midnight of", "ordeal" }, { "violet", "ordeal" },
+	{ "helper", "ordeal" }, { "wolf", "beast" }, { "bird", "crow" }, { "nothing there", "passenger" }, { "another you", "puppet" },
+	{ "teth", "abnormality" }, { "waw", "abnormality" }, { "aleph", "abnormality" }, { "zayin", "abnormality" },
+	{ "queen of", "abnormality" }, { "red shoes", "abnormality" }, { "scorched", "abnormality" },
+	{ "outskirts", "rustback" }, { "district 12", "vault_thing" }, { "lamps", "lamplighter" }, { "derailed", "passenger" }, { "front car", "passenger" },
+	{ "heart of", "watcher" }, { "terror", "night_stalker" }, { "urban legend", "night_stalker" }, { "urban myth", "night_stalker" },
+	{ "the thing", "night_stalker" }, { "knows your name", "night_stalker" },
+	{ "sottocapo", "thumb_capo" }, { "capo", "thumb_capo" }, { "thumb", "thumb_soldato" }, { "soldato", "thumb_soldato" },
+	{ "big sibling", "middle_big" }, { "big sister", "middle_big" }, { "big brother", "middle_big" }, { "middle", "middle_sibling" }, { "sibling", "middle_sibling" },
+	{ "messenger", "index_messenger" }, { "index", "index_proxy" }, { "proxy", "index_proxy" }, { "prescript", "index_proxy" },
+	{ "ring", "ring_artist" }, { "kurokumo", "kurokumo" }, { "wakashu", "kurokumo" },
+	{ "zwei", "zwei_fixer" }, { "shi ", "shi_assassin" }, { "liu", "liu_fixer" }, { "seven", "seven_fixer" },
+	{ "rabbit", "rcorp_rabbit" }, { "r corp", "rcorp_rabbit" }, { "k corp", "kcorp_staff" }, { "excision", "kcorp_staff" },
+	{ "w corp", "wcorp_cleanup" }, { "cleanup", "wcorp_cleanup" }, { "agent", "lcorp_agent" },
+	{ "wing", "wing_guard" }, { "nest", "wing_guard" }, { "guard", "wing_guard" },
+	{ "bloodfiend", "bloodfiend" }, { "kindred", "bloodfiend" }, { "inquisitor", "inquisitor" }, { "hunter", "hunter" },
+	{ "sweeper", "sweeper" }, { "distortion", "distortion" }, { "abnormality", "abnormality" }, { "ordeal", "ordeal" },
+	{ "peccatul", "peccatula" }, { "dog", "beast" }, { "hound", "beast" }, { "beast", "beast" }, { "crow", "crow" },
+	{ "rat boss", "rat_boss" }, { "rat", "rat" }, { "syndicate", "syndicate" }, { "enforcer", "syndicate" },
+	{ "workshop", "workshop_brute" }, { "bully", "bully" }, { "kid", "street_kid" }, { "fixer", "fixer" },
+	{ "thug", "thug" }, { "mugger", "thug" },
+}
+
+-- who each foe answers to (Reputation.luau): beat one in a fight and its faction hears of it
+local FACTION = {
+	thumb_soldato = "thumb", thumb_capo = "thumb",
+	middle_sibling = "middle", middle_big = "middle",
+	index_proxy = "index", index_messenger = "index",
+	ring_artist = "ring", kurokumo = "kurokumo",
+	rat = "rats", rat_boss = "rats", syndicate = "rats",
+	fixer = "fixers", zwei_fixer = "fixers", shi_assassin = "fixers", liu_fixer = "fixers", seven_fixer = "fixers",
+	wing_guard = "wings", kcorp_staff = "wings", rcorp_rabbit = "wings", wcorp_cleanup = "wings",
+	lcorp_agent = "lcorp", bloodfiend = "bloodfiends",
+}
+
+-- TEMPER (pack.tempers): how a foe fights, and so what it's weak to.
+--   brute    heavy and slow      weak to Speed
+--   quick    fast and light      weak to Intelligence
+--   cunning  has a plan          weak to Strength
+local TEMPER = {
+	bully = "brute", street_kid = "quick", thug = "brute", rat = "quick", rat_boss = "cunning", syndicate = "cunning", workshop_brute = "brute",
+	thumb_soldato = "brute", thumb_capo = "cunning", thumb_gunner = "quick", middle_sibling = "quick", middle_big = "brute",
+	index_proxy = "quick", index_messenger = "cunning", index_proselyte = "brute", ring_artist = "cunning", ring_docent = "cunning", kurokumo = "quick",
+	fixer = "quick", zwei_fixer = "brute", shi_assassin = "quick", liu_fixer = "brute", seven_fixer = "cunning", cinq_duelist = "quick",
+	hana_examiner = "cunning", dieci_scholar = "cunning", devyat_courier = "quick", oufi_enforcer = "brute",
+	wing_guard = "brute", kcorp_staff = "cunning", rcorp_rabbit = "quick", rcorp_reindeer = "cunning", rcorp_rhino = "brute", wcorp_cleanup = "brute",
+	lcorp_agent = "cunning", tcorp_collector = "cunning", bloodfiend = "quick", bf_elder = "cunning", inquisitor = "brute", kleinhammer = "brute",
+	bf_fledgling = "quick", bf_knight = "brute", bf_hand = "cunning",
+	hunter = "cunning", sweeper = "brute", salsu = "cunning", whaler = "brute", pirate = "quick", librarian = "cunning", night_awl = "quick",
+	scavenger = "quick", smiling_face = "cunning",
+	distortion = "brute", abnormality = "cunning", ordeal = "brute", peccatula = "quick", beast = "quick", crow = "quick",
+	trash_crab = "brute", drain_thing = "quick", stormgut = "brute", lamplighter = "cunning", binder = "cunning", doorkeeper = "brute",
+	puppet = "cunning", hollow_armor = "brute", branches = "brute", golden_bough_thing = "cunning", watcher = "cunning",
+	smoke_war_machine = "brute", rustback = "brute", laughing_umbrella = "quick", streetlight_eater = "quick", passenger = "quick",
+	vault_thing = "cunning", night_stalker = "quick", claw = "quick",
+	color_umber = "cunning", legend_hunter = "quick", clocktower = "brute", aleph = "brute",
+	doll_spider = "quick", shadow_hound = "quick", lamp_moth = "quick", drift_jelly = "cunning", stitched_giant = "brute",
+	eye_mound = "cunning", scrap_golem = "brute", smiling_bloom = "cunning", lake_whale = "brute",
+}
+-- ABILITIES a foe fights with (Engine/Clash.luau): the Thumb's bullets, a Kurokumo blade's
+-- bleeding, a Zwei shield, an Index Proxy's speed. Lore first: each is how that group fights.
+local ABILITY = {
+	rat = { id = "bleed", potency = 1 }, rat_boss = { id = "crush", potency = 1 }, syndicate = { id = "volley", potency = 1 },
+	thumb_soldato = { id = "volley", potency = 2 }, thumb_capo = { id = "volley", potency = 3 }, thumb_gunner = { id = "volley", potency = 2 },
+	middle_sibling = { id = "riposte", potency = 2 }, middle_big = { id = "crush", potency = 1 },
+	index_proxy = { id = "quick", potency = 1 }, index_proselyte = { id = "pierce", potency = 1 }, index_messenger = { id = "guard", potency = 1 },
+	ring_artist = { id = "bleed", potency = 2 }, ring_docent = { id = "bleed", potency = 3 }, kurokumo = { id = "bleed", potency = 2 },
+	fixer = { id = "riposte", potency = 1 }, zwei_fixer = { id = "guard", potency = 2 }, shi_assassin = { id = "quick", potency = 1 },
+	liu_fixer = { id = "burn", potency = 2 }, seven_fixer = { id = "rupture", potency = 2 }, cinq_duelist = { id = "poise", potency = 2 },
+	hana_examiner = { id = "guard", potency = 2 }, dieci_scholar = { id = "sinking", potency = 1 }, devyat_courier = { id = "quick", potency = 1 },
+	oufi_enforcer = { id = "tremor", potency = 2 }, wing_guard = { id = "guard", potency = 1 }, kcorp_staff = { id = "guard", potency = 1 },
+	rcorp_rabbit = { id = "volley", potency = 2 }, rcorp_reindeer = { id = "sinking", potency = 2 }, rcorp_rhino = { id = "crush", potency = 1 },
+	wcorp_cleanup = { id = "charge", potency = 2 }, lcorp_agent = { id = "guard", potency = 1 }, tcorp_collector = { id = "quick", potency = 1 },
+	bloodfiend = { id = "bleed", potency = 2 }, bf_elder = { id = "bleed", potency = 3 }, inquisitor = { id = "pierce", potency = 2 },
+	bf_fledgling = { id = "bleed", potency = 1 }, bf_knight = { id = "riposte", potency = 2 }, bf_hand = { id = "bleed", potency = 3 },
+	hunter = { id = "pierce", potency = 1 }, kleinhammer = { id = "pierce", potency = 2 }, sweeper = { id = "crush", potency = 1 },
+	salsu = { id = "poise", potency = 2 }, whaler = { id = "pierce", potency = 1 }, pirate = { id = "bleed", potency = 1 },
+	librarian = { id = "guard", potency = 1 }, distortion = { id = "sinking", potency = 2 }, abnormality = { id = "sinking", potency = 2 },
+	ordeal = { id = "crush", potency = 1 }, peccatula = { id = "bleed", potency = 1 }, beast = { id = "bleed", potency = 1 },
+	crow = { id = "quick", potency = 1 }, stormgut = { id = "crush", potency = 1 }, night_stalker = { id = "quick", potency = 1 },
+	streetlight_eater = { id = "sinking", potency = 1 }, claw = { id = "quick", potency = 1 },
+	color_umber = { id = "poise", potency = 3 }, legend_hunter = { id = "pierce", potency = 2 }, clocktower = { id = "tremor", potency = 3 }, aleph = { id = "sinking", potency = 1 },
+}
+
+-- these can't be talked to at all (Talk down isn't offered)
+local MUTE = { sweeper = true, distortion = true, claw = true, passenger = true, clocktower = true, aleph = true,
+	doll_spider = true, shadow_hound = true, lamp_moth = true, drift_jelly = true, stitched_giant = true, eye_mound = true,
+	scrap_golem = true, smiling_bloom = true, lake_whale = true }
+
+local out = { order = {}, match = match }
+for _, f in foes do
+	f.kind = f.kind or "human"
+	f.temper = f.temper or TEMPER[f.id]
+	f.mute = f.mute or MUTE[f.id] or nil
+	f.faction = f.faction or FACTION[f.id]
+	f.ability = f.ability or ABILITY[f.id]
+	out[f.id] = f
+	table.insert(out.order, f.id)
+end
+return out

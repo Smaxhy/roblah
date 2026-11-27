@@ -1,0 +1,87 @@
+--[[
+	ARSENAL (v0.13): Workshop lines sold in sets, and the big-ticket pieces a long career
+	saves up for. A set (City/GearSets.luau) adds a bonus at two pieces and a bigger one at
+	three; the best pieces let a stat go past 100 while you carry them (capBonus).
+	Canon: Workshops make the City's weapons and armor and sell them to Fixers; Atelier Logic
+	makes guns; K Corp makes ampules [LoR, Limbus]. The Halvard, Lantern Row, Swallow, Marlowe
+	and Greywall workshops are this game's own.
+]]
+
+return {
+	order = {
+		-- the Halvard line (Strength)
+		"hv_longsword", "hv_duster", "hv_whetstone",
+		-- Atelier Logic (guns: Strength and Speed)
+		"al_rifle", "al_bandolier", "al_sight",
+		-- Lantern Row (the Night: Mental Strength)
+		"nw_cudgel", "nw_waxed_coat", "nw_lantern",
+		-- Marlowe & Daughters, Nest tailors (Charisma)
+		"nt_cane", "nt_overcoat", "nt_signet",
+		-- the Archivist's kit (Intelligence)
+		"ar_codex", "ar_coat", "ar_lenses",
+		-- Swallow (couriers: Speed)
+		"sw_blades", "sw_coat", "sw_heels",
+		-- Greywall (Health)
+		"bw_shield", "bw_plate", "bw_ampoule",
+		-- the big ticket
+		"bt_greatsword", "bt_armor", "bt_ampule_case", "bt_signet_of_office", "bt_singing_blade", "bt_lens_of_the_head",
+		-- smaller things worth having
+		"sm_brass_knuckles", "sm_rain_cape", "sm_pocket_watch", "sm_lucky_coin", "sm_med_kit", "sm_whistle",
+		"sm_reading_glasses", "sm_spare_blade", "sm_courier_bag", "sm_scarf",
+	},
+
+	-- ── the Halvard line ──
+	hv_longsword = { name = "Halvard Longsword", slot = "tool", set = "halvard", price = 2600, minAge = 18, rarity = "epic", requires = { flags = { "licensed_fixer" } }, desc = "The Halvard Workshop's line blade: plain, perfectly balanced, and carried by more Grade 3 Fixers than any other.", effect = "+3 base and +1 per-heads power in Strength clashes, +2 Speed in fights.", clash = { strength = { base = 3, coinPower = 1 } }, speed = 2, ability = { id = "riposte", potency = 1 }, look = { kind = "sword", color = { 210, 214, 220 } } },
+	hv_duster = { name = "Halvard Duster", slot = "coat", set = "halvard", price = 2200, minAge = 18, rarity = "epic", desc = "A long coat with blade-stopping mesh in the lining and a hook inside for the scabbard.", effect = "You take 12% less Health damage. +1 base in Strength clashes. Resists Bleed 2.", toughness = 0.88, clash = { strength = { base = 1 } }, resist = { bleed = 2 }, look = { kind = "greatcoat", color = { 80, 70, 60 } } },
+	hv_whetstone = { name = "Halvard Whetstone", slot = "charm", set = "halvard", price = 900, minAge = 16, rarity = "rare", desc = "A pocket whetstone in a leather sleeve, stamped with the Workshop's mark.", effect = "+1 base in Strength clashes. +2% heads.", clash = { strength = { base = 1 } }, heads = 2, look = { kind = "stone", color = { 150, 150, 156 } } },
+
+	-- ── Atelier Logic ──
+	al_rifle = { name = "Atelier Logic Long Rifle", slot = "tool", set = "atelier", price = 3200, minAge = 18, rarity = "epic", requires = { flags = { "licensed_fixer" } }, desc = "Atelier Logic's long gun. It fires before anyone is close enough to argue. Bullets, as always, are expensive.", effect = "+1 coin and +2 base in Strength clashes, +4 Speed in fights. Debuff: ammunition costs 40 Ahn a year.", clash = { strength = { coins = 1, base = 2 } }, speed = 4, yearly = { money = -40 }, ability = { id = "volley", potency = 2 }, look = { kind = "pistol", color = { 60, 60, 64 } } },
+	al_bandolier = { name = "Atelier Bandolier Coat", slot = "coat", set = "atelier", price = 1100, minAge = 18, rarity = "rare", desc = "A short coat with loops for forty rounds and a lining that turns most knives.", effect = "+1 base in Strength and Health clashes, +2 Speed in fights.", clash = { strength = { base = 1 }, health = { base = 1 } }, speed = 2, look = { kind = "jacket", color = { 90, 76, 56 } } },
+	al_sight = { name = "Atelier Sight", slot = "charm", set = "atelier", price = 800, minAge = 18, rarity = "rare", desc = "A clip-on sight that fits every gun Atelier Logic has ever made, and a few it hasn't.", effect = "+4% heads.", heads = 4, look = { kind = "token", color = { 70, 90, 110 } } },
+
+	-- ── Lantern Row ──
+	nw_cudgel = { name = "Lantern Row Cudgel", slot = "tool", set = "lantern", price = 350, minAge = 16, rarity = "uncommon", desc = "Iron-shod ash, made by night-shift workers for walking home after the streetlights go off.", effect = "+2 base in Strength clashes, +1 base in Mental Strength clashes.", clash = { strength = { base = 2 }, mind = { base = 1 } }, ability = { id = "tremor", potency = 1 }, look = { kind = "baton", color = { 120, 90, 60 } } },
+	nw_waxed_coat = { name = "Waxed Night Coat", slot = "coat", set = "lantern", price = 700, minAge = 16, rarity = "rare", desc = "Heavy waxed canvas, dark as the street at three. Rain runs off it. So do most other things.", effect = "+1 base in Health and Mental Strength clashes. Bad luck 15% less likely.", clash = { health = { base = 1 }, mind = { base = 1 } }, hazardGuard = 0.85, look = { kind = "greatcoat", color = { 30, 34, 40 } } },
+	nw_lantern = { name = "Lantern Row Lamp", slot = "charm", set = "lantern", price = 650, minAge = 14, rarity = "rare", desc = "A small brass lamp that burns all night on almost nothing. People in the Backstreets swear by them, and sometimes at them.", effect = "+2 base in Mental Strength clashes. Resists Sinking 1.", clash = { mind = { base = 2 } }, resist = { sinking = 1 }, look = { kind = "bell", color = { 240, 200, 110 } } },
+
+	-- ── Marlowe & Daughters ──
+	nt_cane = { name = "Marlowe Silver-Tipped Cane", slot = "tool", set = "tailor", price = 1400, minAge = 18, rarity = "rare", desc = "Black lacquer and a silver tip. In a Nest it's a cane. In the Backstreets it's an argument.", effect = "+2 base in Charisma clashes, +1 base in Strength clashes.", clash = { charisma = { base = 2 }, strength = { base = 1 } }, ability = { id = "riposte", potency = 1 }, look = { kind = "cane", color = { 30, 30, 34 } } },
+	nt_overcoat = { name = "Marlowe Tailored Overcoat", slot = "coat", set = "tailor", price = 2800, minAge = 18, rarity = "epic", desc = "Cut to you over three fittings by Marlowe's eldest daughter, who didn't smile once and was right about everything.", effect = "+2 base in Charisma clashes. Prices 5% lower. Bad luck 15% less likely.", clash = { charisma = { base = 2 } }, priceCut = 0.05, hazardGuard = 0.85, look = { kind = "coat", color = { 60, 40, 50 } } },
+	nt_signet = { name = "Marlowe Signet", slot = "charm", set = "tailor", price = 2400, minAge = 20, rarity = "epic", desc = "A heavy gold signet with a blank face, for you to have your own mark cut into. People who matter notice it.", effect = "+1 coin in Charisma clashes. +1 Sanity a year.", clash = { charisma = { coins = 1 } }, yearly = { sanity = 1 }, look = { kind = "token", color = { 230, 190, 90 } } },
+
+	-- ── the Archivist's kit ──
+	ar_codex = { name = "Annotated Codex", slot = "tool", set = "archivist", price = 1200, minAge = 16, rarity = "rare", desc = "Thirty years of a Dieci scholar's margin notes on everything from Syndicate law to the habits of Rats. The covers are steel.", effect = "+3 base in Intelligence clashes, +1 base in Strength clashes.", clash = { intelligence = { base = 3 }, strength = { base = 1 } }, look = { kind = "book", color = { 70, 50, 40 } } },
+	ar_coat = { name = "Archivist's Coat", slot = "coat", set = "archivist", price = 1000, minAge = 16, rarity = "rare", desc = "Many pockets, each the size of a notebook. A pencil in every one.", effect = "+2 base in Intelligence clashes. Whatever you do teaches you 1 more.", clash = { intelligence = { base = 2 } }, training = 1, look = { kind = "coat", color = { 70, 70, 80 } } },
+	ar_lenses = { name = "Reading Lenses", slot = "charm", set = "archivist", price = 900, minAge = 14, rarity = "rare", desc = "Workshop lenses that see the small print, the hidden clause, and the second set of numbers in the margin.", effect = "+2 base in Intelligence clashes. +2% heads.", clash = { intelligence = { base = 2 } }, heads = 2, look = { kind = "token", color = { 180, 200, 220 } } },
+
+	-- ── Swallow ──
+	sw_blades = { name = "Swallow Twin Knives", slot = "tool", set = "swallow", price = 1300, minAge = 16, rarity = "rare", desc = "Two short, curved knives balanced for throwing and catching again. Couriers who carry them don't stop to fight.", effect = "+1 base in Strength clashes, +10 Speed in fights.", clash = { strength = { base = 1 } }, speed = 10, ability = { id = "quick", potency = 1 }, look = { kind = "daggers", color = { 200, 210, 220 } } },
+	sw_coat = { name = "Swallow Featherweight", slot = "coat", set = "swallow", price = 1100, minAge = 16, rarity = "rare", desc = "So light you forget it's on, until something sharp bounces off it.", effect = "+6 Speed in fights. You take 5% less Health damage.", speed = 6, toughness = 0.95, look = { kind = "jacket", color = { 40, 60, 90 } } },
+	sw_heels = { name = "Swallow Spring Heels", slot = "charm", set = "swallow", price = 1800, minAge = 16, rarity = "epic", desc = "Workshop springs in the heels of a pair of very good boots. Stairs are optional.", effect = "+8 Speed in fights. +1 base in Speed clashes.", speed = 8, clash = { speed = { base = 1 } }, look = { kind = "token", color = { 90, 200, 230 } } },
+
+	-- ── Greywall ──
+	bw_shield = { name = "Greywall Tower Shield", slot = "tool", set = "greywall", price = 2400, minAge = 18, rarity = "epic", desc = "A shield as tall as your shoulder, with a slot to see through and a weight you'll feel for a month.", effect = "+3 base in Health clashes, +1 base in Strength clashes. You take 10% less Health damage. Debuff: -6 Speed in fights.", clash = { health = { base = 3 }, strength = { base = 1 } }, toughness = 0.9, speed = -6, ability = { id = "guard", potency = 2 }, look = { kind = "hammer", color = { 120, 124, 130 } } },
+	bw_plate = { name = "Greywall Plate Coat", slot = "coat", set = "greywall", price = 3000, minAge = 18, rarity = "epic", desc = "Steel plates under good wool. You look like a careful banker, and hit the ground like a vault door.", effect = "You take 20% less Health damage. +20 most Health. Debuff: -4 Speed in fights.", toughness = 0.8, maxHealth = 20, speed = -4, look = { kind = "coat", color = { 90, 94, 100 } } },
+	bw_ampoule = { name = "Greywall Ampoule Bracelet", slot = "charm", set = "greywall", price = 1200, minAge = 18, rarity = "rare", desc = "A bracelet with one small ampoule in it, licensed from K Corp, that breaks on its own when you fall.", effect = "+2 Health a year. +10 most Health.", yearly = { health = 2 }, maxHealth = 10, look = { kind = "token", color = { 120, 230, 160 } } },
+
+	-- ── the big ticket ──
+	bt_greatsword = { name = "Workshop Masterpiece Greatsword", slot = "tool", price = 14000, minAge = 20, rarity = "legendary", requires = { renown = 4 }, desc = "A Workshop makes one of these every few years, for someone with a name. The waiting list is long. The price is longer.", effect = "+1 coin, +3 base and +1 per-heads power in Strength clashes. Strength can go 10 past its limit. Debuff: -4 Speed in fights.", clash = { strength = { coins = 1, base = 3, coinPower = 1 } }, capBonus = { strength = 10 }, speed = -4, ability = { id = "crush", potency = 2 }, look = { kind = "greatsword", color = { 220, 220, 228 } } },
+	bt_armor = { name = "Hana-Rated Armor", slot = "coat", price = 16000, minAge = 20, rarity = "legendary", requires = { renown = 4, flags = { "licensed_fixer" } }, desc = "Armor the Hana Association has tested and rated for Grade 1 work. The certificate is framed. So is the invoice.", effect = "You take 25% less Health damage. +30 most Health. +2 base in Health clashes. Every stat can go 3 past its limit.", toughness = 0.75, maxHealth = 30, clash = { health = { base = 2 } }, capBonus = { all = 3 }, look = { kind = "greatcoat", color = { 50, 54, 62 } } },
+	bt_ampule_case = { name = "K Corp Ampule Case", slot = "charm", price = 12000, minAge = 18, rarity = "legendary", requires = { renown = 3 }, desc = "A licensed case of K Corp's regenerating ampules, refilled every year by courier. In the City, that's what being rich looks like.", effect = "+4 Health a year. +25 most Health. Health clashes: +1 coin.", yearly = { health = 4 }, maxHealth = 25, clash = { health = { coins = 1 } }, look = { kind = "token", color = { 140, 240, 180 } } },
+	bt_signet_of_office = { name = "A Signet the Nests Recognize", slot = "charm", price = 18000, minAge = 25, rarity = "legendary", requires = { renown = 5 }, desc = "Not bought, exactly: commissioned, approved, registered and then, finally, sold. Doors you didn't know were there open for it.", effect = "+1 coin and +2 base in Charisma clashes. Prices 10% lower. Charisma can go 10 past its limit.", clash = { charisma = { coins = 1, base = 2 } }, priceCut = 0.1, capBonus = { charisma = 10 }, look = { kind = "token", color = { 250, 220, 120 } } },
+	bt_singing_blade = { name = "A Blade That Sings", slot = "tool", price = 22000, minAge = 25, rarity = "legendary", requires = { renown = 5 }, desc = "A Workshop's lifetime work. It hums a note when it's drawn, and another, lower one, when it's about to be needed.", effect = "+1 coin, +2 base and +2 per-heads power in Strength clashes, +4 Speed in fights. Strength and Speed can go 10 past their limits.", clash = { strength = { coins = 1, base = 2, coinPower = 2 } }, speed = 4, capBonus = { strength = 10, speed = 10 }, ability = { id = "bleed", potency = 3 }, look = { kind = "katana", color = { 200, 230, 255 } } },
+	bt_lens_of_the_head = { name = "A Lens the Head Licensed", slot = "charm", price = 26000, minAge = 25, rarity = "legendary", requires = { renown = 5 }, desc = "A monocle of a glass the Head allows to be made only under licence. It sees the way a thing will fall before it falls.", effect = "+6% heads. +1 coin in Intelligence clashes. Intelligence and Mental Strength can go 10 past their limits.", heads = 6, clash = { intelligence = { coins = 1 } }, capBonus = { intelligence = 10, mind = 10 }, look = { kind = "token", color = { 200, 240, 255 } } },
+
+	-- ── smaller things worth having ──
+	sm_brass_knuckles = { name = "Brass Knuckles", slot = "tool", price = 70, minAge = 14, rarity = "common", desc = "Fits in a pocket. Makes a point.", effect = "+1 base in Strength clashes, +4 Speed in fights.", clash = { strength = { base = 1 } }, speed = 4, look = { kind = "gauntlet", color = { 200, 170, 90 } } },
+	sm_rain_cape = { name = "Rain Cape", slot = "coat", price = 80, minAge = 10, rarity = "common", desc = "Oilcloth, with a hood. The City's rain is not always only rain.", effect = "Bad luck 10% less likely.", hazardGuard = 0.9, look = { kind = "jacket", color = { 70, 90, 80 } } },
+	sm_pocket_watch = { name = "Second-Hand Pocket Watch", slot = "charm", price = 120, minAge = 12, rarity = "common", desc = "It runs four minutes fast. You've never once been late.", effect = "+1 base in Intelligence and Speed clashes.", clash = { intelligence = { base = 1 }, speed = { base = 1 } }, look = { kind = "token", color = { 190, 170, 120 } } },
+	sm_lucky_coin = { name = "Old Ahn Coin", slot = "charm", price = 150, minAge = 8, rarity = "uncommon", desc = "A coin from before the Head reminted everything, rubbed thin by somebody's thumb for luck.", effect = "+3% heads.", heads = 3, look = { kind = "token", color = { 210, 190, 110 } } },
+	sm_med_kit = { name = "Clinic Kit", slot = "charm", price = 240, minAge = 14, rarity = "uncommon", desc = "Bandages, a needle, a little bottle of something from K Corp. Enough to keep you going until you get somewhere.", effect = "+1 Health a year. +5 most Health.", yearly = { health = 1 }, maxHealth = 5, look = { kind = "token", color = { 230, 230, 230 } } },
+	sm_whistle = { name = "Office Whistle", slot = "charm", price = 60, minAge = 12, rarity = "common", desc = "Three short blasts means trouble. Everyone in an Office knows it. So does everyone who causes trouble.", effect = "+1 base in Charisma clashes. Bad luck 5% less likely.", clash = { charisma = { base = 1 } }, hazardGuard = 0.95, look = { kind = "bell", color = { 200, 200, 210 } } },
+	sm_reading_glasses = { name = "Wire Glasses", slot = "charm", price = 90, minAge = 10, rarity = "common", desc = "Round, wire-rimmed, from a pawn arcade. They make you look clever, and see better, in that order.", effect = "+2 base in Intelligence clashes.", clash = { intelligence = { base = 2 } }, look = { kind = "token", color = { 160, 160, 170 } } },
+	sm_spare_blade = { name = "Boot Knife", slot = "tool", price = 90, minAge = 14, rarity = "common", desc = "For when the first knife is somewhere else.", effect = "+1 base in Strength clashes, +3 Speed in fights.", clash = { strength = { base = 1 } }, speed = 3, ability = { id = "quick", potency = 1 }, look = { kind = "knife", color = { 170, 170, 176 } } },
+	sm_courier_bag = { name = "Courier's Satchel", slot = "charm", price = 180, minAge = 12, rarity = "uncommon", desc = "Waxed, double-stitched, with a strap that doesn't snap when someone grabs it.", effect = "+3 Speed in fights. +1 base in Speed clashes.", speed = 3, clash = { speed = { base = 1 } }, look = { kind = "token", color = { 120, 90, 60 } } },
+	sm_scarf = { name = "Good Wool Scarf", slot = "charm", price = 110, minAge = 8, rarity = "common", desc = "Knitted by someone who meant it. Warmer than it looks.", effect = "+1 Sanity a year.", yearly = { sanity = 1 }, look = { kind = "token", color = { 180, 60, 60 } } },
+}

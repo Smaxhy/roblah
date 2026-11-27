@@ -1,0 +1,30 @@
+{
+  "name": "BitLeveling",
+  "tree": {
+    "$className": "DataModel",
+    "ServerScriptService": {
+      "$className": "ServerScriptService",
+      "LifeSimKit": {
+        "$className": "Folder",
+        "Install": { "$path": "../src/Install.server.luau" },
+        "Shared": {
+          "$className": "Folder",
+          "Engine": { "$path": "../src/shared/Engine" },
+          "Base": { "$path": "../src/shared/Base" },
+          "Games": {
+            "$className": "Folder",
+            "BitLeveling": { "$path": "../src/shared/Games/BitLeveling" }
+          },
+          "Pack": { "$path": "../src/shared/Pack.luau" },
+          "Config": { "$path": "../src/shared/Config.luau" }
+        },
+        "Server": { "$path": "../src/server" },
+        "Client": { "$path": "../src/client" }
+      }
+    },
+    "Players": { "$className": "Players", "$properties": { "CharacterAutoLoads": false } },
+    "ReplicatedStorage": { "$className": "ReplicatedStorage" },
+    "Lighting": { "$className": "Lighting" },
+    "Workspace": { "$className": "Workspace" }
+  }
+}

@@ -1,0 +1,106 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Emblem sheet</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<!--
+  Contact sheet for preview/emblems.js: every emblem at 64, 20 and 16 px on the game's panel color,
+  the 20 px raster blown up 4x (nearest neighbour, to judge pixels), on a paper card with dark ink,
+  and flat-tinted grey (an inactive tab). ?group=stat|cur|approach|style|sin|faction|tab|misc|logo
+  shows one group; ?grid=1 shows the compact overview (every emblem at 20 and 64 px).
+-->
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;700&family=Roboto+Mono:wght@400&display=swap">
+<style>
+  :root { --shade: #050608; --panel: #0e1014; --panel-hi: #181b21; --stroke: #2e323a; --text: #ece8e1;
+          --sub: #a8aab0; --faint: #6e727a; --accent: #cfa349; --paper: #e7e0d1; --ink: #1c1a17; }
+  html, body { margin: 0; background: var(--shade); color: var(--text); font-family: "Oswald", "Arial Narrow", sans-serif; }
+  body { padding: 16px; }
+  h1 { font-size: 18px; letter-spacing: .08em; text-transform: uppercase; color: var(--accent); margin: 0 0 12px; }
+  h2 { font-size: 13px; letter-spacing: .1em; text-transform: uppercase; color: var(--sub); margin: 18px 0 8px; font-weight: 500; }
+  .rows { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px 10px; }
+  .row { display: grid; grid-template-columns: 128px 72px 28px 24px 88px 36px 36px; align-items: center; gap: 8px;
+         background: var(--panel); border: 1px solid var(--stroke); padding: 6px 8px; }
+  .id { font-family: "Roboto Mono", monospace; font-size: 11px; color: var(--sub); overflow-wrap: anywhere; }
+  .cell { display: flex; align-items: center; justify-content: center; }
+  .paper { background: var(--paper); padding: 4px; }
+  canvas.zoom { image-rendering: pixelated; width: 80px; height: 80px; background: var(--panel); outline: 1px solid var(--stroke); }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, 112px); gap: 6px; }
+  .tile { background: var(--panel); border: 1px solid var(--stroke); padding: 8px 4px 6px; display: flex; flex-direction: column; align-items: center; gap: 6px; }
+  .tile .pair { display: flex; align-items: center; gap: 10px; }
+  .tile .id { font-size: 10px; text-align: center; }
+  .logos { display: flex; align-items: flex-end; gap: 20px; background: var(--panel); border: 1px solid var(--stroke); padding: 16px; flex-wrap: wrap; }
+  .logos .wordmark { display: flex; align-items: center; gap: 12px; font-weight: 700; font-size: 26px; letter-spacing: .12em; color: var(--text); }
+</style>
+<body>
+<h1>Emblems</h1>
+<div id="out"></div>
+<script src="../preview/emblems.js"></script>
+<script>
+  const E = window.Emblem;
+  const q = new URLSearchParams(location.search);
+  const group = q.get('group');
+  const out = document.getElementById('out');
+  const GROUPS = ['stat', 'cur', 'approach', 'style', 'sin', 'faction', 'tab', 'misc'];
+  const ids = E.ids.concat(['unknown.id']);
+  const pending = [];
+
+  // the 20 px raster, drawn 4x with no smoothing, so single pixels show
+  function zoom(svgText, px) {
+    const c = document.createElement('canvas');
+    c.width = px; c.height = px; c.className = 'zoom';
+    const img = new Image();
+    pending.push(new Promise((res) => {
+      img.onload = () => { const g = c.getContext('2d'); g.fillStyle = '#0e1014'; g.fillRect(0, 0, px, px); g.drawImage(img, 0, 0); res(); };
+      img.onerror = res;
+    }));
+    img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svgText);
+    return c;
+  }
+  const cell = (html, cls) => { const d = document.createElement('div'); d.className = 'cell' + (cls ? ' ' + cls : ''); d.innerHTML = html; return d; };
+
+  function rowFor(id) {
+    const r = document.createElement('div');
+    r.className = 'row';
+    const label = document.createElement('div');
+    label.className = 'id'; label.textContent = id;
+    r.append(label, cell(E.svg(id, 64)), cell(E.svg(id, 20)), cell(E.svg(id, 16)));
+    const z = document.createElement('div'); z.className = 'cell'; z.append(zoom(E.svg(id, 20), 20)); r.append(z);
+    r.append(cell(E.svg(id, 20, null, '#1c1a17'), 'paper'));
+    r.append(cell(E.svg(id, 20, '#6e727a', '#6e727a')));
+    return r;
+  }
+
+  if (q.get('grid')) {
+    for (const g of GROUPS) {
+      const h = document.createElement('h2'); h.textContent = g; out.append(h);
+      const grid = document.createElement('div'); grid.className = 'grid';
+      for (const id of E.ids.filter((x) => x.startsWith(g + '.'))) {
+        const t = document.createElement('div'); t.className = 'tile';
+        const pair = document.createElement('div'); pair.className = 'pair';
+        pair.innerHTML = E.svg(id, 20) + E.svg(id, 48);
+        const l = document.createElement('div'); l.className = 'id'; l.textContent = id.split('.')[1];
+        t.append(pair, l); grid.append(t);
+      }
+      out.append(grid);
+    }
+  } else {
+    for (const g of GROUPS) {
+      if (group && group !== g) continue;
+      const h = document.createElement('h2');
+      h.textContent = g + '   (64 / 20 / 16 / 20 at 4x / paper, dark ink / flat grey)';
+      out.append(h);
+      const rows = document.createElement('div'); rows.className = 'rows';
+      for (const id of ids.filter((x) => x.startsWith(g + '.') || (g === 'misc' && x === 'unknown.id'))) rows.append(rowFor(id));
+      out.append(rows);
+    }
+  }
+  if (!group || group === 'logo') {
+    const h = document.createElement('h2'); h.textContent = 'logo'; out.append(h);
+    const l = document.createElement('div'); l.className = 'logos';
+    l.innerHTML = [128, 64, 32, 20].map((s) => E.logo(s)).join('') +
+      `<div class="wordmark">${E.logo(40)}<span>A LIFE IN THE CITY</span></div>`;
+    const z = zoom(E.logo(20), 20); l.append(z);
+    out.append(l);
+  }
+  Promise.all(pending).then(() => { document.body.dataset.ready = '1'; });
+</script>
+</body>

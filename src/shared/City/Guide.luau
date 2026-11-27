@@ -1,0 +1,51 @@
+--[[
+	The guidebook's "Start here" page: how to play, in short plain sentences. The rest of the
+	guidebook (stats, statuses, talents and their odds, gear, books, careers, factions, modes,
+	family names) is built from the pack itself by server/Guide.luau, so it stays true.
+	{ basics = { { title, text } } }
+]]
+
+return {
+	basics = {
+		{ title = "A year at a time", text = "Press +1 Year. Things happen, and some make you choose. Each year you also get things to DO and time for PEOPLE. The pips above the button show what's left." },
+		{ title = "The six tabs", text = "DO: work and activities. PEOPLE: family and friends. STORY: your story and goals. YOU: stats, talent, gear. CITY: the age, your District, who likes you. MORE: everything else." },
+		{ title = "Your story", text = "The strip above the feed is your story: what to do now, its chapters, and when the next one comes. When a story ends, another finds you through your job, your District or the age." },
+		{ title = "Threads", text = "Every card has a color and a mark: your story, work, people, your District, the age, a grudge. One color down the feed is one thread of your life." },
+		{ title = "Stats", text = "Health is your body: at 0 you die. Strength, Speed, Intelligence, Charisma and Mental Strength are what you do things with. Luck is dealt at birth. Hover a stat to see what it's doing for you." },
+		{ title = "Tiers and perks", text = "Every 20 points of a stat is a tier, and tiers have perks. Speed gives you more to do in a year. Charisma gives more time for people. Mental Strength guards your Sanity. Health takes the edge off wounds." },
+		{ title = "Your nature", text = "Your highest stat is your nature: The Strong, The Quick, The Sharp, The Charming, The Unshaken. You get +1 on everything that uses it, and the City sends you more of that kind of trouble." },
+		{ title = "Coins", text = "Every risk flips coins. Each heads adds power; beat the other side's total and you win. Sanity tilts them: above 0 they land heads more often. At the bottom, you break." },
+		{ title = "Checks", text = "Most risks check one stat. The card shows which stat, your number in it, and the odds, before you choose." },
+		{ title = "Fights", text = "In a fight you choose which stat to fight with: Overpower (Strength), Outpace (Speed), Outthink (Intelligence), or Talk down (Charisma, people only). Speed always sets how many coins you have and who strikes first." },
+		{ title = "Tempers", text = "Every foe is a Brute, Quick or Cunning. Outpace beats Brutes. Outthink beats the Quick. Overpower beats the Cunning. The card marks the way that has the advantage." },
+		{ title = "Work", text = "A career puts three jobs on your board each year. Each one pays, teaches, and counts toward your next rank. The rank bar shows exactly what's still missing." },
+		{ title = "People", text = "Spending time with someone opens a small scene with choices. Keep someone close and they'll stand with you in a fight once a year. Closer still, and one day they'll get to you in time." },
+		{ title = "The City kills", text = "People die young here. Keep Health up, see a clinic when you're hurt, be indoors before 3:13, and read the odds. When you die, the file says what happened and what would have helped." },
+		{ title = "Standing", text = "Every power in the City has an opinion of you, from -100 to 100. Beat one of theirs and it drops. Kill one of a Finger's own and it's a blood debt: -30. Bad standing brings them to your door, or to the door of someone you love. The City tab shows where you stand, on each one's entry in Who you know of." },
+		{ title = "Renown", text = "Grown up, what you do gets talked about. Beat strong foes, take hard jobs, live through hard years, run an Office and do deeds, and Hana grades you: Known on Your Street, Urban Myth, Urban Legend, all the way to Impurity. Each grade gives more Health and better pay." },
+		{ title = "Deeds", text = "Renown opens deeds on the DO tab: open your own Office, take a street, clear out the Rats, fund a clinic, hunt an Urban Legend, become a Color. Some change a District for everyone on the server: the City tab shows The Districts." },
+		{ title = "Spending", text = "DO, then Spend: markets whose stock and prices change with the streets and with whatever the City is going through, K Corp's ampules (they heal past full), prosthetics, Fixers for hire, and homes to buy. Buying never uses an action." },
+		{ title = "A home", text = "A home has upkeep every year, makes trouble in the streets rarer, and some are hard to find you in. Can't pay the upkeep and it's taken back. A letting agent buys it back for half." },
+		{ title = "People you've met", text = "Every so often you meet someone: a neighbour, a coworker, the cook at the night stall. Talk to them and they can become friends. Leave them be and they drift away." },
+		{ title = "A household", text = "A very close friend can be asked to share a household: two names on the District's register, the upkeep split, better years at home. Where this game allows it, a household can later become a marriage at the District office. Only with people the City gives you, never another player." },
+		{ title = "Episodes", text = "Some cards are part of an episode: a short story of a few cards that happens once in a life. The band names it and shows how far along you are. How it ends is kept on the STORY tab." },
+		{ title = "Ways in", text = "Hatches behind boilers, lifts with one button too many, letters with an address: ways down are found out in the City. Go in at once, or remember the way; places you know are on the DO tab." },
+		{ title = "Turf", text = "Grown, in the Backstreets, you can step into the turf war: for yourself or under a Finger's colours. Take blocks from whoever holds them, walk them so they're raided less, collect what they pay. The CITY tab shows your streets." },
+		{ title = "Cases", text = "Some trouble is a case: work it on the DO tab a clue at a time (each case needs a different stat), and when every clue is in, go and finish it. A finale that goes badly can be tried again." },
+		{ title = "Feats and limits", text = "The Goals sheet (MORE) lists 47 feats, bronze to mythic. The rarest break limits: your stats can go past 100. Renown grades, legendary gear and full gear sets raise the limit too. Past 90, every gain is hard won." },
+		{ title = "Phases", text = "A life has parts: Childhood, Youth, Making a Name, Power, Legacy. Each opens new things, from turf wars and cases at 18 to apprentices and last contracts late in life." },
+		{ title = "The stash", text = "Gear you replace goes into your stash instead of the bin. Equip it back from the YOU tab, or sell it to a Workshop. Pieces of one Workshop's line add a bonus at two and at three." },
+		{ title = "Rivals", text = "A rival can be beaten properly in the yard once a year, or made a friend: bury the hatchet, help them through a bad year, or fight an enemy you share." },
+		{ title = "Gifts that wake", text = "A Gifted talent or better sleeps until it wakes: early, around twelve, or late. When a Prodigy's gift wakes, someone comes looking, and what they offer depends on when." },
+		{ title = "Kinds of year", text = "Some years have a mood: the Year of Strangers, a Loud Year, a Quiet Year, a Year of Long Nights. It tilts what happens and colours the year's card. A hard year is its own kind." },
+		{ title = "The ages", text = "The Smoke War is over before you're born. Then the Age of L Corp; its last year, when a Light shines three days and fails; the Age of the Library; and what comes after, when a second Light shines seven. What exists, and what can happen to you, depends on the age." },
+		{ title = "At the brink", text = "When Sanity hits the bottom, you break. What that means depends on the age you're living in, and you'll find out when it happens: the Archive fills in as you learn. Mental Strength decides whether you hold. Keep Sanity off the floor and the question never comes." },
+		{ title = "How hard", text = "You pick how hard the City is before a life starts: A Gentler City, The City, or The Backstreets at Night. It changes how hard wounds land, how strong foes are, and how often bad luck finds you. It can't be changed once you're born." },
+		{ title = "Talents and sins", text = "Every life is born with one random talent, from Ordinary to One in the City, at real odds, and is dealt two of the seven sins. Nobody picks either. A talent of one of your sins resonates. Free rerolls every day." },
+		{ title = "Careers and factions", text = "Offices, Associations, Fingers, Wings and Families. Climb the ranks for pay and power. Some of them come looking for you." },
+		{ title = "Gear and books", text = "Weapons, armor and charms all have buffs, and many have a debuff. Style weapons only work with their own style. Read a book to learn its ability." },
+		{ title = "When you die", text = "Your life becomes a book on your shelf and earns Light. If you have children, one of them can carry on the line." },
+		{ title = "Light and Lunacy", text = "Light unlocks origins, modes and looks. Lunacy rerolls talents and buys rolls and boosts. You earn a little of both by playing." },
+		{ title = "Friends", text = "Link with friends so your lives cross. Make a crew to start lives together, run expeditions, or duel each other." },
+	},
+}

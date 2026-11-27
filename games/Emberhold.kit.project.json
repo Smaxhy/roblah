@@ -1,0 +1,20 @@
+{
+  "name": "EmberholdKit",
+  "tree": {
+    "$className": "Folder",
+    "Install": { "$path": "../src/Install.server.luau" },
+    "Shared": {
+      "$className": "Folder",
+      "Engine": { "$path": "../src/shared/Engine" },
+      "Base": { "$path": "../src/shared/Base" },
+      "Games": {
+        "$className": "Folder",
+        "Emberhold": { "$path": "../src/shared/Games/Emberhold" }
+      },
+      "Pack": { "$path": "../src/shared/Pack.luau" },
+      "Config": { "$path": "../src/shared/Config.luau" }
+    },
+    "Server": { "$path": "../src/server" },
+    "Client": { "$path": "../src/client" }
+  }
+}

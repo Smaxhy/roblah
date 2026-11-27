@@ -1,0 +1,36 @@
+--[[
+	Ambitions: three goals at a time, matched to age. See the format notes in
+	Content/Ambitions.luau. Tallies: clashesWon, clashesLost, fightsWon, fightsLost,
+	reckless, expeditions, ambitions, interactions.
+]]
+
+return {
+	-- childhood
+	{ id = "first_friend", name = "Someone in your corner", desc = "Make a friend.", minAge = 4, maxAge = 16, check = { when = { hasRelation = "friend" } }, reward = { sanity = 3, log = "Having a friend made the District feel smaller and safer." } },
+	{ id = "book_learning", name = "Academy kid", desc = "Reach 30 Intelligence.", minAge = 6, maxAge = 18, check = { when = { min = { intelligence = 30 } } }, progress = { stat = "intelligence", target = 30 }, reward = { intelligence = 2, log = "You can read a Fixer's job report now, which is more than most adults can." } },
+	{ id = "scrapper", name = "Scrapper", desc = "Win 3 fights.", minAge = 8, maxAge = 30, check = { tally = { fightsWon = 3 } }, progress = { tally = "fightsWon", target = 3 }, reward = { strength = 2, log = "Word got around the street: you don't back down." } },
+	{ id = "steady_nerves", name = "Steady nerves", desc = "Reach 30 Mental Strength.", minAge = 8, maxAge = 25, check = { when = { min = { mind = 30 } } }, progress = { stat = "mind", target = 30 }, reward = { sanity = 3, log = "Things that used to frighten you just make you think now." } },
+	{ id = "first_ahn", name = "First pocket money", desc = "Hold 50 Ahn.", minAge = 6, maxAge = 15, check = { when = { min = { money = 50 } } }, progress = { money = 50 }, reward = { sanity = 2, log = "Fifty Ahn, all yours. You counted it every night." } },
+	{ id = "style_first", name = "Found your style", desc = "Reach mastery 2 in your fighting style.", minAge = 10, maxAge = 30, check = { when = { minMastery = 2 } }, reward = { strength = 2, log = "Your style comes without thinking now. People notice how you stand." } },
+
+	-- youth and adult life
+	{ id = "first_job", name = "Earn your keep", desc = "Get a job.", minAge = 14, maxAge = 45, check = { when = { anyCareer = true } }, reward = { wage = { 20, 40 }, log = "Your first proper wage. You spent some and hid the rest in your boot." } },
+	{ id = "save_500", name = "Something put by", desc = "Hold 500 Ahn at once.", minAge = 16, maxAge = 60, check = { when = { min = { money = 500 } } }, progress = { money = 500 }, reward = { sanity = 3, log = "A little money put by, for the first time. You slept better." } },
+	{ id = "save_3000", name = "A real nest egg", desc = "Hold 3,000 Ahn at once.", minAge = 20, maxAge = 75, check = { when = { min = { money = 3000 } } }, progress = { money = 3000 }, reward = { sanity = 4, log = "Three thousand Ahn. People on your street started asking you for advice." } },
+	{ id = "promoted_twice", name = "Moving up", desc = "Reach rank 3 in any job.", minAge = 18, maxAge = 60, check = { when = { anyCareer = true, minRank = 3 } }, progress = { rank = 3 }, reward = { wage = { 40, 80 }, log = "Rank three. You have a desk, or a badge, or a crew of your own now." } },
+	{ id = "top_rank", name = "Top of the ladder", desc = "Reach rank 5 in any job.", minAge = 25, maxAge = 80, weight = 6, check = { when = { anyCareer = true, minRank = 5 } }, progress = { rank = 5 }, reward = { sanity = 6, log = "Rank five. There aren't many people above you now." } },
+	{ id = "nest_resident", name = "Behind the walls", desc = "Live in a Nest.", minAge = 18, maxAge = 70, when = { side = "backstreets" }, check = { when = { side = "nest" } }, reward = { sanity = 4, log = "You live inside the Nest now. The guards nod at you instead of searching you." } },
+	{ id = "fighter", name = "Hard to put down", desc = "Win 10 fights.", minAge = 16, maxAge = 70, check = { tally = { fightsWon = 10 } }, progress = { tally = "fightsWon", target = 10 }, reward = { health = 4, log = "Ten fights won. You walk differently now." } },
+	{ id = "mastery_max", name = "Master of your style", desc = "Reach mastery 5.", minAge = 18, maxAge = 70, weight = 6, check = { when = { minMastery = 5 } }, reward = { strength = 3, log = "Mastery five. Fixers who see you fight ask who trained you." } },
+	{ id = "grade_five", name = "A real Fixer", desc = "Reach Grade 5 as a Fixer.", minAge = 18, maxAge = 70, weight = 8, when = { career = "fixer" }, check = { when = { career = "fixer", minRank = 5 } }, progress = { rank = 5 }, reward = { wage = { 80, 160 }, log = "Grade 5. Offices compete for you now." } },
+	{ id = "expedition_one", name = "Out past the walls", desc = "Finish an expedition.", minAge = 14, maxAge = 70, check = { tally = { expeditions = 1 } }, progress = { tally = "expeditions", target = 1 }, reward = { sanity = 3, log = "You went somewhere most people never go, and came back." } },
+	{ id = "expedition_five", name = "Seasoned", desc = "Finish 5 expeditions.", minAge = 18, maxAge = 75, weight = 6, check = { tally = { expeditions = 5 } }, progress = { tally = "expeditions", target = 5 }, reward = { wage = { 60, 120 }, log = "Five expeditions. Crews ask for you by name." } },
+	{ id = "people_person", name = "People person", desc = "Spend time with people 8 times.", minAge = 12, maxAge = 80, check = { tally = { interactions = 8 } }, progress = { tally = "interactions", target = 8 }, reward = { sanity = 4, log = "You kept up with people. They kept up with you." } },
+	{ id = "parent", name = "Someone to raise", desc = "Take in a child.", minAge = 24, maxAge = 60, check = { minChildren = 1 }, progress = { children = 1 }, reward = { sanity = 5, log = "There's a small pair of boots by your door now." } },
+	{ id = "big_family", name = "A full table", desc = "Raise three children.", minAge = 28, maxAge = 70, weight = 5, check = { minChildren = 3 }, progress = { children = 3 }, reward = { sanity = 6, log = "Three children at your table, all talking at once." } },
+	{ id = "strong_body", name = "Built like a Rhino", desc = "Reach 70 Health.", minAge = 16, maxAge = 50, check = { when = { min = { health = 70 } } }, progress = { stat = "health", target = 70 }, reward = { strength = 2, log = "You could carry a WARP crate up ten flights without stopping." } },
+	{ id = "sharp_mind", name = "Sharp as a scalpel", desc = "Reach 60 Intelligence.", minAge = 16, maxAge = 70, check = { when = { min = { intelligence = 60 } } }, progress = { stat = "intelligence", target = 60 }, reward = { wage = { 30, 60 }, log = "People bring you their problems now, and pay you for the answers." } },
+	{ id = "fair_hand", name = "Fast hands", desc = "Reach 60 Strength.", minAge = 16, maxAge = 70, check = { when = { min = { strength = 60 } } }, progress = { stat = "strength", target = 60 }, reward = { sanity = 3, log = "When there's trouble on the street, they send for you." } },
+	{ id = "wanderer", name = "See the City", desc = "Move twice.", minAge = 18, maxAge = 60, weight = 6, check = { minMoves = 2 }, reward = { mind = 2, log = "You know more than one District from the inside now." } },
+	{ id = "lore_seeker", name = "Seen things", desc = "Survive an Abnormality or a Distortion.", minAge = 16, maxAge = 70, weight = 4, check = { when = { flags = { "saw_abnormality" } } }, reward = { mind = 3, log = "You've seen something most people only hear about. It changed how you see everything else." } },
+}

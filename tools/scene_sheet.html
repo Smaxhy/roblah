@@ -1,0 +1,82 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Scene Art Sheet</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Merriweather:wght@700&family=Montserrat:wght@700&family=Oswald:wght@500;700&family=Roboto+Mono:wght@500&family=Special+Elite&display=swap">
+<style>
+/* Contact sheet for preview/scenes.js: every scene at phone (360x120) and PC (900x260) size.
+   ?scene=a,b limits the list, ?seed=N picks the seed, ?seeds=N shows N seeds of each at phone size,
+   ?mode=card shows each banner on a paper event card (&fade=e7e0d1 fades it into the paper). */
+:root { color-scheme: dark; --ink: #0e1014; --sub: #a8aab0; --paper: #e7e0d1; --paper-edge: #baae96; }
+* { box-sizing: border-box; }
+body { margin: 0; padding: 16px; background: #050608; color: #ece8e1; font: 13px/1.4 Montserrat, system-ui, sans-serif; }
+h1 { font: 700 18px Oswald, sans-serif; letter-spacing: .12em; text-transform: uppercase; margin: 0 0 12px; }
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(360px, 1fr)); gap: 14px 16px; }
+.cell { display: flex; flex-direction: column; gap: 4px; }
+.cell b { font: 500 12px Oswald, sans-serif; letter-spacing: .08em; text-transform: uppercase; color: var(--sub); }
+.banner { width: 360px; height: 120px; background: #000; }
+.big .banner { width: 900px; height: 260px; }
+.big { display: flex; flex-direction: column; gap: 14px; }
+.seeds { display: flex; gap: 8px; flex-wrap: wrap; }
+.seeds .banner { width: 360px; height: 120px; }
+.card { width: 360px; background: var(--paper); border: 2px solid var(--paper-edge); border-radius: 2px; color: #1c1a17; }
+.card .band { height: 30px; background: #1c1a17; color: #f3eee2; font: 700 13px Oswald, sans-serif; letter-spacing: .08em; text-transform: uppercase; display: flex; align-items: center; padding: 0 12px; }
+.card .banner { width: 100%; height: 110px; }
+.card h2 { margin: 12px 14px 4px; font: 700 20px Merriweather, serif; }
+.card p { margin: 0 14px 14px; font: 14px/1.45 Merriweather, serif; }
+</style>
+<h1>Scene art · <span id="what"></span></h1>
+<div id="out"></div>
+<script src="../preview/scenes.js"></script>
+<script>
+(function () {
+  const q = new URLSearchParams(location.search);
+  const list = q.get("scene") ? q.get("scene").split(",") : SceneArt.scenes;
+  const seed = q.has("seed") ? Number(q.get("seed")) : 1;
+  const out = document.getElementById("out");
+  const mode = q.get("mode") || "small";
+  document.getElementById("what").textContent = mode + " · seed " + seed;
+  function cell(parent, id, s, label) {
+    const c = document.createElement("div");
+    c.className = "cell";
+    const b = document.createElement("b");
+    b.textContent = label || id;
+    const d = document.createElement("div");
+    d.className = "banner";
+    c.append(b, d);
+    parent.append(c);
+    SceneArt.draw(d, id, s);
+  }
+  if (mode === "small") {
+    const g = document.createElement("div");
+    g.className = "grid";
+    out.append(g);
+    list.forEach((id) => cell(g, id, seed));
+  } else if (mode === "big") {
+    const g = document.createElement("div");
+    g.className = "big";
+    out.append(g);
+    list.forEach((id) => cell(g, id, seed));
+  } else if (mode === "seeds") {
+    const n = Number(q.get("n") || 4);
+    list.forEach((id) => {
+      const row = document.createElement("div");
+      row.className = "seeds";
+      out.append(row);
+      for (let s = 1; s <= n; s++) cell(row, id, s, id + " · seed " + s);
+    });
+  } else if (mode === "card") {
+    const g = document.createElement("div");
+    g.className = "grid";
+    out.append(g);
+    list.forEach((id) => {
+      const c = document.createElement("div");
+      c.className = "card";
+      c.innerHTML = '<div class="band">Report</div><div class="banner"></div><h2>' + id + '</h2><p>A short line of event text sits under the picture.</p>';
+      g.append(c);
+      SceneArt.draw(c.querySelector(".banner"), id, seed, q.get("fade") ? { fade: "#" + q.get("fade") } : undefined);
+    });
+  }
+  window.__ready = document.fonts.ready.then(() => new Promise((r) => setTimeout(r, 400)));
+})();
+</script>

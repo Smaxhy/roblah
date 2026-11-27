@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>GUI Snapshot Render</title>
+<!--
+  Draws a dump from tests/gui_snapshot.luau. shoot.js drives this page to make PNGs; it also
+  works by hand: serve the folder (python3 -m http.server -d tools/gui_render 8000) and open
+  render.html?dump=out/dumps/pc/menu.json, or open the file directly and drop a .json on it.
+  Options in the URL: bg=city|dark|none  topbar=0  folderPadding=0  outline=1
+  Hover the picture to see which instance is where.
+-->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<style>
+  :root { color-scheme: dark; }
+  html, body { margin: 0; padding: 0; background: #050608; color: #ece8e1; font: 13px/1.4 system-ui, sans-serif; }
+  body.shot { overflow: hidden; }
+  #stage { position: relative; }
+  .gr-screen { position: relative; overflow: hidden; background: #000; isolation: isolate; }
+  .gr-backdrop { position: absolute; left: 0; top: 0; }
+  .gr-gui { position: absolute; left: 0; }
+  .gr-n { position: absolute; box-sizing: border-box; }
+  .gr-bg { position: absolute; inset: 0; }
+  .gr-c { position: absolute; inset: 0; }
+  .gr-canvas { position: absolute; }
+  .gr-t { position: absolute; display: flex; flex-direction: column; }
+  .gr-tb { font-size: 0; overflow-wrap: normal; word-break: normal; -webkit-font-smoothing: antialiased; }
+  .gr-vp { position: absolute; inset: 0; width: 100%; height: 100%; }
+  .gr-img { position: absolute; inset: 0; }
+  .gr-sb { position: absolute; border-radius: 1px; }
+  .gr-topbar { position: absolute; left: 0; top: 0; right: 0; pointer-events: none; }
+  .gr-pill { position: absolute; background: rgba(18, 18, 21, 0.72); box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.06); }
+  #drop { padding: 40px; max-width: 640px; }
+  #drop code { color: #edc472; }
+  #tip { position: fixed; z-index: 99; pointer-events: none; background: rgba(0, 0, 0, 0.85); border: 1px solid #50555f; padding: 4px 8px; border-radius: 3px; font: 12px/1.35 ui-monospace, monospace; max-width: 560px; display: none; white-space: pre-wrap; }
+  #hl { position: fixed; z-index: 98; pointer-events: none; outline: 1px solid #60bab2; background: rgba(96, 186, 178, 0.08); display: none; }
+</style>
+</head>
+<body>
+<div id="stage"></div>
+<div id="drop" hidden>
+  <h2>GUI snapshot renderer</h2>
+  <p>Drop a dump (<code>tools/gui_render/out/dumps/&lt;device&gt;/&lt;state&gt;.json</code>) here, or open
+  <code>render.html?dump=out/dumps/pc/menu.json</code> from a local server
+  (<code>python3 -m http.server -d tools/gui_render 8000</code>).</p>
+  <p><input type="file" id="file" accept=".json,application/json"></p>
+</div>
+<div id="tip"></div><div id="hl"></div>
+<script src="vendor/three.min.js"></script>
+<script>if (!window.THREE) document.write('<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"><\/script>');</script>
+<script src="backdrop.js"></script>
+<script src="render.js"></script>
+<script>
+(() => {
+  const q = new URLSearchParams(location.search);
+  const options = {
+    backdrop: q.get("bg") || "city",
+    topbar: q.get("topbar") !== "0",
+    folderPadding: q.get("folderPadding") !== "0",
+    outline: q.get("outline") === "1",
+  };
+  const stage = document.getElementById("stage");
+  // shoot.js calls this with the dump and waits for the promise
+  window.renderDump = async (dump, extra) => {
+    document.getElementById("drop").hidden = true;
+    const res = await GuiRender.render(dump, stage, Object.assign({}, options, extra || {}));
+    window.__rendered = res;
+    return res;
+  };
+  if (q.get("shot") === "1") { document.body.classList.add("shot"); return; }
+
+  const show = (dump) => renderDump(dump).catch((e) => { stage.textContent = "Couldn't draw that dump: " + e.message; });
+  const dumpUrl = q.get("dump");
+  if (dumpUrl) {
+    fetch(dumpUrl).then((r) => r.json()).then(show).catch((e) => { stage.textContent = "Couldn't load " + dumpUrl + ": " + e.message; });
+  } else {
+    document.getElementById("drop").hidden = false;
+  }
+  const readFile = (f) => f && f.text().then((t) => show(JSON.parse(t)));
+  document.getElementById("file").addEventListener("change", (e) => readFile(e.target.files[0]));
+  document.addEventListener("dragover", (e) => e.preventDefault());
+  document.addEventListener("drop", (e) => { e.preventDefault(); readFile(e.dataTransfer.files[0]); });
+
+  // hover: which instance is this
+  const tip = document.getElementById("tip"), hl = document.getElementById("hl");
+  document.addEventListener("mousemove", (e) => {
+    const hits = document.elementsFromPoint(e.clientX, e.clientY).filter((x) => x.classList && x.classList.contains("gr-n"));
+    const el = hits.find((x) => x.dataset.draws) || hits[0];
+    if (!el) { tip.style.display = hl.style.display = "none"; return; }
+    const r = el.getBoundingClientRect();
+    hl.style.display = "block";
+    Object.assign(hl.style, { left: r.left + "px", top: r.top + "px", width: r.width + "px", height: r.height + "px" });
+    tip.style.display = "block";
+    tip.textContent = `${el.dataset.path}\n${el.dataset.cls}  ${Math.round(r.width)}x${Math.round(r.height)} at ${Math.round(r.left)},${Math.round(r.top)}`;
+    tip.style.left = Math.min(e.clientX + 14, innerWidth - 580) + "px";
+    tip.style.top = e.clientY + 16 + "px";
+  });
+})();
+</script>
+</body>
+</html>

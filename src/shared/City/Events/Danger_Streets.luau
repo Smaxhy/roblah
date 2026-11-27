@@ -1,0 +1,410 @@
+--[[
+	Danger and horror (dz_): ordinary streets on bad days. Rats with war-surplus rifles,
+	Syndicate fights, Workshop accidents, Nest clearances, Feather raids, bad water, a stalker,
+	a cult and a crowd.
+	Chains:
+		dz_s_clearance -> dz_s_clearance_day
+		dz_s_cistern -> dz_s_cistern_thing
+		dz_s_notes -> (1 year) dz_s_key -> dz_s_kitchen   someone practicing being you
+		dz_s_pillar -> (1 year) dz_s_pillar_visit
+]]
+
+return {
+	-- ── Rats, Syndicates, Workshops ──
+	{
+		id = "dz_s_rat_rifles",
+		title = "Rats With Rifles",
+		text = "Four Rats with old Smoke War rifles have the noodle stall on its knees. One points his at you, almost bored. \"Pockets,\" he says.",
+		weight = 3,
+		cooldown = 10,
+		tags = { "danger", "crime" },
+		when = { minAge = 14, side = "backstreets" },
+		codex = "fn_lore_rats",
+		choices = {
+			{ label = "Empty your pockets", result = { money = { -80, -20 }, sanity = -3, log = "You emptied your pockets onto the counter. They took the Ahn and left your keys, which for Rats is a kindness." } },
+			{
+				label = "Run for the alley",
+				hint = "Speed check.",
+				clash = { stat = "speed", foe = "A bored Rat with a rifle", coins = 2, base = 5, coinPower = 3 },
+				win = { sanity = -2, log = "A shot went over your head. You were round the corner before the second." },
+				lose = { health = { -16, -8 }, condition = "dz_maimed", log = "You weren't round the corner in time.", cause = "Shot running from Rats" },
+			},
+			{
+				label = "Take the rifle off him",
+				clash = { stat = "strength", foe = "Four Rats with rifles", coins = 3, base = 7, coinPower = 3, fight = true, status = { id = "rupture", potency = 2 } },
+				win = { strength = 3, wage = { 40, 120 }, log = "You had his rifle before he finished yawning, and the other three ran. The cook fed you free for a month." },
+				lose = { health = { -20, -8 }, log = "There were four of them.", cause = "Killed by Rats with Smoke War rifles" },
+			},
+		},
+	},
+	{
+		id = "dz_s_stairwell_war",
+		title = "War on the Stairs",
+		text = "The Night Awls and the Dead Rabbits are settling something in your stairwell, one landing at a time. Your door is the only thing between them.",
+		weight = 3,
+		cooldown = 10,
+		tags = { "danger", "crime" },
+		when = { minAge = 13, side = "backstreets", world = { streets = "turf_war" } },
+		codex = "fn_lore_syndicates",
+		choices = {
+			{
+				label = "Barricade the door",
+				hint = "Health check.",
+				clash = { stat = "health", foe = "A door under fire", coins = 2, base = 5, coinPower = 3, fixed = true },
+				win = { sanity = -5, log = "You lay behind the wardrobe for two hours. By morning it was quiet, and your door had eleven new holes." },
+				lose = { health = { -16, -8 }, sanity = -4, log = "The door gave before the wardrobe did.", cause = "Caught in a Syndicate fight on the stairs" },
+			},
+			{
+				label = "Out the window",
+				hint = "Strength check.",
+				clash = { stat = "strength", foe = "A fourth-floor ledge", coins = 2, base = 5, coinPower = 3, fixed = true },
+				win = { sanity = -3, log = "Along the ledge, down the drainpipe, across the laundry lines. You slept in the bathhouse." },
+				lose = { health = { -16, -6 }, condition = "broken_arm", log = "The drainpipe came away from the wall.", cause = "Fell from a fourth-floor ledge" },
+			},
+			{
+				label = "Pull the neighbor's boy in",
+				hint = "Strength check.",
+				clash = { stat = "strength", foe = "A landing full of bullets", coins = 3, base = 6, coinPower = 3 },
+				win = { sanity = 2, strength = 2, addRelation = { kind = "friend", name = "Mrs. Baek", bond = 70, age = { 30, 45 } }, log = "You dragged the Baek boy in by his collar while the landing lit up. His mother has never let you pay for anything since." },
+				lose = { health = { -18, -8 }, log = "You got him inside. You were the one left on the landing.", cause = "Pulled a child out of a Syndicate fight" },
+			},
+			{ label = "Lie flat behind the bed", result = { sanity = -8, health = { -6, -2 }, cause = "Caught in a Syndicate fight on the stairs", log = "You lay flat behind the bed for two hours while the walls were redecorated around you." } },
+		},
+	},
+	{
+		id = "dz_s_test_fire",
+		title = "Thursday Test Fire",
+		text = "The Workshop downstairs test-fires a prototype every Thursday. This Thursday the whole building jumps, the lights go out, and somebody downstairs starts screaming.",
+		weight = 2,
+		once = true,
+		tags = { "danger" },
+		when = { minAge = 14, side = "backstreets" },
+		codex = "fx_lore_workshops",
+		choices = {
+			{
+				label = "Run down and help",
+				hint = "Speed check.",
+				clash = { stat = "speed", foe = "A burning Workshop", coins = 2, base = 5, coinPower = 3, fixed = true },
+				win = { strength = 2, sanity = 2, wage = { 40, 100 }, log = "You dragged the apprentice out by his apron. The Rep paid you, and asked if you wanted a job." },
+				lose = { health = { -18, -8 }, condition = "burns", log = "The second blast came while you were on the stairs.", cause = "Killed in a Workshop explosion" },
+			},
+			{ label = "Get yourself out", result = { sanity = -4, money = { -40, -10 }, log = "You got out with your shoes in your hand, and the building stood. The apprentice didn't make it." } },
+			{
+				label = "Grab the prototype",
+				hint = "Intelligence check.",
+				clash = { stat = "intelligence", foe = "A prototype still humming", coins = 3, base = 6, coinPower = 3, fixed = true },
+				win = { money = { 200, 400 }, sanity = -4, log = "You carried it out in a wet blanket and sold it to a rival Workshop by noon. Nobody asked where it came from." },
+				lose = { health = { -18, -8 }, condition = "dz_maimed", log = "It was still humming when you picked it up. Then it wasn't.", cause = "Picked up a live Workshop prototype" },
+			},
+		},
+	},
+	{
+		id = "dz_s_forge",
+		title = "The Pressure Forge",
+		text = "The apprentice set the pressure forge three notches too high and went for lunch. The gauge needle is shaking at the red line, and the whole Workshop is ticking like a clock.",
+		weight = 8,
+		once = true,
+		tags = { "danger" },
+		when = { minAge = 16, career = "workshop" },
+		codex = "bs_lore_workshops",
+		choices = {
+			{
+				label = "Shut the valve",
+				hint = "Intelligence check.",
+				clash = { stat = "intelligence", foe = "A forge about to burst", coins = 2, base = 5, coinPower = 3, fixed = true },
+				win = { intelligence = 2, paycheck = 0.3, log = "You turned the valve with a rag round your hand, and the needle sank. The Rep gave you the apprentice's bonus." },
+				lose = { health = { -18, -8 }, condition = "burns", log = "The valve was rusted shut.", cause = "Killed when a Workshop forge burst" },
+			},
+			{ label = "Clear the floor", result = { sanity = -3, log = "You got everyone out before the forge went at 12:40 and took the back wall. Nobody was standing behind it." } },
+			{ label = "Run", result = { sanity = -6, quitCareer = true, log = "You ran, and the forge held, as it happened. The Rep didn't hold your job." } },
+		},
+	},
+
+	-- ── the Wings come to the Backstreets ──
+	{
+		id = "dz_s_clearance",
+		title = "Clearance Notice",
+		text = "A notice on every door: the Nest is moving its wall out by four blocks. Blocks nine to fourteen will be cleared in three days. Your block is eleven.",
+		weight = 2,
+		once = true,
+		tags = { "danger" },
+		when = { minAge = 16, side = "backstreets" },
+		codex = "bs_lore_nests",
+		choices = {
+			{ label = "Pack and leave now", result = { money = { -120, -60 }, sanity = -4, log = "You sold what you couldn't carry for a tenth of its worth and found a room six blocks out." } },
+			{
+				label = "Stay and protest",
+				hint = "Strength check.",
+				clash = { stat = "strength", foe = "The Wing's patience", coins = 2, base = 5, coinPower = 3, fixed = true },
+				win = { strength = 2, sanity = -2, log = "Three hundred of you blocked the road for a day, and the Wing moved the wall three blocks instead of four. Your block stayed." },
+				lose = { sanity = -4, trigger = "dz_s_clearance_day", log = "The protest broke up on the second day. You were still there on the third." },
+			},
+			{ label = "Hide and wait it out", result = { sanity = -2, trigger = "dz_s_clearance_day", log = "You stocked the cellar and waited." } },
+		},
+	},
+	{
+		id = "dz_s_clearance_day",
+		title = "The Clearance",
+		text = "The Feathers come in white armor, three abreast, block by block. They aren't checking papers. They aren't checking anything.",
+		weight = 0,
+		when = { side = "backstreets" },
+		codex = "dz_lore_feather_raids",
+		choices = {
+			{
+				label = "Run for the canal",
+				hint = "Speed check.",
+				clash = { stat = "speed", foe = "A line of Feathers", coins = 3, base = 6, coinPower = 3, fixed = true },
+				win = { sanity = -8, money = { -100, -40 }, log = "You went into the canal and came out two blocks downstream with nothing but your life. It was enough." },
+				lose = { health = { -20, -8 }, log = "The line closed before you reached the canal.", cause = "Lost in a Nest clearance" },
+			},
+			{
+				label = "Stay hidden in the cellar",
+				hint = "Mental Strength check. Very bad odds.",
+				clash = { stat = "mind", foe = "White armor on the stairs", coins = 4, base = 9, coinPower = 4, fixed = true },
+				win = { sanity = -12, setFlags = { "dz_unsurvivable" }, addTrait = "dz_scar_tissue", log = "They walked over your cellar door for an hour, then brought the building down on top of it. You dug out two days later into a street that wasn't a street any more." },
+				lose = { die = "Cleared with the outer blocks", log = "They found the cellar." },
+			},
+			{ label = "Surrender", result = { sanity = -10, money = { -200, -80 }, loseGear = true, log = "They took everything, put you on a truck, and left you at the edge of the next block at dusk." } },
+		},
+	},
+	{
+		id = "dz_s_the_box",
+		title = "Hold This for Me",
+		text = "Your neighbor asked you to keep a box for a week. Tonight a Wing retrieval team in white armor is kicking in doors along your street, and the box under your bed has started to hum.",
+		weight = 2,
+		once = true,
+		tags = { "danger" },
+		when = { minAge = 16 },
+		codex = "dz_lore_feather_raids",
+		choices = {
+			{ label = "Hand it over at the door", result = { sanity = -8, log = "They took the box and your neighbor, in that order, and thanked you for your cooperation." } },
+			{
+				label = "Hide it and play dumb",
+				hint = "Mental Strength check.",
+				clash = { stat = "mind", foe = "A retrieval team", coins = 3, base = 6, coinPower = 3, fixed = true },
+				win = { money = { 250, 500 }, sanity = -4, log = "They searched for an hour and missed it, and your neighbor never came back for it. A Workshop paid well and asked nothing." },
+				lose = { health = { -18, -8 }, condition = "dz_maimed", log = "The box hummed louder when they walked in.", cause = "Killed in a Feather raid" },
+			},
+			{
+				label = "Out the back with it",
+				hint = "Strength check.",
+				clash = { stat = "strength", foe = "White armor in the alley", coins = 3, base = 7, coinPower = 3 },
+				win = { money = { 300, 600 }, sanity = -6, condition = "dz_hunted", log = "You ran it across two Districts and sold it before dawn. The Wing is still looking for whoever did." },
+				lose = { health = { -22, -10 }, condition = "dz_maimed", log = "They had someone in the alley.", cause = "Shot in a Feather raid" },
+			},
+		},
+	},
+
+	-- ── bad water ──
+	{
+		id = "dz_s_cistern",
+		title = "The Water Tastes Like Coins",
+		text = "Half the block is sick, and the cistern water tastes of old coins. At night something in the cistern breathes, slowly, through the water.",
+		weight = 3,
+		once = true,
+		when = { minAge = 8, side = "backstreets" },
+		choices = {
+			{ label = "Buy water from the Nest", hint = "50 Ahn.", requires = { min = { money = 50 } }, result = { money = -50, sanity = -1, log = "You paid Nest prices for clean water all season. Half your neighbors couldn't." } },
+			{ label = "Boil it and hope", result = { condition = "dz_bad_water", sanity = -2, log = "You boiled it twice. It still tasted of coins." } },
+			{ label = "Climb up and look", requires = { minAge = 14 }, result = { sanity = -3, trigger = "dz_s_cistern_thing", log = "You took a lamp up the iron ladder at midnight." } },
+		},
+	},
+	{
+		id = "dz_s_cistern_thing",
+		title = "In the Cistern",
+		text = "Your lamp finds it at the bottom of the cistern: something curled up and pale, big as a cart, breathing slowly through the water. Its eyes open.",
+		weight = 0,
+		when = { minAge = 14 },
+		choices = {
+			{ label = "Drop the lid and run", result = { sanity = -8, condition = "dz_bad_water", log = "You slammed the lid and ran. The block drank Nest water for a year, and the breathing never stopped." } },
+			{
+				label = "Kill it",
+				clash = { stat = "strength", foe = "The thing in the cistern", coins = 3, base = 8, coinPower = 4, fight = true, status = { id = "sinking", potency = 2 } },
+				win = { strength = 3, wage = { 80, 180 }, log = "It took an hour and a borrowed harpoon. The water ran clean by the end of the month." },
+				lose = { die = "Pulled into the cistern", log = "It was much faster in the water." },
+			},
+			{
+				label = "Sell the tip to Fixers",
+				hint = "Intelligence check.",
+				clash = { stat = "intelligence", foe = "Fixers who haggle", coins = 2, base = 4, coinPower = 3, fixed = true },
+				win = { money = { 120, 220 }, log = "A Grade 6 Office paid well for the tip and cleared it in a night." },
+				lose = { money = 30, sanity = -3, log = "They paid you thirty Ahn and charged the block three hundred." },
+			},
+		},
+	},
+
+	-- ── someone who knows your name ──
+	{
+		id = "dz_s_notes",
+		title = "Someone Knows Your Name",
+		text = "A note under your door: your name, your shift times, and the color of the socks you wore yesterday. No signature. The handwriting is very neat.",
+		weight = 2,
+		once = true,
+		when = { minAge = 16 },
+		choices = {
+			{ label = "Change your routine", result = { sanity = -3, money = -20, condition = "dz_hunted", schedule = { event = "dz_s_key", inYears = 1 }, log = "New route, new hours, new socks. The notes kept coming, and they knew the new route too." } },
+			{
+				label = "Wait up and catch them",
+				hint = "Mental Strength check.",
+				clash = { stat = "mind", foe = "Someone very patient", coins = 2, base = 5, coinPower = 3, fixed = true },
+				win = { sanity = -2, setFlags = { "dz_stalker_warned" }, schedule = { event = "dz_s_key", inYears = 1 }, log = "You caught a Rat kid sliding the note under at four. Someone had paid him, and their coat, he said, was exactly like yours." },
+				lose = { sanity = -6, condition = "dz_hunted", schedule = { event = "dz_s_key", inYears = 1 }, log = "You fell asleep at 3:40. The next note mentioned that you snore." },
+			},
+			{ label = "Hire a Seven investigator", hint = "200 Ahn.", requires = { min = { money = 200 } }, result = { money = -200, sanity = -2, codex = "fx_lore_seven", log = "A Seven Association investigator took the case, and the notes stopped. \"You don't want to know who,\" she said, and you believed her." } },
+		},
+	},
+	{
+		id = "dz_s_key",
+		title = "A Key on the Step",
+		text = "A gift on your step, wrapped in brown paper: a key to your own front door, freshly cut. Whoever it is has been inside.",
+		weight = 0,
+		when = { minAge = 16 },
+		choices = {
+			{ label = "Move, tonight", hint = "150 Ahn.", requires = { min = { money = 150 } }, result = { money = -150, sanity = -4, cure = "dz_hunted", log = "You moved across the District with two bags and told nobody the address, and the notes stopped. You still check under the door." } },
+			{ label = "Change the locks and wait", result = { sanity = -4, money = -40, trigger = "dz_s_kitchen", log = "Three new locks and a chair under the handle." } },
+			{
+				label = "Set a trap",
+				hint = "Intelligence check.",
+				clash = { stat = "intelligence", foe = "Someone who knows your habits", coins = 2, base = 5, coinPower = 3, fixed = true },
+				win = { sanity = -2, setFlags = { "dz_stalker_warned" }, trigger = "dz_s_kitchen", log = "A bell on a thread across the hall. It rang at 2:10." },
+				lose = { sanity = -6, trigger = "dz_s_kitchen", log = "In the morning the trap was neatly reset, with a note: \"Good try.\"" },
+			},
+		},
+	},
+	{
+		id = "dz_s_kitchen",
+		title = "In Your Kitchen",
+		text = "2:10 in the morning. Someone is sitting very straight in your dark kitchen, wearing a coat exactly like yours. \"I've been practicing being you,\" they say. \"I'm nearly ready.\"",
+		weight = 0,
+		when = { minAge = 16 },
+		choices = {
+			{
+				label = "Fight",
+				clash = { stat = "strength", foe = "The one who knows your name", coins = 3, base = 7, coinPower = 3, fight = true, status = { id = "bleed", potency = 2 } },
+				win = { strength = 2, sanity = -4, cure = "dz_hunted", log = "You won, and they ran out into the dark at 2:30, still wearing your coat. The Night took care of the rest." },
+				lose = { health = { -20, -8 }, log = "They knew every move you'd make. Of course they did.", cause = "Killed by the one who knew your name" },
+			},
+			{
+				label = "Talk to them",
+				hint = "Charisma check. You know who they are.",
+				requires = { flags = { "dz_stalker_warned" } },
+				clash = { stat = "charisma", foe = "Someone who wants your life", coins = 2, base = 5, coinPower = 3, fixed = true },
+				win = { sanity = 2, cure = "dz_hunted", log = "They'd lost their own life somewhere and wanted to borrow yours. You talked until the shaking stopped, and walked them to a night shelter at 2:58." },
+				lose = { health = { -16, -8 }, sanity = -10, condition = "dz_terror", log = "You talked until three. They left wearing your coat, and you've never been sure, since, which of you went to work the next day.", cause = "Talked to the one who practiced being you" },
+			},
+			{
+				label = "Talk to them",
+				hint = "Charisma check.",
+				requires = { notFlags = { "dz_stalker_warned" } },
+				clash = { stat = "charisma", foe = "Someone who wants your life", coins = 3, base = 6, coinPower = 3, fixed = true },
+				win = { sanity = 2, cure = "dz_hunted", log = "They'd lost their own life somewhere and wanted to borrow yours. You talked until the shaking stopped, and walked them to a night shelter at 2:58." },
+				lose = { die = "Replaced by someone who practiced being you", log = "You talked until three. In the morning someone in your coat went to your job, and nobody noticed." },
+			},
+			{ label = "Run for a night shelter", hint = "The Night is an hour off.", result = { money = -40, sanity = -8, condition = "dz_terror", log = "You banged on a night shelter's door at 2:40 until they let you in. In the morning your kitchen was empty, and your coat was gone." } },
+		},
+	},
+
+	-- ── crowds ──
+	{
+		id = "dz_s_pillar",
+		title = "The Children of the Pillar",
+		text = "A crowd in white meets at dawn under the old overpass. They miss the White Nights, and they say the Light comes back through anyone pushed far enough. One hands you a tuning fork that hums your worst memory.",
+		weight = 2,
+		once = true,
+		when = { minAge = 14, world = { era = { "library", "limbus" } } },
+		codex = "terms_distortion",
+		choices = {
+			{ label = "Smash the fork", result = { sanity = 2, schedule = { event = "dz_s_pillar_visit", inYears = 1 }, log = "You smashed it on the curb. Every one of them turned to look at you, all at once." } },
+			{ label = "Keep the fork", result = { sanity = -10, setFlags = { "dz_pillar_fork" }, schedule = { event = "dz_s_pillar_visit", inYears = 1 }, log = "You kept it in a drawer. You took it out more often than you meant to." } },
+			{ label = "Walk away for good", result = { sanity = -3, log = "You took a different road to work for a year. The overpass is fenced off now, and nobody says why." } },
+		},
+	},
+	{
+		id = "dz_s_pillar_visit",
+		title = "They Came for You",
+		text = "Twenty of the Children of the Pillar are at your door at dawn, smiling. \"You're so close,\" says the one in front. \"We only want to help you the rest of the way.\"",
+		weight = 0,
+		when = { world = { era = { "library", "limbus" } } },
+		codex = "terms_distortion",
+		choices = {
+			{
+				label = "Slam the door",
+				hint = "Health check.",
+				clash = { stat = "health", foe = "Twenty smiling people", coins = 3, base = 6, coinPower = 3, fixed = true },
+				win = { sanity = -4, log = "You held the door until they went away singing. You moved in the spring." },
+				lose = { sanity = -15, health = { -14, -5 }, log = "They came in and sat with you all day, humming. When they left you couldn't stop shaking.", cause = "Pushed toward the edge by the Children of the Pillar" },
+			},
+			{
+				label = "Drive them off",
+				clash = { stat = "strength", foe = "The Children of the Pillar", coins = 3, base = 7, coinPower = 3, fight = true, status = { id = "sinking", potency = 3 } },
+				win = { strength = 2, sanity = -2, log = "They scattered like pigeons. The one in front was still smiling as he ran." },
+				lose = { sanity = -20, health = { -20, -8 }, log = "There were too many of them, and the humming got inside.", cause = "Fought the Children of the Pillar" },
+			},
+			{ label = "Give them back the fork", requires = { flags = { "dz_pillar_fork" } }, result = { sanity = 6, clearFlags = { "dz_pillar_fork" }, log = "You gave it back, and the humming in your head stopped like a tap turned off. They left looking disappointed in you." } },
+			{ label = "Hide under the bed", result = { sanity = -8, log = "You lay under the bed while they knocked and sang and knocked. At noon they went away, still singing." } },
+		},
+	},
+	{
+		id = "dz_s_checkpoint_crowd",
+		title = "The Crowd at the Gate",
+		text = "The Wing raised the Nest residence fee again, and the crowd at the checkpoint has stopped shouting and started pushing. On the wall, the guard turrets turn, very slowly, toward it.",
+		weight = 2,
+		once = true,
+		tags = { "danger" },
+		when = { minAge = 16, side = "backstreets", world = { streets = { "tense", "turf_war" } } },
+		codex = "bs_lore_nests",
+		choices = {
+			{
+				label = "Get out of the crowd",
+				hint = "Strength check.",
+				clash = { stat = "strength", foe = "A crowd of thousands", coins = 2, base = 5, coinPower = 3, fixed = true },
+				win = { sanity = -4, log = "You fought your way to the edge and ran. Behind you, the turrets started." },
+				lose = { health = { -16, -8 }, log = "The crowd went down like a wave, and you went down with it.", cause = "Crushed in the crowd at a Nest checkpoint" },
+			},
+			{
+				label = "Lift a child onto a cart",
+				hint = "Health check.",
+				clash = { stat = "health", foe = "The weight of the crowd", coins = 2, base = 5, coinPower = 3, fixed = true },
+				win = { strength = 2, sanity = -2, log = "You held a little girl up on a fruit cart until it was over. Her father found you at dusk and couldn't speak." },
+				lose = { health = { -16, -8 }, log = "You got her onto the cart. That was as far as you got.", cause = "Held a child above a crushing crowd" },
+			},
+			{
+				label = "Push for the gate",
+				hint = "Strength check. Very bad odds.",
+				clash = { stat = "strength", foe = "The guard turrets", coins = 4, base = 9, coinPower = 4, fixed = true },
+				win = { side = "nest", sanity = -10, setFlags = { "dz_unsurvivable" }, log = "You reached the gate as it opened for a supply truck and went through underneath it. Nobody inside ever asked how you got your papers." },
+				lose = { die = "Reached the Nest gate at the wrong moment", log = "You were nearly at the gate when the turrets finished turning." },
+			},
+			{ label = "Cling to a lamppost", result = { sanity = -6, health = { -6, -2 }, cause = "Crushed in the crowd at a Nest checkpoint", log = "You wrapped your arms round a lamppost and held on while the crowd went past like a flood." } },
+		},
+	},
+
+	-- ── Fixers' business ──
+	{
+		id = "dz_s_shi",
+		title = "The Man at the Window",
+		text = "A wounded man climbs in through your window and begs you to hide him. On the roof opposite, a woman in a Shi Association coat waits politely for you to decide.",
+		weight = 2,
+		once = true,
+		tags = { "danger" },
+		when = { minAge = 16 },
+		codex = "fx_lore_shi",
+		choices = {
+			{
+				label = "Hide him",
+				hint = "Mental Strength check.",
+				clash = { stat = "mind", foe = "A Shi assassin", coins = 3, base = 7, coinPower = 3 },
+				win = { sanity = -4, wage = { 100, 300 }, log = "She searched for an hour, then left. He paid you from a money belt and was gone before dawn." },
+				lose = { health = { -18, -8 }, sanity = -6, log = "She came in through the other window, and apologized for the inconvenience.", cause = "Stood between the Shi and a contract" },
+			},
+			{ label = "Open the window for her", result = { money = 40, sanity = -8, log = "She came in, thanked you, and finished her contract. She left a little Ahn on the table for the carpet." } },
+			{
+				label = "Push him back out",
+				hint = "Health check.",
+				clash = { stat = "health", foe = "A desperate man", coins = 2, base = 4, coinPower = 3, fixed = true },
+				win = { sanity = -6, log = "You shoved him back over the sill. You heard the rest from behind your curtain." },
+				lose = { health = { -16, -6 }, condition = "deep_cut", log = "He fought you for the window until the Shi settled it for both of you.", cause = "Fought a desperate man at your window" },
+			},
+		},
+	},
+}

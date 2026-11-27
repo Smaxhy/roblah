@@ -1,0 +1,27 @@
+{
+  "name": "LifeInTheCity",
+  "tree": {
+    "$className": "DataModel",
+    "ServerScriptService": {
+      "$className": "ServerScriptService",
+      "LifeSimKit": {
+        "$path": "model.project.json"
+      }
+    },
+    "Players": {
+      "$className": "Players",
+      "$properties": {
+        "CharacterAutoLoads": false
+      }
+    },
+    "ReplicatedStorage": {
+      "$className": "ReplicatedStorage"
+    },
+    "Lighting": {
+      "$className": "Lighting"
+    },
+    "Workspace": {
+      "$className": "Workspace"
+    }
+  }
+}

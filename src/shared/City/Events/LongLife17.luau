@@ -1,0 +1,201 @@
+--[[
+	LONG LIVES (v0.17, lg17_ and bf17_ ids): what happens to a life that goes on far past the
+	usual (Engine/Body.luau lifespan). Humans get there with a body the City couldn't wear out,
+	K Corp courses and Workshop bodies; Bloodfiends get there because the blood only gets older
+	(pack.elderBlood: Old Blood at 25 years, Elder Blood at 80, Ancient Blood at 120...).
+
+	Canon behind the Bloodfiend side: Families of Kindred led by Elders, the Thirst, Hemobars,
+	Hardblood, and old manners [Limbus, Canto VII]. Everyone named here is this game's own.
+]]
+
+return {
+	-- ── anyone who lives that long ──────────────────────────────────────────────
+	{
+		id = "lg17_century",
+		title = "A Hundred Years",
+		art = "street",
+		weight = 20,
+		once = true,
+		when = { minAge = 100 },
+		text = "You're a hundred today. The block has strung paper lanterns between the buildings, which it has never done for anybody, and the noodle stall is giving bowls away in your name. Children who've only ever heard of you are standing very still, staring, waiting to see what a hundred looks like up close.",
+		scene = { set = "street", title = "A Hundred Years", line = "Is it true you saw the old Districts? Before they moved the walls?", other = { name = "A child from the block", role = "nine, and brave about it", pose = "stand" } },
+		choices = {
+			{ label = "Make a speech", clash = { stat = "charisma", foe = "A whole block waiting for wisdom", coins = 2, base = 6, coinPower = 3 }, win = { charisma = 3, sanity = 8, renown = 20, log = "You told them three things you'd learned in a hundred years, and the third one made the old woman on six cry. The children repeated it all week." }, lose = { sanity = 4, log = "You lost your place halfway through and told them about a dog you had once instead. They liked that better." } },
+			{ label = "Teach the children one thing", result = { mind = 3, sanity = 6, log = "You showed them how to stand so the Night can't find your shadow. It doesn't work. They'll remember it anyway, and teach it to theirs." } },
+			{ label = "Slip away and watch from a rooftop", result = { sanity = 10, mind = 2, log = "You watched your own party from the roof across the street, with a bowl of noodles, the way you used to watch everything. It was a very good party." } },
+		},
+	},
+	{
+		id = "lg17_outlived",
+		title = "The Last of Your Year",
+		art = "home",
+		weight = 14,
+		once = true,
+		when = { minAge = 88 },
+		text = "The last person you went to school with died this week, peacefully, which in the City is a kind of victory. There's nobody left alive who remembers you at nine. A letter came with a small box: they wanted you to have something.",
+		choices = {
+			{ label = "Open the box", result = { sanity = { -4, 2 }, mind = 2, log = "A marble. The blue one you lost in the yard, eighty years ago. They'd had it the whole time. There's a note: \"Sorry. Couldn't give it back. You'd have known I took it.\"" } },
+			{ label = "Go to the funeral", result = { sanity = { -6, -2 }, charisma = 2, log = "Their grandchildren didn't know who you were until you told them a story about their grandmother at twelve. Then they wouldn't let you leave." } },
+			{ label = "Sit with it alone", result = { mind = 3, sanity = -3, log = "You sat in the dark for a while. There's a particular quiet that comes when the last person who knew you young is gone. You learned its shape." } },
+		},
+	},
+	{
+		id = "lg17_oldest_fighter",
+		title = "The Oldest Fighter in the District",
+		art = "arena",
+		weight = 12,
+		cooldown = 6,
+		tags = { "danger" },
+		when = { minAge = 80, min = { strength = 110 } },
+		text = "Word has got round that the oldest fighter in the District is still the best one. A Grade 3 with a fresh licence and something to prove has turned up at your door with two friends to watch. He bows, which is more than most of them do.",
+		scene = { set = "street", title = "The Oldest Fighter", line = "With respect. I need to know if it's true.", other = { name = "A Grade 3 with a fresh licence", role = "nineteen, and certain", pose = "fight" } },
+		choices = {
+			{ label = "Show him", clash = { stat = "strength", foe = "A Grade 3 who heard about you", fight = true, coins = 4, base = 10, coinPower = 5, fixed = true }, win = { renown = 25, limitBreak = { strength = 5 }, sanity = 4, log = "It took four seconds. You helped him up, and told him what he'd done wrong, and he wrote it down. His friends stopped laughing at the second second." }, lose = { health = { -24, -12 }, renown = 5, log = "He won, barely, and stood over you looking more frightened than proud. \"It was true,\" he said. \"Most of it.\"" } },
+			{ label = "Teach him instead", result = { mind = 3, charisma = 2, sanity = 4, log = "You talked him out of it, and then into a lesson. He comes back on Sundays now. He's going to be very good." } },
+			{ label = "Close the door", result = { sanity = 2, log = "You closed the door. Through it, you heard one of his friends say \"See? Scared.\" You smiled. You've been called worse by better." } },
+		},
+	},
+	{
+		id = "lg17_kcorp_call",
+		title = "K Corp's Courtesy Call",
+		art = "clinic",
+		weight = 6,
+		cooldown = 12,
+		when = { minAge = 58, maxAge = 140 },
+		text = "A K Corp clerk in a spotless coat comes by with a folder and an offer: a regeneration course at their Nest clinic, for a valued older resident, at a price they describe as a courtesy. The green ampules in the brochure photograph very well.",
+		choices = {
+			{ label = "Take the course (2,500 Ahn)", requires = { min = { money = 2500 } }, result = { money = -2500, lifespan = 6, maxHealth = 4, health = { 12, 20 }, log = "A month of green ampules in a white bed. You came out with a body that feels a decade younger, and a bill that feels about the same." } },
+			{ label = "Ask what's in the ampules", clash = { stat = "intelligence", foe = "A clerk trained not to answer", coins = 2, base = 6, coinPower = 3 }, win = { intelligence = 2, codex = "wg_lore_kcorp", log = "He told you more than he meant to, and less than you wanted. Enough to know you'd rather not have asked." }, lose = { log = "He smiled, and answered a different question, and left the brochure." } },
+			{ label = "Decline", result = { sanity = 2, log = "You told him you'd last as long as you last. He made a note in the folder, politely." } },
+		},
+	},
+	{
+		id = "lg17_city_moved_on",
+		title = "The City Moved On",
+		art = "rooftop",
+		weight = 10,
+		once = true,
+		when = { minAge = 75 },
+		text = "You stood on a roof tonight and couldn't find the street you were born on. It's still there; it just has a different name, and different walls, and a Syndicate you've never heard of on the corner. The City doesn't stop. It never waited for anybody.",
+		choices = {
+			{ label = "Walk the old streets anyway", result = { speed = 1, sanity = 4, log = "You walked it by memory. Every third building was still there. The bakery still makes the same bread, under a new name, from the same recipe." } },
+			{ label = "Write down how it was", result = { intelligence = 2, mind = 2, log = "You wrote down every street, every shop, every name. Somebody will want it someday. In the City, somebody always eventually wants the past." } },
+			{ label = "Let it go", result = { mind = 3, sanity = { -2, 4 }, log = "You let it go. The City isn't yours to keep. You were only ever passing through it, like everybody, just slower." } },
+		},
+	},
+	{
+		id = "lg17_apprentice_line",
+		title = "Your Apprentice's Apprentice",
+		art = "office",
+		weight = 8,
+		once = true,
+		when = { minAge = 85 },
+		text = "A young Fixer knocks, holding a letter in a hand you recognise, from someone you taught decades ago. \"She said you'd know what I'm doing wrong,\" the young Fixer says. \"She said you taught her what she taught me. She said you'd want to see how it came out.\"",
+		choices = {
+			{ label = "Watch them fight", result = { mind = 3, sanity = 6, log = "They fought like you, two people removed: the same feet, the same breath before the swing, and one bad habit you'd forgotten you had. You fixed it. You'd forgotten how good that feels." } },
+			{ label = "Send a letter back", result = { charisma = 2, sanity = 4, log = "You wrote three pages back to your old student. They wrote back nine. You're writing to each other every month now, which neither of you expected." } },
+		},
+	},
+
+	-- ── Bloodfiends: the blood gets older ───────────────────────────────────────
+	{
+		id = "bf17_fledgling",
+		title = "A Fledgling at the Door",
+		art = "night",
+		weight = 12,
+		once = true,
+		when = { form = "bloodfiend", bloodYears = 30 },
+		text = "Someone is on your step at three in the morning, newly turned, eyes too red, shaking with a Thirst they don't understand. Nobody told them about Hemobars. Nobody told them anything. Somebody told them your name.",
+		scene = { set = "stairs", title = "A Fledgling at the Door", line = "Please. They said you'd know what this is.", other = { name = "A fledgling Bloodfiend", role = "turned last week", pose = "sit" } },
+		choices = {
+			{ label = "Take them in and teach them", result = { charisma = 3, mind = 2, sanity = 4, rep = { bloodfiends = 6 }, log = "Hemobars first, then manners, then how to keep the Thirst on a leash. They stayed a month. They write to you now, every winter, in very formal language." } },
+			{ label = "Give them Hemobars and an address", result = { sanity = 2, rep = { bloodfiends = 3 }, log = "A box of Hemobars and the address of a Family that takes in strays. It's more than anyone gave you." } },
+			{ label = "Close the door", result = { sanity = -4, log = "You closed the door. You heard them sit down on the step anyway. In the morning they were gone, and you never learned where." } },
+		},
+	},
+	{
+		id = "bf17_graves",
+		title = "Graves",
+		art = "ruins",
+		weight = 10,
+		once = true,
+		when = { form = "bloodfiend", bloodYears = 60 },
+		text = "Everyone from your human life is gone now. You went to find their graves, the ones who got graves, and found some under new buildings and some under nothing, and one with fresh flowers on it that somebody else is still bringing.",
+		choices = {
+			{ label = "Find out who brings the flowers", result = { charisma = 2, sanity = 6, log = "A great-grandchild who's never met you, keeping a promise a grandmother made. You didn't tell them who you were. You left flowers too, the same kind." } },
+			{ label = "Visit every one, one a night", result = { mind = 4, sanity = { -6, 2 }, log = "Forty nights, forty names. On the last one you sat until dawn nearly caught you. The blood doesn't forget. Neither, it turns out, do you." } },
+		},
+	},
+	{
+		id = "bf17_hunters",
+		title = "Hunters Who Heard the Stories",
+		art = "alley",
+		weight = 9,
+		cooldown = 12,
+		tags = { "danger" },
+		when = { form = "bloodfiend", bloodYears = 50 },
+		text = "There are stories about you now, in the bars where Fixers who hunt Bloodfiends drink: an old one, very old, who's never been caught. A party of four has decided the stories are worth testing. They're waiting at the end of your street, and they've done their homework.",
+		scene = { set = "alley", title = "The Hunters", line = "Old blood. We heard you're the oldest in the District.", other = { name = "A Bloodfiend hunter", role = "with three friends behind her", pose = "fight" } },
+		choices = {
+			{ label = "Meet them", clash = { stat = "strength", foe = "Four hunters who did their homework", fight = true, coins = 4, base = 12, coinPower = 5, fixed = true, status = { id = "bleed", potency = 2 } }, win = { renown = 30, strength = 3, limitBreak = { strength = 5 }, log = "Their homework was ten years out of date. They left on their own feet, which is how you meant it, and the stories got bigger." }, lose = { health = { -40, -20 }, sanity = -8, log = "They were better than their homework. You got away into the Night, which they weren't willing to follow you into. Not this time." } },
+			{ label = "Disappear for a decade", result = { speed = 2, sanity = -4, log = "You moved three Districts away, changed your name, and waited them out. You're good at waiting. You've had practice." } },
+			{ label = "Talk them out of it", clash = { stat = "charisma", foe = "Hunters who've heard this before", coins = 3, base = 10, coinPower = 4, fixed = true }, win = { charisma = 3, renown = 15, log = "You told them which of the stories were true. By the end they were buying you a drink they couldn't watch you have." }, lose = { health = { -20, -10 }, log = "They'd heard that one. They'd heard all of them." } },
+		},
+	},
+	{
+		id = "bf17_elder_seat",
+		title = "An Elder's Seat",
+		art = "nest",
+		weight = 12,
+		once = true,
+		when = { form = "bloodfiend", bloodYears = 80 },
+		text = "A young Family has lost its Elder, and its Kindred have come to you, all eleven of them, in their best clothes, to ask you to sit at the head of their table. Your blood is old enough. They say so very formally, and then the youngest one forgets the formality and says please.",
+		scene = { set = "hall", title = "An Elder's Seat", line = "Your blood is old enough to lead us. Will you?", other = { name = "The eldest of a young Family", role = "speaking for eleven", pose = "stand" } },
+		choices = {
+			{ label = "Take the seat", result = { charisma = 4, mind = 3, rep = { bloodfiends = 12 }, setFlags = { "bf17_elder" }, maxHealth = 10, log = "You sat at the head of the table. Eleven Kindred bowed. You are an Elder now, and a Family's manners, its Thirst, and its safety are yours to keep." } },
+			{ label = "Advise them, but don't lead", result = { mind = 3, rep = { bloodfiends = 6 }, log = "You chose one of them to lead and taught her how. You come to dinner once a month and say very little, which is what a good adviser does." } },
+			{ label = "Decline", result = { sanity = 2, log = "You told them you'd been alone too long to be good at anything else. They understood. The youngest one cried, very politely." } },
+		},
+	},
+	{
+		id = "bf17_century_thirst",
+		title = "A Century of Thirst",
+		art = "night",
+		weight = 12,
+		once = true,
+		when = { form = "bloodfiend", bloodYears = 100 },
+		text = "A hundred years of the Thirst. It doesn't get weaker. You get stronger, or you lose to it. Tonight, for the first time in decades, it's loud, the way it was the first year, and you can feel it testing every lock you ever put on it.",
+		choices = {
+			{ label = "Hold it", clash = { stat = "mind", foe = "A century of Thirst, all at once", coins = 4, base = 12, coinPower = 5, fixed = true }, win = { mind = 6, limitBreak = { mind = 10 }, sanity = 6, log = "You held it until dawn. It went quiet, the way a storm goes quiet. You know now that it always will, if you don't let go first." }, lose = { sanity = -18, health = { -10, -4 }, log = "You held it until three, and then you ate your entire stock of Hemobars, all at once, sitting on the kitchen floor. It went quiet. You're not proud. You're alive." } },
+			{ label = "Go to your Family", requires = { flags = { "bf17_elder" } }, result = { sanity = 8, charisma = 2, log = "You went to your Family, and sat at the table, and they sat with you all night without being asked. Being an Elder isn't only about leading." } },
+		},
+	},
+	{
+		id = "bf17_forgotten_name",
+		title = "Nobody Knows Your First Name",
+		art = "street",
+		weight = 10,
+		once = true,
+		when = { form = "bloodfiend", bloodYears = 150 },
+		text = "The last record with your human name on it burned in a records-office fire this year. Nobody alive knows what you were called before the blood. In the District, you're just \"the old one\", and in the Families, a title. You find you can't quite remember it either.",
+		choices = {
+			{ label = "Choose a new name", result = { charisma = 3, sanity = 4, log = "You chose a name, an old-fashioned one, and told the Families. It's yours now. It fits better than the first one did." } },
+			{ label = "Search for the old one", clash = { stat = "intelligence", foe = "A hundred and fifty years of paperwork", coins = 3, base = 10, coinPower = 4, fixed = true }, win = { intelligence = 4, sanity = 8, log = "A school register, in a box, in a basement, in a District that's moved twice. Your name, in a teacher's handwriting. You said it out loud, once." }, lose = { sanity = -4, log = "It's gone. All of it. You were a person once, before. You'll have to take your own word for it." } },
+		},
+	},
+	{
+		id = "bf17_hunters_granddaughter",
+		title = "The Hunter's Granddaughter",
+		art = "alley",
+		weight = 8,
+		once = true,
+		tags = { "danger" },
+		when = { form = "bloodfiend", bloodYears = 120 },
+		text = "Ninety years ago a hunter swore she'd be the one to end you, and didn't. Her granddaughter is standing in your doorway with the old woman's coat on and the old woman's weapon in her hand. \"She talked about you every day,\" she says. \"I came to finish it, or to ask why she couldn't.\"",
+		scene = { set = "stairs", title = "The Hunter's Granddaughter", line = "She talked about you every day of her life.", other = { name = "A hunter's granddaughter", role = "in her grandmother's coat", pose = "fight" } },
+		choices = {
+			{ label = "Tell her why", clash = { stat = "charisma", foe = "Ninety years of a family's story", coins = 3, base = 10, coinPower = 4, fixed = true }, win = { charisma = 4, sanity = 8, mind = 2, log = "You told her about the night her grandmother had you cornered and let you go, and why. She sat down on your step. She came back the next week, without the weapon, with questions." }, lose = { health = { -24, -12 }, log = "She didn't want a story. She wanted what her grandmother wanted. You left before either of you had to find out who was right." } },
+			{ label = "Let her try", clash = { stat = "strength", foe = "A hunter's granddaughter, better than her grandmother", fight = true, coins = 4, base = 13, coinPower = 5, fixed = true }, win = { renown = 25, strength = 3, log = "She was better than her grandmother. You were older. You put the weapon down between you and told her to keep it, and the coat." }, lose = { health = { -40, -20 }, sanity = -6, log = "She was better than her grandmother, and you'd forgotten what it was like to be really hurt. You got away. Barely. She'll be back." } },
+		},
+	},
+}
