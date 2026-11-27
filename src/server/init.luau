@@ -1466,6 +1466,8 @@ function Server.start()
 	HunterLive.install(S)
 	-- (BitLeveling) the Hunters' Market: weapons between players (server/HunterMarket)
 	HunterMarket.install(S)
+	-- (BitLeveling) bonds with everyone you meet, and a party of NPCs (server/HunterParty)
+	require(script.HunterParty).install(S)
 
 	-- ── request plumbing ────────────────────────────────────────────────────
 

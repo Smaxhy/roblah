@@ -917,7 +917,7 @@ function Party.dismiss(sim: any, life: any, rel: any, report: any): boolean
 	if not m then
 		return false
 	end
-	say(sim, life, report, rel, "farewell")
+	local farewell = say(sim, life, report, rel, "farewell")
 	local t = traitSet(rel)
 	local hurt = if t.loyal then 8 elseif t.kind then 5 elseif t.greedy or t.cold then 1 else 3
 	if m.loyalty < 30 then
@@ -929,7 +929,7 @@ function Party.dismiss(sim: any, life: any, rel: any, report: any): boolean
 	for _, e in extra do
 		sim:push(life, report, e)
 	end
-	report.party = { relId = rel.id, name = fullName(rel), dismissed = true }
+	report.party = { relId = rel.id, name = fullName(rel), dismissed = true, line = farewell }
 	return true
 end
 
@@ -1676,6 +1676,7 @@ function Party.interact(sim: any, life: any, rel: any, def: any, option: any, re
 		life.money -= g.price or 0
 		local likes, dislikes = Party.likesOf(sim, life, rel)
 		local liked, disliked = giftMatches(g, likes), giftMatches(g, dislikes)
+		local giftLine: string? = nil
 		local t = traitSet(rel)
 		local result: any
 		if liked then
@@ -1685,7 +1686,7 @@ function Party.interact(sim: any, life: any, rel: any, def: any, option: any, re
 				-- (you know it now; the ones before it you'd have guessed anyway)
 				rel.knownLikes = math.max(rel.knownLikes or 0, at)
 			end
-			say(sim, life, report, rel, "gift")
+			giftLine = say(sim, life, report, rel, "gift")
 		elseif disliked then
 			result = { bond = { -8, -4 }, log = string.format("You gave %s %s. They thanked you the way people do when they mean the opposite.", rel.first, g.name) }
 			local at = table.find(dislikes, disliked)
@@ -1711,7 +1712,7 @@ function Party.interact(sim: any, life: any, rel: any, def: any, option: any, re
 		end
 		rel.gifts = (rel.gifts or 0) + 1
 		Party.note(life, rel, string.format("You gave them %s%s.", g.name, if liked then " (they loved it)" elseif disliked then " (they didn't)" else ""))
-		report.party = { relId = rel.id, name = fullName(rel), gift = g.id, liked = liked ~= nil, disliked = disliked ~= nil }
+		report.party = { relId = rel.id, name = fullName(rel), gift = g.id, liked = liked ~= nil, disliked = disliked ~= nil, line = giftLine, giftName = g.name }
 		return true
 	elseif kind == "past" then
 		local lines = Party.backstory(sim, life, rel)
@@ -2124,6 +2125,21 @@ local function kindName(sim: any, rel: any): string
 	return def.name or rel.kind
 end
 
+-- what you know they like and can't stand, and the gift you'd give them (for a gift picker)
+local function knownOf(sim: any, life: any, rel: any): ({ string }, { string }, string?)
+	local likes, dislikes = Party.likesOf(sim, life, rel)
+	local kl, kd = {}, {}
+	for i = 1, math.min(rel.knownLikes or 0, #likes) do
+		table.insert(kl, likes[i])
+	end
+	for i = 1, math.min(rel.knownDislikes or 0, #dislikes) do
+		table.insert(kd, dislikes[i])
+	end
+	local plan = Party.giftPlan(sim, life, rel)
+	return kl, kd, plan and plan.id
+end
+Party.knownOf = knownOf
+
 function Party.memberView(sim: any, life: any, m: any): any
 	local rel = sim:relationById(life, m.rel)
 	if not rel then
@@ -2131,17 +2147,22 @@ function Party.memberView(sim: any, life: any, m: any): any
 	end
 	Party.ensure(sim, life, rel)
 	local t = rel.rank or 0
+	local kl, kd, pick = knownOf(sim, life, rel)
 	return {
 		relId = rel.id,
 		name = fullName(rel),
 		first = rel.first,
 		age = rel.age,
+		kind = rel.kind,
 		kindName = kindName(sim, rel),
 		rank = t,
 		rankLetter = if t > 0 then letter(t) else nil,
 		class = rel.class,
 		className = if t > 0 then CLASS_NAMES[rel.class or "fighter"] else "No rank",
 		traits = traitsView(rel),
+		likes = kl,
+		dislikes = kd,
+		giftPick = pick,
 		loyalty = math.floor((m.loyalty or 0) + 0.5),
 		bond = rel.bond or 0,
 		condition = m.condition or "fine",
@@ -2165,13 +2186,18 @@ function Party.candidateView(sim: any, life: any, rel: any): any
 	Party.ensure(sim, life, rel)
 	local p, factors, why = Party.odds(sim, life, rel)
 	local t = rel.rank or 0
+	local kl, kd, pick = knownOf(sim, life, rel)
 	return {
 		relId = rel.id,
 		name = fullName(rel),
 		first = rel.first,
 		age = rel.age,
+		kind = rel.kind,
 		kindName = kindName(sim, rel),
 		role = rel.role,
+		likes = kl,
+		dislikes = kd,
+		giftPick = pick,
 		rank = t,
 		rankLetter = if t > 0 then letter(t) else nil,
 		class = rel.class,
@@ -2306,6 +2332,7 @@ function Party.profileView(sim: any, life: any, rel: any): any
 		first = rel.first,
 		age = rel.age,
 		alive = rel.alive,
+		kind = rel.kind,
 		kindName = kindName(sim, rel),
 		role = rel.role,
 		work = rel.work,
