@@ -42,15 +42,16 @@ local C = {
 	sub = Color3.fromRGB(150, 158, 180),
 	red = Color3.fromRGB(255, 96, 96),
 }
+-- the six classes at the top of their craft (their S-rank presets), with their weapons
 local PARTY = {
-	{ preset = "tank", x = 0, z = 0 },
-	{ preset = "striker", x = -4.5, z = 1.5 },
-	{ preset = "mage", x = 4.5, z = 1.5 },
-	{ preset = "assassin", x = -8.5, z = 4 },
-	{ preset = "ranger", x = 8.5, z = 4 },
-	{ preset = "healer", x = 0, z = 3.5 },
+	{ preset = "tank_s", x = 0, z = 0 },
+	{ preset = "fighter_s", x = -4.5, z = 1.5 },
+	{ preset = "mage_s", x = 4.5, z = 1.5 },
+	{ preset = "assassin_s", x = -8.5, z = 4 },
+	{ preset = "ranger_s", x = 8.5, z = 4 },
+	{ preset = "healer_s", x = 0, z = 3.5 },
 }
-local WEAPONS = { tank = "bulwark", striker = "ogre_greatsword", mage = "sage_staff", assassin = "shadowglass", ranger = "wyvern_longbow", healer = "mercy_lantern" }
+local WEAPONS = { tank_s = "bulwark", fighter_s = "ogre_greatsword", mage_s = "sage_staff", assassin_s = "shadowglass", ranger_s = "wyvern_longbow", healer_s = "mercy_lantern" }
 
 local function make(className: string, props: any, parent: Instance?): any
 	local i = Instance.new(className)
@@ -109,6 +110,11 @@ local function scene(gui: Instance, env: any): any
 	if env.R6Rig and env.Looks then
 		for i, p in PARTY do
 			local look = env.Looks.applyPreset(env.Looks.DEFAULT, p.preset)
+			local def = env.Looks.find and env.Looks.find("PRESETS", p.preset)
+			if def and def.acc then
+				look.accessories = def.acc
+				look = env.Looks.clean(look)
+			end
 			local ok, m = pcall(env.R6Rig.build, look, { name = p.preset, weapon = { base = WEAPONS[p.preset] or "none", stars = 1 + (i % 3) }, rank = 3 + (i % 4) })
 			if ok and m then
 				for _, d in m:GetDescendants() do

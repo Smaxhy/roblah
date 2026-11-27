@@ -53,12 +53,12 @@ local LINES = {
 -- the party: a class each, in that class's preset (Looks.PRESETS), with a weapon to match.
 -- `look` is the fallback if a preset isn't there.
 local PARTY = {
-	{ class = "TANKER", line = "Holds the line.", preset = "tank", color = Color3.fromRGB(255, 170, 70), x = 0, z = 0, weapon = { base = "bulwark", stars = 3 }, look = { top = "tactical", topColor = "olive", armor = "heavy", armorColor = "slate", build = "broad" } },
-	{ class = "FIGHTER", line = "Breaks what's in front of it.", preset = "striker", color = Color3.fromRGB(255, 90, 80), x = -5, z = -2, weapon = { base = "ogre_greatsword", stars = 2 }, look = { top = "guild", topColor = "crimson", armor = "plate" } },
-	{ class = "MAGE", line = "Bends mana into fire and frost.", preset = "mage", color = Color3.fromRGB(110, 170, 255), x = 5, z = -2, weapon = { base = "sage_staff", stars = 3 }, look = { top = "robe", topColor = "navy", trim = "gold" } },
-	{ class = "ASSASSIN", line = "Strikes before you see it.", preset = "assassin", color = Color3.fromRGB(180, 110, 255), x = -9, z = -5, weapon = { base = "shadowglass", stars = 2, shiny = true }, look = { top = "hoodie", topColor = "black", build = "slim" } },
-	{ class = "RANGER", line = "Never misses twice.", preset = "ranger", color = Color3.fromRGB(120, 220, 130), x = 9, z = -5, weapon = { base = "wyvern_longbow", stars = 3 }, look = { top = "trench", topColor = "forest" } },
-	{ class = "HEALER", line = "Brings everyone home.", preset = "healer", color = Color3.fromRGB(140, 255, 210), x = 0, z = -7, weapon = { base = "mercy_lantern", stars = 2 }, look = { top = "medic", topColor = "white", trim = "teal" } },
+	{ class = "TANKER", line = "Holds the line.", preset = "tank_a", color = Color3.fromRGB(255, 170, 70), x = 0, z = 0, weapon = { base = "bulwark", stars = 3 }, look = { top = "tactical", topColor = "olive", armor = "heavy", armorColor = "slate", build = "broad" } },
+	{ class = "FIGHTER", line = "Breaks what's in front of it.", preset = "fighter_a", color = Color3.fromRGB(255, 90, 80), x = -5, z = -2, weapon = { base = "ogre_greatsword", stars = 2 }, look = { top = "guild", topColor = "crimson", armor = "plate" } },
+	{ class = "MAGE", line = "Bends mana into fire and frost.", preset = "mage_a", color = Color3.fromRGB(110, 170, 255), x = 5, z = -2, weapon = { base = "sage_staff", stars = 3 }, look = { top = "robe", topColor = "navy", trim = "gold" } },
+	{ class = "ASSASSIN", line = "Strikes before you see it.", preset = "assassin_a", color = Color3.fromRGB(180, 110, 255), x = -9, z = -5, weapon = { base = "shadowglass", stars = 2, shiny = true }, look = { top = "hoodie", topColor = "black", build = "slim" } },
+	{ class = "RANGER", line = "Never misses twice.", preset = "ranger_a", color = Color3.fromRGB(120, 220, 130), x = 9, z = -5, weapon = { base = "wyvern_longbow", stars = 3 }, look = { top = "trench", topColor = "forest" } },
+	{ class = "HEALER", line = "Brings everyone home.", preset = "healer_a", color = Color3.fromRGB(140, 255, 210), x = 0, z = -7, weapon = { base = "mercy_lantern", stars = 2 }, look = { top = "medic", topColor = "white", trim = "teal" } },
 }
 
 -- ── little builders ─────────────────────────────────────────────────────────
@@ -481,8 +481,13 @@ function OpeningCutscene.play()
 	-- the party, in their class presets, standing out of shot until they walk up
 	local party = {}
 	for i, p in PARTY do
+		-- each in their class's A-rank outfit, with its accessories (the look is the fallback)
 		local look = Looks.applyPreset(Looks.DEFAULT, p.preset)
-		if not Looks.find("PRESETS", p.preset) then
+		local def = Looks.find("PRESETS", p.preset)
+		if def then
+			look.accessories = def.acc
+			look = Looks.clean(look)
+		else
 			for k, v in p.look do
 				look[k] = v
 			end
