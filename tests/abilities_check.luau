@@ -1167,6 +1167,43 @@ do
 		local res = S.handlers.hwSkillBar(serverPlayer, session, { slot = "G", id = "cataclysm" })
 		check(res and res.ok == false, "the loadout refuses a move above the Hunter's rank")
 		life.form = "hunter_s"
+		-- a plain attack with the life's weapon: its element and power go with the swing, with
+		-- where it struck (client/WeaponFx draws them), and the life's charm is on the rig
+		local Weapons = Loader.require(shared.Hunter.Weapons)
+		local Accessories = Loader.require(shared.Hunter.Accessories)
+		local fire = nil
+		for _, w in Weapons.list do
+			if w.element == "fire" then
+				fire = w
+				break
+			end
+		end
+		local charm = Accessories.list[1]
+		life.flags = { class_fighter = true }
+		life.gear = { weapon = Weapons.gearId(fire.id, 3), charm = charm.id }
+		pcall(S.handlers.hwWalk, serverPlayer, session, { on = true })
+		local ch3 = serverPlayer.Character
+		local root3 = ch3 and ch3:FindFirstChild("HumanoidRootPart")
+		for _, m in table.clone(Npcs.monsters) do
+			Npcs.removeMonster(m)
+		end
+		local target = Npcs.spawnMonster(2, roblox.Vector3.new(0, 0, -5), 1)
+		ch3:PivotTo(roblox.CFrame.new(0, 3, 0))
+		target.model:PivotTo(roblox.CFrame.new(0, 4 * target.def.size + 1, -5))
+		fakeNow += 5
+		local nSw = #serverLog.all
+		local okAtk, errAtk = pcall(serverLog.onServer, serverPlayer, "attack")
+		local swing = nil
+		for k = nSw + 1, #serverLog.all do
+			if serverLog.all[k].fx == "swing" then
+				swing = serverLog.all[k]
+			end
+		end
+		check(okAtk and swing ~= nil and swing.element == "fire" and type(swing.power) == "number" and swing.power > 0, "an attack's swing carries the weapon's element and power", if okAtk then (if swing then tostring(swing.element) else "no swing") else errAtk)
+		check(swing ~= nil and type(swing.targets) == "table" and #swing.targets >= 1, "the swing says where it struck")
+		check(ch3 ~= nil and ch3:GetAttribute("WeaponFamily") == fire.family and ch3:GetAttribute("WeaponElement") == "fire", "the rig carries the weapon the swing effect reads")
+		check(ch3 ~= nil and string.find(ch3:GetAttribute("Accessories") or "", charm.id, 1, true) ~= nil, "the life's charm is drawn on the rig")
+		local _ = root3
 	end
 	Loader.globals.os = nil
 end

@@ -2135,17 +2135,22 @@ local function accessoryOn(ctx: any, a: any)
 end
 local function accessoriesOn(ctx: any, extra: { string }?)
 	local seen = {}
-	local list = table.clone(ctx.look.accessories or {})
-	local more: { string } = extra or {}
-	for _, id in more do
+	-- what the life wears (its charm, passed in) comes first, then the look's own picks; one per slot
+	local list: { string } = table.clone(extra or {})
+	for _, id in ctx.look.accessories or {} do
 		table.insert(list, id)
 	end
+	local worn = {}
 	for _, id in list do
 		local a = Accessories.find(id)
 		if a and not seen[a.slot] then
 			seen[a.slot] = true
 			accessoryOn(ctx, a)
+			table.insert(worn, a.id)
 		end
+	end
+	if #worn > 0 then
+		ctx.model:SetAttribute("Accessories", table.concat(worn, ","))
 	end
 end
 

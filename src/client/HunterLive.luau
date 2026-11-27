@@ -37,6 +37,7 @@ local Theme = require(script.Parent:WaitForChild("UI"):WaitForChild("Theme"))
 local GateVfx = require(script.Parent:WaitForChild("GateVfx"))
 local MonsterAnim = require(script.Parent:WaitForChild("MonsterAnim"))
 local SkillFx = require(script.Parent:WaitForChild("SkillFx"))
+local WeaponFx = require(script.Parent:WaitForChild("WeaponFx"))
 local C, F = Theme.colors, Theme.fonts
 
 local HunterLive = {
@@ -362,9 +363,26 @@ function HunterLive.start(opts: any?)
 			flash(v3(d.at) + Vector3.new(0, 2, 0), BLUE, 8 + (d.rank or 1) * 2, 0.5)
 		elseif kind == "swing" then
 			local at, dir = v3(d.at), v3(d.dir)
-			local col = if d.hit then Color3.fromRGB(190, 230, 255) else Color3.fromRGB(120, 160, 220)
-			local right = dir:Cross(Vector3.yAxis)
-			arc(at - right * 3 + Vector3.new(0, 2.5, 0), at + right * 3 + Vector3.new(0, 1.5, 0), col, 0.4 + (d.rank or 1) * 0.15)
+			-- the weapon's own swing for its family, coloured by its element (client/WeaponFx);
+			-- a rig with no weapon model gets the plain arc
+			local who = Players:GetPlayerByUserId(d.player or 0)
+			local ch = who and who.Character
+			local drawn = false
+			if ch and ch:GetAttribute("WeaponFamily") then
+				local first = type(d.targets) == "table" and d.targets[1]
+				drawn = pcall(WeaponFx.swing, ch, { direction = dir, power = d.power, target = if first then v3(first) else nil, parent = fxRoot })
+			end
+			if not drawn then
+				local col = if d.hit then Color3.fromRGB(190, 230, 255) else Color3.fromRGB(120, 160, 220)
+				local right = dir:Cross(Vector3.yAxis)
+				arc(at - right * 3 + Vector3.new(0, 2.5, 0), at + right * 3 + Vector3.new(0, 1.5, 0), col, 0.4 + (d.rank or 1) * 0.15)
+			end
+			-- and where it landed, the element's impact
+			if type(d.targets) == "table" then
+				for _, t in d.targets do
+					pcall(WeaponFx.hit, v3(t) + Vector3.new(0, 1, 0), d.element, d.power, { parent = fxRoot })
+				end
+			end
 			if d.player == player.UserId then
 				sound(SLASH, at, 0.5, 1 + math.random() * 0.2)
 			end
@@ -534,6 +552,25 @@ function HunterLive.start(opts: any?)
 			end
 		end)
 	end
+	-- a Hunter's weapon comes out with a flash (client/WeaponFx), yours and everyone else's
+	local function weaponOut(ch: Model)
+		task.delay(0.4, function()
+			if ch.Parent and ch:GetAttribute("WeaponFamily") then
+				pcall(WeaponFx.equip, ch, { parent = fxRoot })
+			end
+		end)
+	end
+	local function watchPlayer(p: Player)
+		pcall(function()
+			p.CharacterAdded:Connect(weaponOut)
+		end)
+	end
+	pcall(function()
+		for _, p in Players:GetPlayers() do
+			watchPlayer(p)
+		end
+		Players.PlayerAdded:Connect(watchPlayer)
+	end)
 	player.CharacterAdded:Connect(function(ch)
 		if ch:GetAttribute("HunterLive") or ch:WaitForChild("Humanoid", 3) then
 			task.spawn(animateCharacter, ch)

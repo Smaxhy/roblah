@@ -215,7 +215,19 @@ function Progress.affinitiesInfo()
 				end
 			end
 		end
-		table.insert(list, { id = id, name = a.name, color = a.color, desc = a.desc, talents = talents })
+		-- (a pack can say more about each: BitLeveling's classes add about, their main stat, their
+		-- role in a party and their magic schools)
+		local schools = nil
+		if type(a.schools) == "table" then
+			schools = table.clone(a.schools)
+		end
+		table.insert(list, {
+			id = id, name = a.name, color = a.color, desc = a.desc, talents = talents,
+			about = if type(a.about) == "string" then a.about else nil,
+			stat = if type(a.stat) == "string" then a.stat else nil,
+			role = if type(a.role) == "string" then a.role else nil,
+			schools = schools,
+		})
 	end
 	return list
 end

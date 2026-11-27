@@ -105,8 +105,13 @@ a Gate opens at one of its sites, running the same engine on a clock:
 
 **Walk the city** (dock) puts you in it as your R6 character. Your rank sets your health and speed;
 civilians can only run, hide and help. **RESPOND** turns the nearest incident into a card in your
-life. **HELP [E]** gets a frozen bystander moving. Hunters can **ATTACK [F / click]**. If a monster
-brings you down, your life takes the injury, and it can kill you.
+life. **HELP [H]** gets a frozen bystander moving. Hunters can **ATTACK [F / click]**:
+- The weapon in your hand swings its own way: a slash, a smash, a thrust, a shot, a throw, a
+  spell, a gust, a halo, a punch, a lash or a shield wall.
+- It strikes with its element: fire, frost, lightning and so on (`client/WeaponFx`).
+- Above that is the **skill bar** (Q E R T G) with a mana bar, and **SKILLS** opens the loadout.
+
+If a monster brings you down, your life takes the injury, and it can kill you.
 
 Admins (and anyone in Studio) get **TEST GATE**, **TEST BREAK** and **TEST RED GATE** buttons on
 the dock, which open one at the site nearest them.
@@ -197,14 +202,42 @@ market wallet for the next one.
 ## Classes, skills and talents
 
 Every awakened Hunter has a class (canon's six: Fighter, Mage, Assassin, Tanker, Ranger, Healer),
-leaned by your stats and birth talents. Each class has **six skills** learned in order on the DO
-tab, each needing a rank and enough of the class's main stat (`Games/BitLeveling/Skills.luau`).
-At birth you get a **talent** from 50, by rarity (Ordinary to Unreal).
+leaned by your stats and birth talents (`Games/BitLeveling/Skills.luau`). Skills are learned on
+the DO tab; each needs a rank, enough of its main stat, and the skill before it.
+- **Class skills:** each class has **12 skills on two paths**: Fighter Blade and Vanguard, Mage
+  Elements and Arcane, Assassin Edge and Night, and so on for the others. That makes 72 in all.
+- **Magic schools:** there are **12 schools** of four spells each: fire, frost, lightning, wind,
+  earth, water, holy, void, venom, life, arcane and sound.
+  - The Mage learns nine of them all the way through, the Healer holy and life, the Assassin
+    venom.
+  - Once a class has its own third skill, it can learn the first two spells of the schools that
+    suit it. A Fighter can learn fire, earth and sound, for example.
+- **Hunter craft:** six skills any class can learn: Mana Sensing, Field Medicine, Mana Armour,
+  Mana Breathing, Blink, Gate Instinct.
+- **Talents:** at birth you get one of **70 talents**, by rarity, from Ordinary to One in the
+  World.
 
-In the live city a class's skills power two abilities, **Q** and **R**, each with its own effect:
-Cleave and Ground Slam (Fighter), Mana Bolt and Frost Nova (Mage), a dash strike and Bleed Flurry
-(Assassin), Shield Bash and Provoke (Tanker), Piercing Arrow and Arrow Rain (Ranger), Mend and
-Sanctuary (Healer).
+**In the live city:** those skills open **251 moves** (`Hunter/Abilities.luau`).
+- **Where they come from:**
+  - each class's own signature moves
+  - 10 or 11 per magic school
+  - the physical arts (sword, spear, fist, archery, shield, assassination)
+  - Hunter craft
+- **Unlocking:** a move unlocks when you learn its skill and reach its rank, E to S. A Hunter
+  keeps unlocking new ones for a whole career.
+- **Scaling:** every move's damage, mana cost, cast time, reach and heal come from one table by
+  rank, so an S-rank move does 3.5 times an E-rank one in the same slot.
+- **The skill bar:** five slots.
+  - **Q** quick, **E** move, **R** power, **T** guard or support, **G** ultimate.
+  - By default each slot takes the best move you have.
+  - **SKILLS** (or **K**) opens the loadout: search, filter by class, school, art or craft, and
+    see why a locked move is locked.
+- **Mana:** your pool grows from 100 at E-rank to 680 at S, plus Intelligence and Willpower, and
+  refills over time.
+- **Effects:** every move has its own effect (`client/SkillFx.luau`): 81 made by hand, the rest
+  composed from 34 shapes (projectiles, novas, beams, meteors, pillars, walls, domes, chains,
+  storms, constructs of mana...) in the element's colours.
+- **On the server:** every hit is decided there, from your rank, weapon, main stat and buffs.
 
 ## Monsters and bosses
 
@@ -305,6 +338,7 @@ tool. All three are covered in [`STUDIO_AND_BLENDER.md`](STUDIO_AND_BLENDER.md).
 lune run tools/checkgame BitLeveling            # validate, lint, headless lives
 lune run tests/hunterworld_check 100            # the world simulation's behaviour (see below)
 lune run tests/fates_check 60                   # every ending reachable, every life ends in one
+lune run tests/abilities_check                  # 251 moves: data, scaling, effects, HUD, loadout, real casts on a live server
 lune run tests/weapons_check                    # weapons, stars, Shiny, drops, the market's value
 lune run tests/weaponfx_check                   # every weapon at every rarity builds; every swing and hit draws
 lune run tests/live_build_check                 # the live city, every look option, every monster (built and animated)

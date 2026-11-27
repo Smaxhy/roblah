@@ -76,6 +76,7 @@ function HunterLive.install(S)
 	local hunter = Shared:WaitForChild("Hunter")
 	local Looks = require(hunter:WaitForChild("Looks"))
 	local R6Rig = require(hunter:WaitForChild("R6Rig"))
+	local Accessories = require(hunter:WaitForChild("Accessories"))
 
 	local remotes = Shared:WaitForChild("Remotes")
 	local event = Instance.new("RemoteEvent")
@@ -733,8 +734,14 @@ function HunterLive.install(S)
 				item = { base = base, stars = stars, shiny = shiny }
 			end
 		end
+		-- the charm the life wears (an accessory, Hunter/Accessories) is drawn on the rig too
+		local worn = nil
+		local charm = life and life.gear and life.gear.charm
+		if type(charm) == "string" and Accessories.find(charm) then
+			worn = { charm }
+		end
 		local prank = rankOf(session)
-		local model = R6Rig.build(look, { name = player.Name, hair = hair, weapon = item, rank = prank })
+		local model = R6Rig.build(look, { name = player.Name, hair = hair, weapon = item, rank = prank, accessories = worn })
 		local hum = model:FindFirstChildOfClass("Humanoid") :: Humanoid
 		hum.MaxHealth = RANK_HP[prank]
 		hum.Health = hum.MaxHealth
@@ -1586,6 +1593,7 @@ function HunterLive.install(S)
 		local dmg = RANK_DMG[prank] * (1 + str / 200) * weaponMult(life) * dmgBuffOf(player)
 		local look = root.CFrame.LookVector
 		local hitAny = false
+		local struck = {}
 		for _, m in table.clone(Npcs.monsters) do
 			local mr = m.model.PrimaryPart
 			if mr and m.hum.Health > 0 then
@@ -1594,11 +1602,24 @@ function HunterLive.install(S)
 				if off.Magnitude < reach and (off.Magnitude < 3 or look:Dot(off.Unit) > 0.25) then
 					hurt(m, dmg, life)
 					hitAny = true
+					if #struck < 6 then
+						table.insert(struck, { mr.Position.X, mr.Position.Y, mr.Position.Z })
+					end
 				end
 			end
 		end
 		local a = root.Position + look * 4
-		fx("swing", { at = { a.X, a.Y, a.Z }, dir = { look.X, look.Y, look.Z }, rank = prank, hit = hitAny, player = player.UserId })
+		-- the weapon's element and power colour and size its swing and its impacts (client/WeaponFx)
+		local element, power = "none", 1
+		local Weapons = HW.weapons()
+		if life and Weapons then
+			local base, stars, shiny = Weapons.parse(life.gear and life.gear.weapon)
+			if base then
+				element = Weapons.elementOf(base) or "none"
+				power = Weapons.power(base, stars, shiny)
+			end
+		end
+		fx("swing", { at = { a.X, a.Y, a.Z }, dir = { look.X, look.Y, look.Z }, rank = prank, hit = hitAny, player = player.UserId, element = element, power = power, targets = struck })
 	end)
 
 	-- picking up a mana crystal
@@ -1767,7 +1788,8 @@ function HunterLive.install(S)
 		return { ok = false, error = "Nobody near you needs help right now." }
 	end
 	function handlers.r6Get(_player, session)
-		return { ok = true, look = lookOf(session), rank = rankOf(session) }
+		-- (the class, for the creator's WEAR MY CLASS)
+		return { ok = true, look = lookOf(session), rank = rankOf(session), class = classOf(lifeOf(session)) }
 	end
 	function handlers.r6Save(player, session, payload)
 		local look = Looks.clean(type(payload) == "table" and payload.look or nil)
