@@ -214,7 +214,7 @@ do
 		end
 		return n
 	end
-	local bad, dressed = {}, 0
+	local bad, dressed, sockets = {}, 0, 0
 	local function verify(model, gait, label)
 		for _, p in model:GetDescendants() do
 			if p:IsA("BasePart") and not p:IsA("MeshPart") then
@@ -228,6 +228,25 @@ do
 					table.insert(bad, label .. "/" .. p.Name .. " has a role and no mesh")
 				end
 				local _ = mesh
+			end
+		end
+		-- a socket (WeaponModels) shows its kit mesh whole, and the parts that drew it go
+		local socketDone = {}
+		for _, p in model:GetDescendants() do
+			local id = p:IsA("BasePart") and p:GetAttribute("MeshId")
+			if id and p:GetAttribute("Dressed") then
+				socketDone[id] = true
+				sockets += 1
+				local mesh = p.Parent:FindFirstChild(p.Name .. "Mesh")
+				if not mesh or mesh.Transparency ~= 0 then
+					table.insert(bad, label .. "/" .. p.Name .. " socket's mesh doesn't show")
+				end
+			end
+		end
+		for _, p in model:GetDescendants() do
+			local cover = p:IsA("BasePart") and p:GetAttribute("MeshCover")
+			if cover and socketDone[cover] and p.Transparency ~= 1 then
+				table.insert(bad, label .. "/" .. p.Name .. " still draws a socket the kit dressed")
 			end
 		end
 		for _, m in model:GetDescendants() do
@@ -257,7 +276,32 @@ do
 			verify(R6Rig.build({}, { weapon = { base = w.id, stars = 3, shiny = true } }), nil, w.id)
 		end
 	end)
+	-- an older kit, without the asked-for meshes: sockets stay drawn by their parts
+	local oldKit = I.new("Model")
+	oldKit.Name = MeshLibrary.KIT_NAME
+	for _, role in MeshLibrary.ROLES do
+		if not string.find(role, "_", 1, true) or string.sub(role, 1, 4) == "rod_" or role == "blade_tip" or role == "axe_head" or role == "hammer_head" then
+			local m = I.new("MeshPart")
+			m.Name = role
+			m.Parent = oldKit
+		end
+	end
+	MeshLibrary.setKit(oldKit)
+	local oldOk, oldErr = pcall(function()
+		for _, w in Weapons.list do
+			if w.family == "trident" or w.family == "crystal" or w.family == "warfan" then
+				local rig = R6Rig.build({}, { weapon = { base = w.id, stars = 2 } })
+				for _, p in rig:GetDescendants() do
+					if p:IsA("BasePart") and p:GetAttribute("MeshCover") and p.Transparency == 1 and not p:GetAttribute("Dressed") then
+						table.insert(bad, w.id .. "/" .. p.Name .. " hidden though its socket wasn't dressed")
+					end
+				end
+			end
+		end
+	end)
 	MeshLibrary.setKit(nil)
+	check(oldOk, "an older kit dresses weapons without error" .. (if oldOk then "" else ": " .. tostring(oldErr)))
+	check(sockets > 0, string.format("weapon sockets wear their kit mesh (%d)", sockets))
 	check(ok and #bad == 0, string.format("with the mesh kit, every part with a role is dressed (%d parts) and nothing else", dressed) .. (if not ok then ": " .. tostring(err) elseif #bad > 0 then ": " .. table.concat(bad, "; ", 1, math.min(#bad, 6)) else ""))
 	check(dressed > 400, "the kit reaches monsters, weapons and gear")
 	local plain = Monsters.build("dragonkin")

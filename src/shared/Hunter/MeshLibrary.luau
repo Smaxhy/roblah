@@ -80,8 +80,9 @@ local function thinnest(v: Vector3): string
 end
 
 -- the role a part plays. `gait` is the monster's (nil on a rig). Weapon parts are "Weapon<Name>".
+local roleByName
+
 function MeshLibrary.roleOf(part: BasePart, gait: string?): string?
-	local raw = part.Name
 	if part:IsA("MeshPart") or part.Transparency >= 0.95 then
 		return nil
 	end
@@ -89,6 +90,15 @@ function MeshLibrary.roleOf(part: BasePart, gait: string?): string?
 	local asked = part:GetAttribute("MeshRole")
 	if type(asked) == "string" and ROLE_SET[asked] then
 		return asked
+	end
+	return roleByName(part, gait)
+end
+
+-- the role a part's name and shape give it (what an older kit, without the asked-for mesh, uses)
+function roleByName(part: BasePart, gait: string?): string?
+	local raw = part.Name
+	if part:IsA("MeshPart") or part.Transparency >= 0.95 then
+		return nil
 	end
 	local size = part.Size
 	-- a weapon's pieces
@@ -355,39 +365,72 @@ function MeshLibrary.dress(model: Instance, gait: string?): number
 	end
 	gait = gait or (model:GetAttribute("Gait") :: string?)
 	local done = 0
+	-- a socket (a part with MeshId, WeaponModels) is one mesh drawn, until the kit has it, by
+	-- the parts that carry MeshCover = its id: dress the sockets first, then hide what they cover
+	local parts = {}
 	for _, p in model:GetDescendants() do
 		if p:IsA("BasePart") and not p:GetAttribute("Dressed") then
-			local role = MeshLibrary.roleOf(p, gait)
-			local t = role and template(role)
-			if t then
-				local m = t:Clone()
-				local fromSize = m.Size
-				m.Name = p.Name .. "Mesh"
-				m.Anchored = false
-				m.CanCollide = false
-				m.CanTouch = false
-				m.CanQuery = false
-				m.Massless = true
-				m.Size = p.Size
-				m.CFrame = p.CFrame
-				m.Color = p.Color
-				m.Material = p.Material
-				m.Reflectance = p.Reflectance
-				m.Transparency = p.Transparency
-				m.CastShadow = p.CastShadow
-				local w = Instance.new("WeldConstraint")
-				w.Part0 = p
-				w.Part1 = m
-				w.Parent = m
-				if MeshLibrary.SKINNED[role] then
-					MeshLibrary.fitBones(m, fromSize, p.Size)
-					MeshLibrary.tagCloth(m)
-				end
-				m.Parent = p.Parent
-				p.Transparency = 1
-				p:SetAttribute("Dressed", true)
-				done += 1
+			table.insert(parts, p)
+		end
+	end
+	table.sort(parts, function(a, b)
+		return (a:GetAttribute("MeshId") ~= nil) and (b:GetAttribute("MeshId") == nil)
+	end)
+	local covered: { [string]: boolean } = {}
+	for _, p in model:GetDescendants() do
+		local id = p:IsA("BasePart") and p:GetAttribute("Dressed") and p:GetAttribute("MeshId")
+		if type(id) == "string" then
+			covered[id] = true
+		end
+	end
+	for _, p in parts do
+		local cover = p:GetAttribute("MeshCover")
+		if type(cover) == "string" and covered[cover] then
+			p.Transparency = 1
+			p:SetAttribute("Dressed", true)
+			continue
+		end
+		local role = MeshLibrary.roleOf(p, gait)
+		local t = role and template(role)
+		if role and not t and p:GetAttribute("MeshRole") ~= nil then
+			-- an older kit without the asked-for mesh: the part's name still finds one
+			role = roleByName(p, gait)
+			t = role and template(role)
+		end
+		if t then
+			local m = t:Clone()
+			local fromSize = m.Size
+			m.Name = p.Name .. "Mesh"
+			m.Anchored = false
+			m.CanCollide = false
+			m.CanTouch = false
+			m.CanQuery = false
+			m.Massless = true
+			m.Size = p.Size
+			m.CFrame = p.CFrame
+			m.Color = p.Color
+			m.Material = p.Material
+			m.Reflectance = p.Reflectance
+			m.Transparency = p.Transparency
+			m.CastShadow = p.CastShadow
+			local w = Instance.new("WeldConstraint")
+			w.Part0 = p
+			w.Part1 = m
+			w.Parent = m
+			if MeshLibrary.SKINNED[role] then
+				MeshLibrary.fitBones(m, fromSize, p.Size)
+				MeshLibrary.tagCloth(m)
 			end
+			m.Parent = p.Parent
+			p.Transparency = 1
+			p:SetAttribute("Dressed", true)
+			local id = p:GetAttribute("MeshId")
+			if type(id) == "string" then
+				covered[id] = true
+				-- (a socket is drawn tiny by its FallbackShape; its mesh shows it whole)
+				m.Transparency = 0
+			end
+			done += 1
 		end
 	end
 	return done

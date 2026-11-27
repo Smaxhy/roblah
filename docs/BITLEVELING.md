@@ -161,10 +161,27 @@ when it closes.
 
 ## Weapons, rarities and the market
 
-`Hunter/Weapons.luau` has **65 weapons in 28 families** (daggers, twin daggers, swords, katanas,
-greatswords, rapiers, cleavers, scythes, spears, halberds, axes, hammers, maces, staffs, wands,
-focus orbs, grimoires, bows, crossbows, gauntlets, claws, shields, lanterns, rods, chain-blades,
-chakrams, kusarigama...), graded E to S, each with its own 3D model (`Hunter/WeaponModels.luau`).
+`Hunter/Weapons.luau` has **202 weapons in 53 families**, graded E to S, each with its own 3D
+model (`Hunter/WeaponModels.luau`). The families, by class:
+- **Fighter:** swords, katanas, odachi, twin swords, greatswords, rapiers, cleavers, scythes,
+  axes, greataxes, glaives, chain-blades, kusarigama
+- **Tanker:** shields, bucklers, tower shields, hammers, warhammers, maces, flails, lances,
+  gauntlets
+- **Assassin:** daggers, twin daggers, sai, katars, claws, kunai, chakrams, whips
+- **Ranger:** bows, longbows, crossbows, arbalests, spears, javelins, tridents, halberds
+- **Mage:** staffs, crescent staffs, wands, focus orbs, caged crystals, grimoires, floating
+  codices, rune tablets, war fans, scepters
+- **Healer:** lanterns, rods, thuribles, bells
+
+Each weapon has an **element**: none, fire, frost, lightning, venom, void, holy, wind or earth.
+- **On the rig:** the element gives the weapon its glow, its particles and the colour of its
+  swing trail.
+- **In the live city:** `client/WeaponFx` draws each family's swing (a slash arc, a smash
+  shockwave, a thrust streak, a bolt, a thrown kunai or chakram, a rune circle, a gust, a halo, a
+  shock ring with claw marks, a lash, a shield wall) and each element's impact (a fireball, ice
+  shards, bolts from above, a venom splash, a void implosion, a light pillar, a swirl of wind,
+  flying rocks).
+- **Names:** every weapon name is the game's own; none is a canon item.
 
 Every weapon that drops is rolled for **stars**: ★ (70%), ★★ (24%, x1.35 power, glowing edges),
 ★★★ (6%, x1.8, a light of its own). On top of that, 1 in 60 is **Shiny** (x1.45 more, +6% heads
@@ -256,7 +273,7 @@ accessories, loaded by the server with InsertService the first time someone pick
 hair stands in if one can't load). Your rank is never picked here: it's what you awaken at.
 
 `tools/avatar/r6_sheet.luau` builds contact sheets on real Roblox instance types (`-- presets`
-for presets, headwear, back items and faces; `-- weapons` for every weapon), and
+for presets, headwear, back items and faces; `-- weapons` for every weapon, `-- weapons fx` for every swing and hit), and
 `node tools/gui_render/shoot.js --dump <json> --png <png>` draws them.
 
 **Blender and Studio:** monsters, weapons and gear can wear smooth Blender-made meshes (a mesh
@@ -271,6 +288,7 @@ lune run tools/checkgame BitLeveling            # validate, lint, headless lives
 lune run tests/hunterworld_check 100            # the world simulation's behaviour (see below)
 lune run tests/fates_check 60                   # every ending reachable, every life ends in one
 lune run tests/weapons_check                    # weapons, stars, Shiny, drops, the market's value
+lune run tests/weaponfx_check                   # every weapon at every rarity builds; every swing and hit draws
 lune run tests/live_build_check                 # the live city, every look option, every monster (built and animated)
 lune run tests/live_ui_check                    # the news board, the R6 creator and the market build
 lune run tests/plugin_check                     # the Studio plugin (after bash tools/build_plugin.sh)

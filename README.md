@@ -7,7 +7,7 @@ Gates (discovery, Association response, raids, Dungeon Breaks, Red Gates, Double
 follows the manhwa's public timeline on the news, and has two worlds (Normal and High-Danger).
 A live 3D city lets you walk as your own customizable **R6** character while Gates (standing
 whirlpools) open around you in real time and 24 kinds of monster come out of the ones that break.
-65 weapons with ★ to ★★★ and Shiny rolls, a player market, six classes with skills and live
+202 weapons in 53 families and nine elements, with ★ to ★★★ and Shiny rolls, a player market, six classes with skills and live
 abilities, 50 birth talents, 12 turn-based bosses, 15 story arcs and 40 endings (Monarch paths
 included, on a clearly non-canon world line), and an opening cutscene of a raid party walking
 into a Gate.
