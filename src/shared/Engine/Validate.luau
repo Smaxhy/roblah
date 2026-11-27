@@ -10,7 +10,7 @@ local Avatar = require(script.Parent.Avatar)
 
 local Validate = {}
 
-local EVENT_KEYS = { id = 1, title = 1, text = 1, weight = 1, once = 1, cooldown = 1, tags = 1, when = 1, result = 1, choices = 1, source = 1, codex = 1, always = 1, dialogue = 1, art = 1, story = 1, lucky = 1, unlucky = 1, draws = 1, thread = 1, cutscene = 1, social = 1, terms = 1, episode = 1, step = 1, theme = 1, rare = 1, scene = 1, focus = 1, dread = 1 }
+local EVENT_KEYS = { id = 1, title = 1, text = 1, weight = 1, once = 1, cooldown = 1, tags = 1, when = 1, result = 1, choices = 1, source = 1, codex = 1, always = 1, dialogue = 1, art = 1, story = 1, lucky = 1, unlucky = 1, draws = 1, thread = 1, cutscene = 1, social = 1, terms = 1, episode = 1, step = 1, theme = 1, rare = 1, scene = 1, focus = 1, dread = 1, partyCard = 1 }
 -- (v0.14) an event's cutscene: client/UI/Stage.luau
 local SCENE_KEYS = { set = 1, time = 1, title = 1, kicker = 1, line = 1, voice = 1, reply = 1, color = 1, stand = 1, other = 1 }
 local SCENE_SETS = { street = 1, alley = 1, facility = 1, rooftop = 1, room = 1, nest = 1, underpass = 1, hall = 1, lake = 1, stairs = 1, gym = 1 }
@@ -21,10 +21,11 @@ local ACTIVITY_KEYS = {
 	id = 1, name = 1, desc = 1, minAge = 1, maxAge = 1, cost = 1, cooldown = 1, when = 1, result = 1, clash = 1, win = 1, lose = 1,
 	category = 1, move = 1, daily = 1, icon = 1, family = 1, schools = 1, shop = 1, market = 1, turfFoe = 1, caseId = 1,
 }
-local CLASH_KEYS = { stat = 1, foe = 1, coins = 1, base = 1, coinPower = 1, sanity = 1, ignoreSanity = 1, assist = 1, fight = 1, status = 1, fixed = 1, enemy = 1, speed = 1, temper = 1, boss = 1 }
+local CLASH_KEYS = { stat = 1, foe = 1, coins = 1, base = 1, coinPower = 1, sanity = 1, ignoreSanity = 1, assist = 1, fight = 1, status = 1, fixed = 1, enemy = 1, speed = 1, temper = 1, boss = 1, party = 1 }
 local INTERACTION_KEYS = {
 	name = 1, desc = 1, kinds = 1, linked = 1, online = 1, minAge = 1, relMinAge = 1, relMaxAge = 1, minBond = 1, maxBond = 1,
 	cost = 1, cooldown = 1, actions = 1, result = 1, clash = 1, win = 1, lose = 1, logs = 1, scenes = 1, when = 1,
+	party = 1, member = 1, hunter = 1, sort = 1, -- (v0.19) Engine/Party.luau
 }
 local REL_TOKENS = { rel = 1, relName = 1, relKind = 1 }
 local CREW_TOKENS = { crew = 1, crewNames = 1, champion = 1 }
@@ -60,6 +61,7 @@ local BASE_RESULT_KEYS = {
 	turfJoin = 1, turfTake = 1, turfLose = 1, turfGuard = 1, turfLeave = 1,
 	caseOpen = 1, caseClue = 1, caseClose = 1, limitBreak = 1, marry = 1, reconcile = 1,
 	lifespan = 1, train = 1, -- (v0.17)
+	loyalty = 1, partyLoyalty = 1, partyJoin = 1, partyLeave = 1, partyShare = 1, partyRecover = 1, -- (v0.19) Engine/Party.luau
 }
 -- filled from the pack's own stats (pack.stats.order) at the start of every run
 local RESULT_KEYS: { [string]: number } = {}
@@ -84,7 +86,7 @@ function Validate.run(pack)
 		LIMIT_STATS[key] = 1
 		table.insert(RANGE_KEYS, key)
 	end
-	for _, key in { "sanity", "money", "bond" } do
+	for _, key in { "sanity", "money", "bond", "loyalty", "partyLoyalty" } do
 		table.insert(RANGE_KEYS, key)
 	end
 	local function err(where, msg)
@@ -92,6 +94,68 @@ function Validate.run(pack)
 	end
 	local function warn(where, msg)
 		table.insert(warnings, where .. ": " .. msg)
+	end
+
+	-- (v0.19) the game's own named people (pack.roster), and who a meeting introduces
+	local PARTY_RANKS = { E = 1, D = 2, C = 3, B = 4, A = 5, S = 6 }
+	local PARTY_CLASSES = { fighter = 1, mage = 1, assassin = 1, tanker = 1, ranger = 1, healer = 1 }
+	local PARTY_TRAITS = { brave = 1, cautious = 1, greedy = 1, loyal = 1, proud = 1, kind = 1, reckless = 1, cold = 1, cheerful = 1, ambitious = 1, honest = 1, scheming = 1 }
+	local rosterIds: { [string]: any } = {}
+	local rosterList: { any } = if type(pack.roster) == "table" then pack.roster else {}
+	for i, d in rosterList do
+		if type(d) == "table" and type(d.id) == "string" then
+			rosterIds[d.id] = d
+		else
+			table.insert(errors, "roster[" .. tostring(i) .. "]: needs an id")
+		end
+	end
+	local function checkRank(where, v, allowRange)
+		if v == nil then
+			return
+		end
+		if type(v) == "number" then
+			if v < 0 or v > 6 or v ~= math.floor(v) then
+				err(where, "rank must be 0..6 or a letter E..S")
+			end
+		elseif type(v) == "string" then
+			if not PARTY_RANKS[v] and v ~= "near" then
+				err(where, "rank must be a letter E..S (or 'near')")
+			end
+		elseif type(v) == "table" and allowRange then
+			checkRank(where, v[1], false)
+			checkRank(where, v[2], false)
+		else
+			err(where, "rank must be a letter E..S, a number, or a { low, high } range")
+		end
+	end
+	local MEET_KEYS = { role = 1, text = 1, rank = 1, class = 1, hunter = 1, kind = 1, bond = 1, age = 1, chance = 1, traits = 1, work = 1, roster = 1, name = 1, when = 1, choice = 1, won = 1 }
+	local function checkMeet(where, m)
+		for k in m do
+			if not MEET_KEYS[k] then
+				err(where, "unknown meet key '" .. tostring(k) .. "'")
+			end
+		end
+		if m.role ~= nil and type(m.role) ~= "string" then
+			err(where, "meet.role must be text")
+		end
+		checkRank(where, m.rank, true)
+		if m.class ~= nil and m.class ~= "any" and not PARTY_CLASSES[m.class] then
+			err(where, "meet.class '" .. tostring(m.class) .. "' isn't a Hunter class")
+		end
+		if m.kind ~= nil and not pack.relationKinds[m.kind] then
+			err(where, "meet.kind '" .. tostring(m.kind) .. "' isn't a relation kind")
+		end
+		for _, t in (if type(m.traits) == "table" then m.traits else {}) do
+			if not PARTY_TRAITS[t] then
+				err(where, "unknown personality trait '" .. tostring(t) .. "'")
+			end
+		end
+		if m.chance ~= nil and (type(m.chance) ~= "number" or m.chance <= 0 or m.chance > 1) then
+			err(where, "meet.chance must be a fraction")
+		end
+		if m.roster ~= nil and rosterIds[m.roster] == nil and #rosterList > 0 then
+			err(where, "meet.roster '" .. tostring(m.roster) .. "' isn't in the roster")
+		end
 	end
 
 	-- books (pack.books): each teaches a trait (or mastery)
@@ -521,6 +585,21 @@ function Validate.run(pack)
 		if r.bond ~= nil and not allowRelTokens then
 			warn(where, "bond only does something in interactions (with one person)")
 		end
+		-- (v0.19) the party: loyalty and leaving are about one person (a party card, a scene)
+		if (r.loyalty ~= nil or r.partyLeave or r.partyJoin or r.partyShare ~= nil) and not allowRelTokens then
+			warn(where, "loyalty, partyJoin, partyLeave and partyShare only do something with one person (an interaction, a scene, a party card)")
+		end
+		if r.partyShare ~= nil and (type(r.partyShare) ~= "number" or r.partyShare < -0.4 or r.partyShare > 0.4) then
+			err(where, "partyShare must be a number between -0.4 and 0.4")
+		end
+		if r.partyRecover ~= nil and (type(r.partyRecover) ~= "number" or r.partyRecover < 0 or r.partyRecover > 1) then
+			err(where, "partyRecover must be a fraction between 0 and 1")
+		end
+		if type(r.meet) == "table" then
+			checkMeet(where .. ".meet", r.meet)
+		elseif r.meet ~= nil and r.meet ~= true and type(r.meet) ~= "string" then
+			err(where, "meet must be true, a role, or { role, rank, class, ... }")
+		end
 		if r.quest and not (pack.quests and pack.quests[r.quest]) then
 			err(where, "unknown quest '" .. tostring(r.quest) .. "'")
 		end
@@ -599,6 +678,21 @@ function Validate.run(pack)
 		if r.addRelation then
 			if type(r.addRelation) ~= "table" or not pack.relationKinds[r.addRelation.kind] then
 				err(where, "addRelation needs a valid kind")
+			elseif r.addRelation.roster ~= nil then
+				-- (v0.19) one of the game's own named people (pack.roster)
+				local rid = r.addRelation.roster
+				if type(rid) ~= "string" then
+					err(where, "addRelation.roster must be a roster id (npc_<slug>)")
+				elseif rosterIds[rid] == nil and #rosterList > 0 then
+					err(where, "addRelation.roster '" .. rid .. "' isn't in the roster")
+				elseif rosterIds[rid] == nil then
+					warn(where, "addRelation.roster '" .. rid .. "' names an NPC, and this game has no roster yet (Roster.luau)")
+				end
+			end
+			for k in (if type(r.addRelation) == "table" then r.addRelation else {}) do
+				if k ~= "kind" and k ~= "name" and k ~= "bond" and k ~= "age" and k ~= "roster" then
+					err(where, "unknown addRelation key '" .. tostring(k) .. "'")
+				end
 			end
 		end
 		if r.relationBond then
@@ -712,6 +806,21 @@ function Validate.run(pack)
 			if o.win == nil or o.lose == nil then
 				err(where, "a clash needs both win and lose")
 			end
+			-- (v0.19) a clash your party fights in: the Gate's rank and what kind of place
+			if o.clash.party ~= nil then
+				local cp = o.clash.party
+				local KINDS = { city = 1, ["break"] = 1, raid = 1, red = 1, double = 1, boss = 1, spar = 1 }
+				if type(cp) ~= "table" then
+					err(where, "clash.party must be { rank, kind }")
+				else
+					if type(cp.rank) ~= "number" or cp.rank < 1 or cp.rank > 6 then
+						err(where, "clash.party.rank must be 1..6")
+					end
+					if cp.kind ~= nil and not KINDS[cp.kind] then
+						err(where, "clash.party.kind must be city, break, raid, red, double, boss or spar")
+					end
+				end
+			end
 			checkResult(where .. ".win", o.win, cond)
 			checkResult(where .. ".lose", o.lose, cond)
 		else
@@ -819,8 +928,11 @@ function Validate.run(pack)
 	local targeted = {}
 	for _, e in pack.events or {} do
 		local where = tostring(e.id)
-		-- a scene with someone (e.social) can use their name
-		allowRelTokens = e.social ~= nil
+		-- a scene with someone (e.social) can use their name, and so can a party card
+		allowRelTokens = e.social ~= nil or e.partyCard ~= nil
+		if e.partyCard ~= nil and e.partyCard ~= true then
+			err(where, "partyCard must be true")
+		end
 		for k in e do
 			if not EVENT_KEYS[k] then
 				err(where, "unknown event key '" .. tostring(k) .. "'")
@@ -2108,6 +2220,181 @@ function Validate.run(pack)
 			end
 			if tier.trait and not (pack.traits and pack.traits[tier.trait]) then
 				err(where, "unknown trait '" .. tostring(tier.trait) .. "'")
+			end
+		end
+	end
+
+	-- (v0.19) the roster and the party (Engine/Party.luau)
+	local ROSTER_KEYS = { id = 1, first = 1, last = 1, born = 1, rank = 1, class = 1, guild = 1, role = 1, home = 1, personality = 1, likes = 1, dislikes = 1, backstory = 1, lines = 1, look = 1, recruit = 1, canon = 1, note = 1, gender = 1, title = 1 }
+	local LINE_KINDS = { greet = 1, accept = 1, refuse = 1, battle = 1, hurt = 1, farewell = 1, gift = 1 }
+	local seenRoster = {}
+	for i, d in rosterList do
+		if type(d) ~= "table" then
+			continue
+		end
+		local where = "roster " .. tostring(d.id or i)
+		if seenRoster[d.id] then
+			err(where, "duplicate id")
+		end
+		seenRoster[d.id] = true
+		if type(d.id) == "string" and string.sub(d.id, 1, 4) ~= "npc_" then
+			err(where, "id must start with npc_")
+		end
+		for k in d do
+			if not ROSTER_KEYS[k] then
+				warn(where, "unknown roster key '" .. tostring(k) .. "'")
+			end
+		end
+		if type(d.first) ~= "string" or d.first == "" then
+			err(where, "needs a first name")
+		end
+		if d.last ~= nil and type(d.last) ~= "string" then
+			err(where, "last must be text")
+		end
+		if d.born ~= nil and type(d.born) ~= "number" then
+			err(where, "born must be a Gate Year (a number)")
+		end
+		if d.rank ~= nil and not PARTY_RANKS[d.rank] then
+			err(where, "rank must be E, D, C, B, A or S (or nil for unawakened)")
+		end
+		if d.class ~= nil and not PARTY_CLASSES[d.class] then
+			err(where, "class must be fighter, mage, assassin, tanker, ranger or healer")
+		end
+		if d.class ~= nil and d.rank == nil then
+			warn(where, "has a class but no rank (an unawakened person has no class)")
+		end
+		if d.personality ~= nil then
+			if type(d.personality) ~= "table" then
+				err(where, "personality must be a list of traits")
+			else
+				for _, t in d.personality do
+					if not PARTY_TRAITS[t] then
+						err(where, "unknown personality trait '" .. tostring(t) .. "'")
+					end
+				end
+			end
+		end
+		for _, key in { "likes", "dislikes", "backstory" } do
+			local v = d[key]
+			if v ~= nil then
+				if type(v) ~= "table" then
+					err(where, key .. " must be a list of text")
+				else
+					for _, l in v do
+						if type(l) ~= "string" or l == "" then
+							err(where, key .. " must be a list of text")
+						end
+					end
+				end
+			end
+		end
+		if type(d.backstory) == "table" and (#d.backstory < 1 or #d.backstory > 8) then
+			warn(where, "backstory has " .. #d.backstory .. " lines (3 to 6 read best)")
+		end
+		if d.lines ~= nil then
+			if type(d.lines) ~= "table" then
+				err(where, "lines must be { greet, accept, refuse, battle, hurt, farewell, gift }")
+			else
+				for k, v in d.lines do
+					if not LINE_KINDS[k] then
+						warn(where, "unknown line kind '" .. tostring(k) .. "'")
+					end
+					local list = if type(v) == "string" then { v } else v
+					if type(list) ~= "table" then
+						err(where, "lines." .. tostring(k) .. " must be text or a list of text")
+					else
+						for _, l in list do
+							if type(l) ~= "string" then
+								err(where, "lines." .. tostring(k) .. " must be text or a list of text")
+							end
+						end
+					end
+				end
+			end
+		end
+		if d.look ~= nil and (type(d.look) ~= "table" or (d.look.preset ~= nil and type(d.look.preset) ~= "string")) then
+			err(where, "look must be { preset = <Looks preset id>, overrides = {...} }")
+		end
+		if d.recruit ~= nil then
+			local rc = d.recruit
+			if type(rc) ~= "table" then
+				err(where, "recruit must be { difficulty, minRank, wantsPay }")
+			else
+				if rc.difficulty ~= nil and (type(rc.difficulty) ~= "number" or rc.difficulty < 1 or rc.difficulty > 5) then
+					err(where, "recruit.difficulty must be 1..5")
+				end
+				if rc.minRank ~= nil and not PARTY_RANKS[rc.minRank] then
+					err(where, "recruit.minRank must be E..S")
+				end
+				if rc.wantsPay ~= nil and (type(rc.wantsPay) ~= "number" or rc.wantsPay < 0) then
+					err(where, "recruit.wantsPay must be a number")
+				end
+			end
+		end
+	end
+	local pc = pack.party
+	if type(pc) == "table" then
+		for id, list in pc.castMeet or {} do
+			local e = nil
+			for _, ev in pack.events or {} do
+				if ev.id == id then
+					e = ev
+				end
+			end
+			if not e then
+				err("party.castMeet " .. tostring(id), "isn't an event")
+			else
+				for i, m in list do
+					local where = "party.castMeet " .. tostring(id) .. "[" .. i .. "]"
+					checkMeet(where, m)
+					for _, c in (if type(m.choice) == "table" then m.choice else { m.choice }) do
+						if c ~= nil and not (e.choices and e.choices[c]) then
+							err(where, "event has no choice " .. tostring(c))
+						end
+					end
+				end
+			end
+		end
+		for kind, id in pc.cards or {} do
+			if kind == "betray" then
+				for _, L in { "E", "D", "C", "B", "A", "S" } do
+					local found = false
+					for _, ev in pack.events or {} do
+						if ev.id == id .. L then
+							found = true
+						end
+					end
+					if not found then
+						err("party.cards.betray", "no card '" .. tostring(id) .. L .. "'")
+					end
+				end
+			else
+				local found = nil
+				for _, ev in pack.events or {} do
+					if ev.id == id then
+						found = ev
+					end
+				end
+				if not found then
+					err("party.cards." .. tostring(kind), "no card '" .. tostring(id) .. "'")
+				elseif not found.partyCard then
+					err("party.cards." .. tostring(kind), "card '" .. tostring(id) .. "' needs partyCard = true")
+				end
+			end
+		end
+		for _, g in pc.gifts or {} do
+			if type(g.id) ~= "string" or type(g.name) ~= "string" or type(g.price) ~= "number" then
+				err("party.gifts", "every gift needs id, name and price")
+			end
+		end
+		for kind, pools in pc.lines or {} do
+			if not LINE_KINDS[kind] then
+				warn("party.lines", "unknown line kind '" .. tostring(kind) .. "'")
+			end
+			for trait in pools do
+				if trait ~= "any" and not PARTY_TRAITS[trait] then
+					err("party.lines." .. tostring(kind), "unknown trait '" .. tostring(trait) .. "'")
+				end
 			end
 		end
 	end

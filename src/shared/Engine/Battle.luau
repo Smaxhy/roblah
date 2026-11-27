@@ -26,10 +26,19 @@
 		Battle.act(sim, hostLife, lives, key, action, approach)  -> report? (when the turn resolved)
 		Battle.resolve(sim, hostLife, lives)           force the turn (missing choices guard)
 		Battle.view(sim, hostLife, lives, viewerKey)
+
+	(v0.19) ALLIES: the host's party members who came into the boss room (Engine/Party.luau)
+	fight beside the players as allies (b.allies). They act on their own every turn, after the
+	players and before the boss: a Healer patches up whoever is worst off, a Tanker plants a
+	shield (and may take a blow aimed at one of you), everyone else strikes, by their rank and
+	class. The boss can go for them too. An ally brought to nothing goes down; when the fight
+	ends, Party.afterBattle says what that cost (hurt, or worse) and pays their shares. Every
+	ally move is in the battle log, and allies are in the view's fighters (ally = true).
 ]]
 
 local Effects = require(script.Parent.Effects)
 local Rng = require(script.Parent.Rng)
+local Party = require(script.Parent.Party)
 
 local Battle = {}
 
@@ -142,6 +151,99 @@ local function pickNext(sim, b, rng)
 	else
 		b.target = nil
 	end
+	-- (v0.19) a party ally standing in the room can draw it instead
+	if b.allies and move.target ~= "all" and b.target ~= nil then
+		local up = {}
+		for _, a in b.allies do
+			if not a.down then
+				table.insert(up, a)
+			end
+		end
+		if #up > 0 and Rng.chance(rng, 0.22) then
+			b.target = up[Rng.int(rng, 1, #up)].key
+		end
+	end
+end
+
+local function allyOf(b, key: string?)
+	for _, a in b.allies or {} do
+		if a.key == key then
+			return a
+		end
+	end
+	return nil
+end
+
+local CLASS_WORD = { fighter = "Fighter", mage = "Mage", assassin = "Assassin", tanker = "Tanker", ranger = "Ranger", healer = "Healer" }
+local function allyLabel(a): string
+	return string.format("%s (%s %s)", a.name, Party.letter(a.rank), CLASS_WORD[a.class] or "Hunter")
+end
+Battle.allyLabel = allyLabel
+
+-- an ally takes a blow
+local function allyTake(b, a, dmg: number)
+	if dmg <= 0 or a.down then
+		return 0
+	end
+	local taken = math.min(a.hp, dmg)
+	a.hp = math.max(0, a.hp - dmg)
+	if a.hp <= 0 then
+		a.down = true
+		addLog(b, allyLabel(a) .. " goes down.", "danger")
+	end
+	return taken
+end
+
+-- an ally's turn: heal, guard or strike (lives: the fighters' lives; order: who's still in)
+local STRIKE = {
+	fighter = { mult = 1, verb = "cuts into it" },
+	mage = { mult = 1.15, verb = "hits it with a spell" },
+	assassin = { mult = 0.95, verb = "finds a gap in its guard", crit = 0.25 },
+	ranger = { mult = 0.9, verb = "puts an arrow in it" },
+	tanker = { mult = 0.45, verb = "shield-bashes it" },
+	healer = { mult = 0.35, verb = "strikes when it turns" },
+}
+local function allyAct(sim, b, a, lives, order, rng, reportOf)
+	a.guarding = false
+	local pow = 1 + 0.06 * (a.power or 0)
+	if a.class == "healer" then
+		-- the worst off of you, if anyone needs it
+		local worst, worstRatio, worstLife = nil, 0.7, nil
+		for _, f in order do
+			local life = lives[f.key]
+			if life and life.alive and active(b, f) then
+				local ratio = (life.stats[sim.vital] or 0) / math.max(1, sim:maxHealthOf(life))
+				if ratio < worstRatio then
+					worst, worstRatio, worstLife = f, ratio, life
+				end
+			end
+		end
+		if worst and worstLife then
+			local heal = math.floor((6 + 5 * a.rank) * pow + 0.5) + Rng.int(rng, 0, 4)
+			local before = worstLife.stats[sim.vital] or 0
+			Effects.apply(sim, worstLife, { [sim.vital or "health"] = heal }, reportOf(worst.key))
+			local got = (worstLife.stats[sim.vital] or 0) - before
+			a.healed += got
+			addLog(b, string.format("%s mends %s: +%d Health.", allyLabel(a), worst.name, got), "good")
+			return
+		end
+	elseif a.class == "tanker" then
+		a.guarding = true
+	end
+	local s = STRIKE[a.class] or STRIKE.fighter
+	local d = math.floor(Party.ALLY_BLOW[a.rank] * s.mult * pow * (if a.hurt then 0.6 else 1) + 0.5) + Rng.int(rng, -2, 2)
+	local crit = s.crit and Rng.chance(rng, s.crit)
+	if crit then
+		d = math.floor(d * 1.7 + 0.5)
+	end
+	d = math.max(1, d)
+	b.hp = math.max(0, b.hp - d)
+	a.dealt += d
+	if a.class == "tanker" then
+		addLog(b, string.format("%s plants a shield in front of the party and %s: %d damage.", allyLabel(a), s.verb, d), "good")
+	else
+		addLog(b, string.format("%s %s%s: %d damage.", allyLabel(a), s.verb, if crit then ", a clean hit" else "", d), "good")
+	end
 end
 
 local function moveDef(def, b, id: string?)
@@ -192,6 +294,19 @@ function Battle.begin(sim: any, life: any, bossId: string, origin: any): (any, s
 	}
 	life.battle = b
 	addLog(b, bark(def, "start", life) or (def.name .. " squares up."), "danger")
+	-- (v0.19) your party, the ones who came in with you (a boss holds out a little longer)
+	local allies = Party.allies(sim, life, def)
+	if allies then
+		b.allies = allies
+		local extra = math.floor((def.hp or 100) * 0.18 * #allies)
+		b.hp += extra
+		b.maxHp += extra
+		local names = {}
+		for _, a in allies do
+			table.insert(names, allyLabel(a))
+		end
+		addLog(b, table.concat(names, ", ") .. (if #allies == 1 then " goes in with you." else " go in with you."), "good")
+	end
 	pickNext(sim, b, life)
 	return b
 end
@@ -359,7 +474,8 @@ function Battle.resolve(sim: any, hostLife: any, lives: any): (any, string?)
 			f.recovers -= 1
 			-- (v0.17) a bigger body has more to patch: 10-16, plus 6% of its maximum Health
 			local heal = Rng.int(rng, 10, 16) + math.floor(sim:maxHealthOf(life) * 0.06)
-			Effects.apply(sim, life, { health = heal, sanity = 2 }, report)
+			-- (v0.19) the pack's own Health stat (BitLeveling's is vitality): `health` healed nobody
+			Effects.apply(sim, life, { [sim.vital or "health"] = heal, sanity = 2 }, report)
 			entry.healed = heal
 			addLog(b, f.name .. " patches up (+" .. heal .. " Health).", "good")
 		elseif act.action == "guard" then
@@ -408,6 +524,15 @@ function Battle.resolve(sim: any, hostLife: any, lives: any): (any, string?)
 		end
 	end
 
+	-- (v0.19) the party's turn: each ally still standing heals, guards or strikes
+	if b.allies and b.hp > 0 then
+		for _, a in b.allies do
+			if not a.down and b.hp > 0 then
+				allyAct(sim, b, a, lives, order, rng, reportOf)
+			end
+		end
+	end
+
 	if b.hp <= 0 then
 		b.last = turn
 		local done: any = Battle.finish(sim, hostLife, lives, "won", reports)
@@ -422,10 +547,38 @@ function Battle.resolve(sim: any, hostLife: any, lives: any): (any, string?)
 		addLog(b, nextPhase.line or (def.name .. " changes."), "danger")
 	end
 
+	-- (v0.19) the party in the way: a Tanker steps in front of a blow aimed at one of you, and
+	-- the move lands on any ally it was aimed at (or on all of them, a little lighter)
+	local spared = {}
+	if b.allies then
+		local power = (move.power or 8) + phasePower
+		local aimedAt = b.target and b.target ~= "all" and fighterOf(b, b.target)
+		if aimedAt and not struck[b.target] then
+			for _, a in b.allies do
+				if not a.down and a.guarding and Rng.chance(rng, 0.5) then
+					local took = allyTake(b, a, math.ceil(power * 0.5))
+					a.blocked += took
+					spared[b.target] = true
+					addLog(b, string.format("%s takes the blow meant for %s (%d).", allyLabel(a), aimedAt.name, took), "good")
+					break
+				end
+			end
+		end
+		for _, a in b.allies do
+			if not a.down and (b.target == "all" or b.target == a.key) then
+				local dmg = if b.target == "all" then math.ceil(power * 0.6) else power
+				if a.guarding then
+					dmg = math.ceil(dmg * 0.5)
+				end
+				local took = allyTake(b, a, dmg)
+				addLog(b, string.format("%s: %s (%d to %s).", def.name, move.text or move.name, took, a.name), "danger")
+			end
+		end
+	end
 	-- the boss's move lands on whoever it was aimed at and didn't stop it
 	for _, f in order do
 		local life = lives[f.key]
-		if active(b, f) and life.alive and not struck[f.key] and (b.target == "all" or b.target == f.key) then
+		if active(b, f) and life.alive and not struck[f.key] and not spared[f.key] and (b.target == "all" or b.target == f.key) then
 			local dmg = (move.power or 8) + phasePower
 			if f.guard then
 				dmg = math.ceil(dmg * 0.4)
@@ -488,6 +641,7 @@ function Battle.finish(sim: any, hostLife: any, lives: any, outcome: string, rep
 	if outcome == "won" then
 		addLog(b, def.name .. " is down.", "good")
 	end
+	local hostGained = 0
 	for _, f in b.fighters do
 		local life = lives[f.key]
 		if life then
@@ -497,7 +651,11 @@ function Battle.finish(sim: any, hostLife: any, lives: any, outcome: string, rep
 			if life.alive and outcome == "won" and not f.fled then
 				sim:tally(life, "bossesBeaten")
 				sim:push(life, report, { kind = "event", title = "Victory", text = def.name .. " is down." })
+				local moneyBefore = life.money
 				Effects.apply(sim, life, (choice and choice.win) or def.win, report)
+				if life == hostLife then
+					hostGained = math.max(0, life.money - moneyBefore)
+				end
 			elseif life.alive and f.fled then
 				Effects.apply(sim, life, (choice and choice.fled) or def.fled or { sanity = -4, log = "You got out. Not everyone does." }, report)
 			elseif life.alive and outcome ~= "won" then
@@ -510,6 +668,15 @@ function Battle.finish(sim: any, hostLife: any, lives: any, outcome: string, rep
 			end
 			report.battleDone = { outcome = outcome, boss = def.name }
 		end
+	end
+	-- (v0.19) the party that fought beside the host: what it cost them, and their shares
+	if b.allies then
+		local hostReport = reports[tostring(hostLife.id)] or sim.newReport()
+		reports[tostring(hostLife.id)] = hostReport
+		Party.afterBattle(sim, hostLife, b, outcome, hostReport, hostGained)
+	end
+	if hostLife.party then
+		hostLife.party.on = nil
 	end
 	hostLife.battleDone = { outcome = outcome, boss = def.name, last = b.last, log = b.log }
 	hostLife.battle = nil
@@ -573,6 +740,34 @@ function Battle.view(sim: any, hostLife: any, lives: any, viewerKey: string?): a
 			table.insert(waitingOn, f.name)
 		end
 	end
+	-- (v0.19) the party's allies stand with the fighters (they act on their own: always chosen)
+	local allies: { any } = {}
+	for _, a: any in b.allies or {} do
+		local rel: any = sim:relationById(hostLife, a.rel)
+		local entry = {
+			key = a.key,
+			name = allyLabel(a),
+			first = a.name,
+			rank = a.rank,
+			rankLetter = Party.letter(a.rank),
+			class = a.class,
+			hp = a.hp,
+			maxHp = a.maxHp,
+			down = a.down,
+			fled = false,
+			acted = true,
+			steady = a.guarding == true,
+			dealt = a.dealt,
+			healed = a.healed,
+			blocked = a.blocked,
+			targeted = b.target == "all" or b.target == a.key,
+			me = false,
+			ally = true,
+			appearance = if rel then { look = rel.look, age = rel.age, form = "human" } else nil,
+		}
+		table.insert(allies, entry)
+		table.insert(fighters, entry)
+	end
 	local me: any = viewerKey and fighterOf(b, viewerKey)
 	local myLife: any = viewerKey and lives[viewerKey]
 	local options: { any }? = nil
@@ -623,7 +818,8 @@ function Battle.view(sim: any, hostLife: any, lives: any, viewerKey: string?): a
 		targetName = "everyone"
 	elseif b.target then
 		local t: any = fighterOf(b, b.target)
-		targetName = t and t.name or nil
+		local ally: any = allyOf(b, b.target)
+		targetName = if t then t.name elseif ally then allyLabel(ally) else nil
 	end
 	local bossView: any = {
 		id = b.boss,
@@ -653,6 +849,7 @@ function Battle.view(sim: any, hostLife: any, lives: any, viewerKey: string?): a
 		title = b.title,
 		host = tostring(hostLife.id),
 		outcome = b.outcome,
+		allies = if #allies > 0 then allies else nil,
 	}
 end
 
