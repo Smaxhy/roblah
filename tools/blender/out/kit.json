@@ -2,219 +2,398 @@
  "roles": {
   "head_biped": {
    "verts": 478,
-   "tris": 952
+   "tris": 952,
+   "bones": 0
   },
   "head_beast": {
    "verts": 478,
-   "tris": 952
+   "tris": 952,
+   "bones": 0
   },
   "head_serpent": {
    "verts": 478,
-   "tris": 952
+   "tris": 952,
+   "bones": 0
   },
   "head_golem": {
    "verts": 288,
-   "tris": 572
+   "tris": 572,
+   "bones": 0
   },
   "snout": {
    "verts": 478,
-   "tris": 952
+   "tris": 952,
+   "bones": 0
   },
   "ear": {
    "verts": 478,
-   "tris": 952
+   "tris": 952,
+   "bones": 0
   },
   "horn_x": {
    "verts": 158,
-   "tris": 312
+   "tris": 312,
+   "bones": 0
   },
   "horn_y": {
    "verts": 158,
-   "tris": 312
+   "tris": 312,
+   "bones": 0
   },
   "horn_z": {
    "verts": 158,
-   "tris": 312
+   "tris": 312,
+   "bones": 0
   },
   "torso_biped": {
    "verts": 478,
-   "tris": 952
+   "tris": 952,
+   "bones": 0
   },
   "torso_golem": {
    "verts": 362,
-   "tris": 720
+   "tris": 720,
+   "bones": 0
   },
   "body_quad": {
    "verts": 512,
-   "tris": 1020
+   "tris": 1020,
+   "bones": 0
   },
   "body_flyer": {
    "verts": 478,
-   "tris": 952
+   "tris": 952,
+   "bones": 0
   },
   "carapace": {
    "verts": 512,
-   "tris": 1020
+   "tris": 1020,
+   "bones": 0
   },
   "cephalothorax": {
    "verts": 478,
-   "tris": 952
+   "tris": 952,
+   "bones": 0
   },
   "abdomen": {
    "verts": 478,
-   "tris": 952
+   "tris": 952,
+   "bones": 0
   },
   "slime": {
    "verts": 478,
-   "tris": 952
+   "tris": 952,
+   "bones": 0
   },
   "arm": {
    "verts": 156,
-   "tris": 308
+   "tris": 308,
+   "bones": 0
   },
   "leg": {
    "verts": 128,
-   "tris": 252
+   "tris": 252,
+   "bones": 0
   },
   "arm_golem": {
    "verts": 342,
-   "tris": 680
+   "tris": 680,
+   "bones": 0
   },
   "leg_golem": {
    "verts": 262,
-   "tris": 520
+   "tris": 520,
+   "bones": 0
   },
   "leg_quad": {
    "verts": 114,
-   "tris": 224
+   "tris": 224,
+   "bones": 0
   },
   "leg_insect": {
    "verts": 92,
-   "tris": 180
+   "tris": 180,
+   "bones": 0
   },
   "sleeve": {
    "verts": 82,
-   "tris": 160
+   "tris": 160,
+   "bones": 0
   },
   "tail": {
    "verts": 170,
-   "tris": 336
+   "tris": 336,
+   "bones": 0
   },
   "wing_r": {
    "verts": 1078,
-   "tris": 2152
+   "tris": 2152,
+   "bones": 0
   },
   "wing_l": {
    "verts": 1078,
-   "tris": 2152
+   "tris": 2152,
+   "bones": 0
   },
   "segment": {
    "verts": 478,
-   "tris": 952
+   "tris": 952,
+   "bones": 0
   },
   "neck": {
    "verts": 58,
-   "tris": 112
+   "tris": 112,
+   "bones": 0
   },
   "robe": {
    "verts": 162,
-   "tris": 320
+   "tris": 320,
+   "bones": 0
   },
   "hood_open": {
    "verts": 478,
-   "tris": 952
+   "tris": 952,
+   "bones": 0
   },
   "crystal_x": {
    "verts": 20,
-   "tris": 36
+   "tris": 36,
+   "bones": 0
   },
   "crystal_y": {
    "verts": 20,
-   "tris": 36
+   "tris": 36,
+   "bones": 0
   },
   "crystal_z": {
    "verts": 20,
-   "tris": 36
+   "tris": 36,
+   "bones": 0
   },
   "core_gem": {
    "verts": 18,
-   "tris": 32
+   "tris": 32,
+   "bones": 0
   },
   "armor_plate": {
    "verts": 478,
-   "tris": 952
+   "tris": 952,
+   "bones": 0
   },
   "club_head": {
    "verts": 444,
-   "tris": 884
+   "tris": 884,
+   "bones": 0
   },
   "axe_head": {
    "verts": 682,
-   "tris": 1360
+   "tris": 1360,
+   "bones": 0
   },
   "scythe_blade": {
    "verts": 594,
-   "tris": 1184
+   "tris": 1184,
+   "bones": 0
   },
   "spear_point": {
    "verts": 50,
-   "tris": 96
+   "tris": 96,
+   "bones": 0
   },
   "blade": {
    "verts": 182,
-   "tris": 360
+   "tris": 360,
+   "bones": 0
   },
   "blade_tip": {
    "verts": 374,
-   "tris": 744
+   "tris": 744,
+   "bones": 0
   },
   "guard": {
    "verts": 172,
-   "tris": 340
+   "tris": 340,
+   "bones": 0
   },
   "rod_x": {
    "verts": 50,
-   "tris": 96
+   "tris": 96,
+   "bones": 0
   },
   "rod_y": {
    "verts": 50,
-   "tris": 96
+   "tris": 96,
+   "bones": 0
   },
   "rod_z": {
    "verts": 50,
-   "tris": 96
+   "tris": 96,
+   "bones": 0
   },
   "hammer_head": {
    "verts": 478,
-   "tris": 952
+   "tris": 952,
+   "bones": 0
   },
   "shield_x": {
    "verts": 850,
-   "tris": 1696
+   "tris": 1696,
+   "bones": 0
   },
   "shield_z": {
    "verts": 850,
-   "tris": 1696
+   "tris": 1696,
+   "bones": 0
   },
   "cloth_x": {
    "verts": 1230,
-   "tris": 2456
+   "tris": 2456,
+   "bones": 0
   },
   "cloth_z": {
    "verts": 1230,
-   "tris": 2456
+   "tris": 2456,
+   "bones": 0
   },
   "pauldron": {
    "verts": 478,
-   "tris": 952
+   "tris": 952,
+   "bones": 0
   },
   "cuirass": {
    "verts": 478,
-   "tris": 952
+   "tris": 952,
+   "bones": 0
   },
   "helm": {
    "verts": 478,
-   "tris": 952
+   "tris": 952,
+   "bones": 0
+  },
+  "shield_round": {
+   "verts": 362,
+   "tris": 720,
+   "bones": 0
+  },
+  "shield_kite": {
+   "verts": 1026,
+   "tris": 2048,
+   "bones": 0
+  },
+  "shield_tower": {
+   "verts": 966,
+   "tris": 1928,
+   "bones": 0
+  },
+  "shield_buckler": {
+   "verts": 146,
+   "tris": 288,
+   "bones": 0
+  },
+  "blade_curved": {
+   "verts": 418,
+   "tris": 832,
+   "bones": 0
+  },
+  "blade_wide": {
+   "verts": 350,
+   "tris": 696,
+   "bones": 0
+  },
+  "axe_double": {
+   "verts": 1066,
+   "tris": 2128,
+   "bones": 0
+  },
+  "spear_leaf": {
+   "verts": 550,
+   "tris": 1096,
+   "bones": 0
+  },
+  "trident_head": {
+   "verts": 150,
+   "tris": 280,
+   "bones": 0
+  },
+  "mace_flanged": {
+   "verts": 482,
+   "tris": 936,
+   "bones": 0
+  },
+  "orb_cage": {
+   "verts": 638,
+   "tris": 1296,
+   "bones": 0
+  },
+  "staff_crescent": {
+   "verts": 100,
+   "tris": 196,
+   "bones": 0
+  },
+  "fan_blade": {
+   "verts": 602,
+   "tris": 1200,
+   "bones": 0
+  },
+  "robe_skirt": {
+   "verts": 182,
+   "tris": 360,
+   "bones": 0
+  },
+  "robe_sleeve": {
+   "verts": 82,
+   "tris": 160,
+   "bones": 0
+  },
+  "hood_cowl": {
+   "verts": 572,
+   "tris": 1140,
+   "bones": 0
+  },
+  "pauldron_spiked": {
+   "verts": 508,
+   "tris": 1000,
+   "bones": 0
+  },
+  "helm_winged": {
+   "verts": 650,
+   "tris": 1288,
+   "bones": 0
+  },
+  "helm_horned": {
+   "verts": 794,
+   "tris": 1576,
+   "bones": 0
+  },
+  "crown": {
+   "verts": 126,
+   "tris": 136,
+   "bones": 0
+  },
+  "gauntlet": {
+   "verts": 100,
+   "tris": 196,
+   "bones": 0
+  },
+  "boot": {
+   "verts": 230,
+   "tris": 452,
+   "bones": 0
+  },
+  "belt_pouch": {
+   "verts": 578,
+   "tris": 1148,
+   "bones": 0
+  },
+  "cape_skinned": {
+   "verts": 646,
+   "tris": 1288,
+   "bones": 12
+  },
+  "scarf_skinned": {
+   "verts": 294,
+   "tris": 584,
+   "bones": 4
   }
  }
 }

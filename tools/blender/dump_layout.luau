@@ -19,6 +19,17 @@ Loader.globals = {
 	Vector2 = roblox.Vector2, Vector3 = roblox.Vector3, CFrame = roblox.CFrame, Color3 = roblox.Color3, Enum = roblox.Enum, Font = roblox.Font,
 }
 local shared = Loader.preload(Loader.node("src/shared", "LifeSim", nil))
+-- (Monsters finds the mesh library through ReplicatedStorage.LifeSim)
+Loader.globals.game = { GetService = function(_, name)
+	if name == "ReplicatedStorage" then
+		return { WaitForChild = function()
+			return shared
+		end, FindFirstChild = function()
+			return nil
+		end }
+	end
+	return {}
+end }
 local server = Loader.preload(Loader.node("src/server", "Server", nil))
 local R6Rig = Loader.require(shared.Hunter.R6Rig)
 local Looks = Loader.require(shared.Hunter.Looks)
@@ -38,6 +49,14 @@ end
 
 local function partsOf(model, origin, gait, filter)
 	local out = {}
+	-- the limbs on joints (Motor6D Part1 -> the joint, in the root's space) and what rides on them
+	local joints = {}
+	for _, m in model:GetDescendants() do
+		if m:IsA("Motor6D") and m.Part1 then
+			local j = (origin:Inverse() * m.Part0.CFrame * m.C0).Position
+			joints[m.Part1.Name] = { j.X, j.Y, j.Z }
+		end
+	end
 	for _, p in model:GetDescendants() do
 		if p:IsA("BasePart") and p.Name ~= "HumanoidRootPart" and p.Name ~= "FacePlate" and (filter == nil or filter(p)) then
 			local rel = origin:Inverse() * p.CFrame
@@ -51,6 +70,12 @@ local function partsOf(model, origin, gait, filter)
 				material = p.Material.Name,
 				shape = shapeOf(p),
 				transparency = p.Transparency,
+				joint = joints[p.Name],
+				follows = (function()
+					local w = p:FindFirstChildOfClass("WeldConstraint")
+					local base = w and w.Part0
+					return if base and joints[base.Name] then base.Name else nil
+				end)(),
 			})
 		end
 	end

@@ -7,6 +7,8 @@
 	leg, a wing, a blade, a crossguard, a pauldron, a cape...) gets the kit's mesh for that role:
 	a MeshPart the part's size, colour and material, welded over it, and the part goes invisible.
 	A MeshPart scales its mesh to its Size, so one mesh per role fits every part that plays it.
+	A builder can ask for a role with the part's MeshRole attribute. Cloth roles (capes, scarves)
+	carry Bones: they're tagged "SmartBone" and swing (client/ClothPhysics, or SmartBone itself).
 
 	Where the kit comes from (the first that's there wins):
 	  1. ReplicatedStorage.BitLevelingMeshKit: a Model of MeshParts named by role. The Studio
@@ -39,7 +41,17 @@ MeshLibrary.ROLES = {
 	"blade", "blade_tip", "guard", "rod_x", "rod_y", "rod_z", "hammer_head", "shield_x", "shield_z",
 	-- gear on the R6 rig
 	"cloth_x", "cloth_z", "pauldron", "cuirass", "helm",
+	-- the second set, asked for by a part's MeshRole attribute (weapons and outfits set it)
+	"shield_round", "shield_kite", "shield_tower", "shield_buckler", "blade_curved", "blade_wide", "axe_double",
+	"spear_leaf", "trident_head", "mace_flanged", "orb_cage", "staff_crescent", "fan_blade",
+	"robe_skirt", "robe_sleeve", "hood_cowl", "pauldron_spiked", "helm_winged", "helm_horned", "crown",
+	"gauntlet", "boot", "belt_pouch",
+	-- cloth with bones: it swings (client/ClothPhysics, SmartBone-compatible)
+	"cape_skinned", "scarf_skinned",
 }
+-- the roles whose meshes carry Bones (cloth): tagged for physics when they're laid on
+MeshLibrary.SKINNED = { cape_skinned = true, scarf_skinned = true }
+MeshLibrary.PHYSICS_TAG = "SmartBone" -- the tag SmartBone uses, so either it or ours can drive them
 local ROLE_SET = {}
 for _, r in MeshLibrary.ROLES do
 	ROLE_SET[r] = true
@@ -68,6 +80,11 @@ function MeshLibrary.roleOf(part: BasePart, gait: string?): string?
 	if part:IsA("MeshPart") or part.Transparency >= 0.95 then
 		return nil
 	end
+	-- a builder can ask for a mesh by name (WeaponModels and R6Rig set MeshRole on a part)
+	local asked = part:GetAttribute("MeshRole")
+	if type(asked) == "string" and ROLE_SET[asked] then
+		return asked
+	end
 	local size = part.Size
 	-- a weapon's pieces
 	if string.sub(raw, 1, 6) == "Weapon" then
@@ -95,9 +112,15 @@ function MeshLibrary.roleOf(part: BasePart, gait: string?): string?
 	local n = string.gsub(raw, "%d+$", "")
 	if gait == nil then
 		-- the R6 rig's gear
-		if n == "Cape" or n == "Tatter" or n == "Banner" or n == "VeilBack" or n == "WrapTail" then
+		if n == "Cape" or n == "Tatter" or n == "Banner" or n == "VeilBack" or n == "WrapTail" or n == "RobeTail" then
 			local t = thinnest(size)
+			-- a cape that hangs (thin front to back, taller than thick) swings: the cloth with bones
+			if t == "z" and size.Y > size.Z * 4 then
+				return "cape_skinned"
+			end
 			return if t == "x" or t == "z" then "cloth_" .. t else nil
+		elseif n == "Scarf" or n == "Sash" then
+			return if size.Y > size.X and size.Y > size.Z then "scarf_skinned" else nil
 		elseif n == "Pauldron" then
 			return "pauldron"
 		elseif n == "Cuirass" then
@@ -182,7 +205,7 @@ function MeshLibrary.roleOf(part: BasePart, gait: string?): string?
 	elseif n == "Plate" then
 		return "armor_plate"
 	elseif n == "Cape" then
-		return "cloth_z"
+		return "cape_skinned"
 	elseif n == "ClubHead" then
 		return "club_head"
 	elseif n == "Club" or n == "Haft" or n == "Shaft" then
@@ -286,6 +309,40 @@ function MeshLibrary.load(): boolean
 	return true
 end
 
+-- a skinned mesh resized: its Bones move with the geometry (a MeshPart scales its mesh to its
+-- Size, but not the Bones in it). Each bone keeps its turn; its place relative to the part scales.
+function MeshLibrary.fitBones(m: BasePart, fromSize: Vector3, toSize: Vector3)
+	local scale = Vector3.new(toSize.X / math.max(fromSize.X, 1e-4), toSize.Y / math.max(fromSize.Y, 1e-4), toSize.Z / math.max(fromSize.Z, 1e-4))
+	local function walk(parent: Instance, oldRel: CFrame, newRel: CFrame)
+		for _, b in parent:GetChildren() do
+			if b:IsA("Bone") then
+				local relOld = oldRel * b.CFrame
+				local relNew = CFrame.new(relOld.Position * scale) * relOld.Rotation
+				b.CFrame = newRel:Inverse() * relNew
+				walk(b, relOld, relNew)
+			end
+		end
+	end
+	walk(m, CFrame.identity, CFrame.identity)
+end
+
+-- cloth: tagged for bone physics, the way SmartBone expects (its tag, and "Roots": the root bones)
+function MeshLibrary.tagCloth(m: BasePart)
+	local roots = {}
+	for _, b in m:GetChildren() do
+		if b:IsA("Bone") then
+			table.insert(roots, b.Name)
+		end
+	end
+	if #roots == 0 then
+		return
+	end
+	m:SetAttribute("Roots", table.concat(roots, ","))
+	pcall(function()
+		m:AddTag(MeshLibrary.PHYSICS_TAG)
+	end)
+end
+
 -- lay the kit over a built model: every part with a role gets its mesh
 function MeshLibrary.dress(model: Instance, gait: string?): number
 	if not MeshLibrary.ready() then
@@ -299,6 +356,7 @@ function MeshLibrary.dress(model: Instance, gait: string?): number
 			local t = role and template(role)
 			if t then
 				local m = t:Clone()
+				local fromSize = m.Size
 				m.Name = p.Name .. "Mesh"
 				m.Anchored = false
 				m.CanCollide = false
@@ -316,6 +374,10 @@ function MeshLibrary.dress(model: Instance, gait: string?): number
 				w.Part0 = p
 				w.Part1 = m
 				w.Parent = m
+				if MeshLibrary.SKINNED[role] then
+					MeshLibrary.fitBones(m, fromSize, p.Size)
+					MeshLibrary.tagCloth(m)
+				end
 				m.Parent = p.Parent
 				p.Transparency = 1
 				p:SetAttribute("Dressed", true)

@@ -72,8 +72,10 @@ local function store(game: any, meshes: { [string]: MeshPart }, roles: { string 
 	for role, m in meshes do
 		local c = m:Clone()
 		for _, child in c:GetChildren() do
-			if not child:IsA("SurfaceAppearance") then
-				child:Destroy() -- (welds and scripts from wherever it was imported to)
+			-- keep what the mesh is made of (its look, and the Bones a cloth mesh swings on);
+			-- drop welds and scripts from wherever it was imported to
+			if not (child:IsA("SurfaceAppearance") or child:IsA("Bone")) then
+				child:Destroy()
 			end
 		end
 		c.Name = role

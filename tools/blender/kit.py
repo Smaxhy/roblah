@@ -680,6 +680,328 @@ def helm():
     return remap(v, d), f
 
 
+# ── shapes made of several pieces, and the second set of roles (MeshRole attribute) ─────────
+def merge(*parts):
+    verts, faces = [], []
+    for (v, f) in parts:
+        base = len(verts)
+        verts.extend([list(p) for p in v])
+        faces.extend([[i + base for i in face] for face in f])
+    return verts, faces
+
+
+def moved(vf, dx=0.0, dy=0.0, dz=0.0, sx=1.0, sy=1.0, sz=1.0):
+    v, f = vf
+    return [[p[0] * sx + dx, p[1] * sy + dy, p[2] * sz + dz] for p in v], f
+
+
+def turned(vf, axis, deg):
+    v, f = vf
+    a = math.radians(deg)
+    c, s = math.cos(a), math.sin(a)
+    out = []
+    for (x, y, z) in v:
+        if axis == "x":
+            out.append([x, y * c - z * s, y * s + z * c])
+        elif axis == "y":
+            out.append([x * c + z * s, y, -x * s + z * c])
+        else:
+            out.append([x * c - y * s, x * s + y * c, z])
+    return out, f
+
+
+def torus(R=0.42, r=0.08, seg=28, ring=8, axis="y"):
+    verts, faces = [], []
+    for i in range(seg):
+        a = 2 * math.pi * i / seg
+        for j in range(ring):
+            b = 2 * math.pi * j / ring
+            x = (R + r * math.cos(b)) * math.cos(a)
+            z = (R + r * math.cos(b)) * math.sin(a)
+            y = r * math.sin(b)
+            verts.append([x, y, z] if axis == "y" else ([y, x, z] if axis == "x" else [x, z, y]))
+    for i in range(seg):
+        for j in range(ring):
+            a = i * ring + j
+            b = ((i + 1) % seg) * ring + j
+            c = ((i + 1) % seg) * ring + (j + 1) % ring
+            d = i * ring + (j + 1) % ring
+            faces.append([a, b, c, d])
+    return verts, faces
+
+
+def cone(base=0.5, length=1.0, seg=8, axis="y"):
+    return lathe([(-0.5 * length, base), (0.5 * length, 0.0)], seg, axis)
+
+
+def shield_round():
+    # a domed disc, face in the Y-Z plane, thin along X (the face bulges toward -X... both sides read fine)
+    prof = [(-0.5, 0.46), (-0.38, 0.5), (0.0, 0.48), (0.22, 0.36), (0.36, 0.2), (0.44, 0.1), (0.5, 0.0)]
+    rim = torus(0.48, 0.03, 32, 6, "x")
+    return merge(lathe(prof, 28, "x"), moved(rim, dx=-0.3))
+
+
+def shield_buckler():
+    prof = [(-0.5, 0.42), (-0.4, 0.5), (-0.1, 0.46), (0.05, 0.25), (0.2, 0.16), (0.42, 0.05), (0.5, 0.0)]
+    return lathe(prof, 24, "x")
+
+
+def shield_kite():
+    def outline(u):
+        z = -0.5 + u
+        k = abs(z) * 2
+        top = 0.5 - 0.12 * k ** 2
+        bottom = -0.5 + 0.95 * k ** 1.25  # a long point at the bottom
+        return z, bottom, top
+
+    def thick(z, y, v):
+        return 0.5 * (0.4 + 0.6 * (1 - (abs(z) * 2) ** 2))
+
+    v, f = slab(outline, 26, 18, thick)  # slab: X across (here Z), Y up, thin along slab Z
+    v = swap_axes(v, "zyx")
+    return v, f
+
+
+def shield_tower():
+    def outline(u):
+        z = -0.5 + u
+        k = abs(z) * 2
+        return z, -0.5 + 0.04 * k ** 4, 0.5 - 0.06 * k ** 4
+
+    v, f = slab(outline, 22, 20, lambda z, y, v: 0.3)
+    v = swap_axes(v, "zyx")
+    return remap(v, lambda x, y, z: (x - 0.35 * (z * 2) ** 2, y, z)), f  # curved round the bearer
+
+
+def blade_curved():
+    def outline(u):
+        z = 0.5 - u
+        w = 0.5 * (1 - 0.15 * u)
+        bend = 0.3 * u ** 2
+        return z, -w + bend, w + bend
+
+    def thick(z, y, v):
+        # a thick spine at the top (+Y), the edge at the bottom
+        return 0.5 * (0.15 + 0.85 * smoothstep(0.0, 0.85, v)) * (1 - smoothstep(0.85, 1.0, v) * 0.6)
+
+    v, f = slab(outline, 18, 10, thick)
+    return swap_axes(v, "zyx"), f
+
+
+def blade_wide():
+    def outline(u):
+        z = 0.5 - u
+        return z, -0.5, 0.5
+
+    def thick(z, y, v):
+        edge = (1 - abs(v - 0.5) * 2) ** 0.8
+        fuller = 1 - 0.55 * math.exp(-((v - 0.5) ** 2) / 0.006)
+        return 0.5 * edge * fuller + 0.03
+
+    v, f = slab(outline, 6, 24, thick)
+    return swap_axes(v, "zyx"), f
+
+
+def axe_double():
+    def outline(u):
+        z = -0.5 + u
+        k = abs(z) * 2
+        h = 0.22 + 0.28 * k ** 1.6 + 0.05 * math.sin(k * math.pi)
+        return z, -h, h
+
+    def thick(z, y, v):
+        k = abs(z) * 2
+        return 0.5 * (1 - 0.85 * smoothstep(0.65, 1.0, k))
+
+    v, f = slab(outline, 40, 12, thick)
+    return swap_axes(v, "zyx"), f
+
+
+def spear_leaf():
+    def outline(u):
+        y = -0.5 + u
+        w = 0.5 * math.sin(math.pi * clamp(u * 1.1, 0, 1)) ** 0.8
+        if u > 0.85:
+            w *= 1 - smoothstep(0.85, 1.0, u)
+        return y, -max(0.01, w), max(0.01, w)
+
+    def thick(y, z, v):
+        return 0.5 * (1 - abs(v - 0.5) * 2) ** 0.7 + 0.02
+
+    v, f = slab(outline, 24, 10, thick)  # slab X = length (here Y), Y = width (here Z), Z thin (here X)
+    return swap_axes(v, "zxy"), f
+
+
+def trident_head():
+    prong = lambda: lathe([(-0.5, 0.5), (0.3, 0.45), (0.5, 0.0)], 6, "y")
+    centre = moved(prong(), dy=0.15, sx=0.12, sy=0.7, sz=0.12)
+    left = turned(moved(prong(), dy=0.1, sx=0.1, sy=0.55, sz=0.1), "x", 0)
+    left = moved(left, dz=-0.32)
+    right = moved(prong(), dy=0.1, dz=0.32, sx=0.1, sy=0.55, sz=0.1)
+    bar = moved(superq(0.3, 0.3, 12, 8), dy=-0.22, sx=0.14, sy=0.12, sz=0.78)
+    socket = moved(lathe([(-0.5, 0.3), (0.5, 0.45)], 10, "y"), dy=-0.38, sx=0.18, sy=0.24, sz=0.18)
+    return merge(centre, left, right, bar, socket)
+
+
+def mace_flanged():
+    core = moved(lathe([(-0.5, 0.25), (-0.3, 0.32), (0.3, 0.32), (0.5, 0.2)], 12, "y"), sx=1, sy=0.9, sz=1)
+    parts = [core]
+    for k in range(6):
+        fl = superq(0.4, 0.4, 10, 8)
+        fl = moved(fl, dx=0.3, sx=0.42, sy=0.8, sz=0.08)
+        parts.append(turned(fl, "y", k * 60))
+    return merge(*parts)
+
+
+def orb_cage():
+    return merge(torus(0.44, 0.05, 28, 6, "y"), torus(0.44, 0.05, 28, 6, "x"), torus(0.44, 0.05, 28, 6, "z"),
+                 moved(superq(1.0, 1.0, 16, 10), sx=0.4, sy=0.4, sz=0.4))
+
+
+def staff_crescent():
+    verts, faces = [], []
+    seg = 24
+    for i in range(seg + 1):
+        a = math.pi * (0.1 + 0.8 * i / seg)  # a crescent opening upward (+Y)
+        for (r, w) in ((0.32, 0.5), (0.5, 0.5), (0.5, -0.5), (0.32, -0.5)):
+            taper = 1 - 0.75 * abs(i / seg - 0.5) * 2
+            rr = 0.32 + (r - 0.32) * taper if r > 0.32 else r
+            verts.append([w * 0.25, -math.sin(a) * rr + 0.2, math.cos(a) * rr])
+    for i in range(seg):
+        for k in range(4):
+            a = i * 4 + k
+            b = i * 4 + (k + 1) % 4
+            c = (i + 1) * 4 + (k + 1) % 4
+            d = (i + 1) * 4 + k
+            faces.append([a, b, c, d])
+    faces.append([0, 1, 2, 3])
+    n = seg * 4
+    faces.append([n + 3, n + 2, n + 1, n])
+    return verts, faces
+
+
+def fan_blade():
+    # a folding war fan, opened: ribs radiating from the rivet, a scalloped outer edge
+    def outline(u):
+        return u - 0.5, 0.12, 0.5  # (angle slot, inner radius, outer radius)
+
+    def thick(a, r, v):
+        rib = 0.5 + 0.5 * math.cos((a + 0.5) * math.pi * 14)  # pleats
+        return 0.18 + 0.32 * rib * (1 - 0.5 * v)
+
+    v, f = slab(outline, 42, 6, thick)
+
+    def polar(x, y, z):
+        ang = math.radians(-80 + 160 * (x + 0.5))
+        r = y - 0.02 * abs(math.sin((x + 0.5) * math.pi * 14)) * (y > 0.45)
+        return z, math.cos(ang) * r, math.sin(ang) * r  # thin along X, the fan in Y-Z, opening up (+Y)
+
+    return remap(v, polar), f
+
+
+def robe_skirt():
+    prof = [(0.5, 0.36), (0.3, 0.4), (0.0, 0.44), (-0.3, 0.48), (-0.5, 0.5)]
+    v, f = lathe(prof, 36, "y")
+
+    def folds(x, y, z):
+        a = math.atan2(z, x)
+        k = 1 + 0.07 * math.sin(a * 9) * (0.5 - y)
+        return x * k, y, z * k
+
+    return remap(v, folds), f
+
+
+def robe_sleeve():
+    prof = [(0.5, 0.3), (0.2, 0.34), (-0.2, 0.42), (-0.5, 0.5)]
+    v, f = lathe(prof, 20, "y")
+    return remap(v, lambda x, y, z: (x * (1 + 0.05 * math.sin(math.atan2(z, x) * 5) * (0.5 - y)), y - (0.08 * (z + 0.5) if y < -0.3 else 0), z)), f
+
+
+def hood_cowl():
+    v, f = superq(0.7, 0.7, 30, 20)
+
+    def d(x, y, z):
+        if z < -0.1:
+            k = smoothstep(0.34, 0.12, abs(x)) * smoothstep(0.36, 0.05, abs(y + 0.08))
+            z += 0.6 * k * smoothstep(-0.1, -0.5, z)  # the opening
+        if z > 0.0 and y < 0.0:
+            y -= 0.25 * smoothstep(0.0, 0.5, z) * smoothstep(0.0, -0.5, y)  # drapes down the back
+        if y > 0.3:
+            z += 0.1 * smoothstep(0.3, 0.5, y)
+        return x, y, z
+
+    return remap(v, d), f
+
+
+def pauldron_spiked():
+    base = pauldron()
+    spikes = [moved(cone(0.5, 1.0, 8, "y"), dx=dx, dy=0.35, sx=0.14, sy=0.45, sz=0.14) for dx in (-0.25, 0.0, 0.25)]
+    return merge(base, *spikes)
+
+
+def helm_winged():
+    h = helm()
+    wing = lambda side: moved(turned(moved(superq(0.6, 0.9, 12, 8), sx=0.06, sy=0.5, sz=0.3), "z", side * -30), dx=side * 0.62, dy=0.2, dz=0.05)
+    return merge(h, wing(1), wing(-1))
+
+
+def helm_horned():
+    h = helm()
+    horn_l = moved(turned(horn("y"), "z", 35), dx=-0.62, dy=0.35, sx=0.3, sy=0.7, sz=0.3)
+    horn_r = moved(turned(horn("y"), "z", -35), dx=0.62, dy=0.35, sx=0.3, sy=0.7, sz=0.3)
+    return merge(h, horn_l, horn_r)
+
+
+def crown():
+    band = lathe([(-0.5, 0.5), (0.0, 0.5)], 24, "y", caps=False)
+    inner = lathe([(0.0, 0.44), (-0.5, 0.44)], 24, "y", caps=False)
+    pts = []
+    for k in range(5):
+        a = 2 * math.pi * k / 5
+        pts.append(moved(cone(0.5, 1.0, 4, "y"), dx=math.cos(a) * 0.46, dz=math.sin(a) * 0.46, dy=0.25, sx=0.16, sy=0.5, sz=0.16))
+    return merge(band, inner, *pts)
+
+
+def gauntlet():
+    prof = [(-0.5, 0.3), (-0.42, 0.4), (-0.25, 0.38), (0.0, 0.36), (0.25, 0.4), (0.38, 0.5), (0.5, 0.5)]
+    v, f = lathe(prof, 14, "y")
+    return remap(v, lambda x, y, z: (x, y, z * (1.15 if y < -0.25 else 1.0))), f
+
+
+def boot():
+    shaft = moved(lathe([(-0.2, 0.42), (0.5, 0.46)], 14, "y"), dz=0.1, sz=0.8)
+    foot = moved(superq(0.4, 0.5, 18, 12), dy=-0.32, dz=-0.12, sx=0.95, sy=0.36, sz=1.0)
+    return merge(shaft, foot)
+
+
+def belt_pouch():
+    body = superq(0.3, 0.35)
+    flap = moved(superq(0.3, 0.3, 14, 8), dy=0.32, dz=-0.04, sx=1.02, sy=0.36, sz=1.04)
+    return merge(body, flap)
+
+
+def cloth_skinned():
+    # a hanging cloth: thin along Z, top edge at +Y, folds across X (bones added in main)
+    def outline(u):
+        x = -0.5 + u
+        hem = -0.5 + 0.04 * math.sin(u * math.pi * 6)
+        return x, hem, 0.5
+
+    v, f = slab(outline, 18, 16, lambda x, y, v: 0.25)
+    return remap(v, lambda x, y, z: (x, y, z + 0.3 * math.sin((x + 0.5) * math.pi * 4) * (0.3 + 0.7 * (0.5 - y)))), f
+
+
+def scarf_skinned():
+    def outline(u):
+        x = -0.5 + u
+        return x, -0.5, 0.5
+
+    v, f = slab(outline, 6, 20, lambda x, y, v: 0.3)
+    return v, f
+
+
+SKINNED = {"cape_skinned": (3, 4), "scarf_skinned": (1, 4)}  # columns of bones, bones per column
+
 ROLES = {
     "head_biped": head_biped, "head_beast": head_beast, "head_serpent": head_serpent, "head_golem": head_golem,
     "snout": snout, "ear": ear, "horn_x": lambda: horn("x"), "horn_y": lambda: horn("y"), "horn_z": lambda: horn("z"),
@@ -692,8 +1014,16 @@ ROLES = {
     "blade": blade, "blade_tip": blade_tip, "guard": guard, "rod_x": lambda: rod("x"), "rod_y": lambda: rod("y"), "rod_z": lambda: rod("z"),
     "hammer_head": hammer_head, "shield_x": lambda: shield("x"), "shield_z": lambda: shield("z"),
     "cloth_x": lambda: cloth("x"), "cloth_z": lambda: cloth("z"), "pauldron": pauldron, "cuirass": cuirass, "helm": helm,
+    # the second set: asked for by a part's MeshRole attribute (weapons and outfits)
+    "shield_round": shield_round, "shield_kite": shield_kite, "shield_tower": shield_tower, "shield_buckler": shield_buckler,
+    "blade_curved": blade_curved, "blade_wide": blade_wide, "axe_double": axe_double, "spear_leaf": spear_leaf,
+    "trident_head": trident_head, "mace_flanged": mace_flanged, "orb_cage": orb_cage, "staff_crescent": staff_crescent,
+    "fan_blade": fan_blade, "robe_skirt": robe_skirt, "robe_sleeve": robe_sleeve, "hood_cowl": hood_cowl,
+    "pauldron_spiked": pauldron_spiked, "helm_winged": helm_winged, "helm_horned": helm_horned, "crown": crown,
+    "gauntlet": gauntlet, "boot": boot, "belt_pouch": belt_pouch,
+    "cape_skinned": cloth_skinned, "scarf_skinned": scarf_skinned,
 }
-FLAT = {"crystal_x", "crystal_y", "crystal_z", "core_gem", "torso_golem", "head_golem", "arm_golem", "leg_golem"}
+FLAT = {"crystal_x", "crystal_y", "crystal_z", "core_gem", "torso_golem", "head_golem", "arm_golem", "leg_golem", "crown"}
 
 
 def build_mesh(role):
@@ -715,6 +1045,63 @@ def build_mesh(role):
     return me
 
 
+# ── bones for the cloth that swings (SmartBone-style physics in the game: client/ClothPhysics) ──
+def skin_weights(role, me):
+    cols, per = SKINNED[role]
+    xs = [0.0] if cols == 1 else [-0.36 + 0.72 * c / (cols - 1) for c in range(cols)]
+    bones = []
+    for c, x in enumerate(xs):
+        for k in range(per):
+            y0 = 0.5 - k / per
+            y1 = 0.5 - (k + 1) / per
+            bones.append({"name": f"{role}_c{c}_b{k}", "col": c, "k": k, "head": (x, y0, 0.0), "tail": (x, y1, 0.0), "parent": f"{role}_c{c}_b{k - 1}" if k > 0 else None})
+    per_vertex = []
+    for vert in me.vertices:
+        x, y, z = vert.co
+        # across: nearest columns; down: the bone the vertex hangs from, blended with the next
+        cw = [math.exp(-((x - cx) ** 2) / 0.04) for cx in xs]
+        tot = sum(cw) or 1.0
+        t = clamp((0.5 - y) * per - 0.5, 0, per - 1)
+        k0 = int(math.floor(t))
+        k1 = min(per - 1, k0 + 1)
+        f = t - k0
+        w = {}
+        for c in range(cols):
+            for kk, ww in ((k0, 1 - f), (k1, f)):
+                name = f"{role}_c{c}_b{kk}"
+                w[name] = w.get(name, 0) + ww * cw[c] / tot
+        per_vertex.append(w)
+    return {"bones": bones, "verts": per_vertex}
+
+
+def add_armature(role, ob, weights, coll):
+    arm = bpy.data.armatures.new(role + "_rig")
+    rig = bpy.data.objects.new(role + "_rig", arm)
+    coll.objects.link(rig)
+    bpy.context.view_layer.objects.active = rig
+    rig.select_set(True)
+    bpy.ops.object.mode_set(mode="EDIT")
+    made = {}
+    for b in weights["bones"]:
+        eb = arm.edit_bones.new(b["name"])
+        eb.head = (TO_BLENDER @ Vector(b["head"]))
+        eb.tail = (TO_BLENDER @ Vector(b["tail"]))
+        if b["parent"]:
+            eb.parent = made[b["parent"]]
+            eb.use_connect = True
+        made[b["name"]] = eb
+    bpy.ops.object.mode_set(mode="OBJECT")
+    for b in weights["bones"]:
+        ob.vertex_groups.new(name=b["name"])
+    for i, w in enumerate(weights["verts"]):
+        for name, value in w.items():
+            if value > 0.01:
+                ob.vertex_groups[name].add([i], value, "REPLACE")
+    ob.parent = rig
+    mod = ob.modifiers.new("Armature", "ARMATURE")
+    mod.object = rig
+
+
 def reset():
     bpy.ops.wm.read_factory_settings(use_empty=True)
 
@@ -733,24 +1120,27 @@ def main():
     coll = bpy.context.scene.collection
     for i, role in enumerate(ROLES):
         me = build_mesh(role)
+        weights = skin_weights(role, me) if role in SKINNED else None
         me.transform(TO_BLENDER)  # model in Roblox space, store in Blender's
         ob = bpy.data.objects.new(role, me)
-        ob.location = ((i % 10) * 2.0, -(i // 10) * 2.0, 0)
         coll.objects.link(ob)
+        if weights:
+            add_armature(role, ob, weights, coll)
         tris = sum(len(p.vertices) - 2 for p in me.polygons)
-        stats[role] = {"verts": len(me.vertices), "tris": tris}
+        stats[role] = {"verts": len(me.vertices), "tris": tris, "bones": len(weights["bones"]) if weights else 0}
     # the kit as one file: Studio's 3D Importer makes a MeshPart per object, named by role
-    for ob in bpy.data.objects:
-        ob.location = (0, 0, 0)
+    # (the cloth meshes keep their armatures: the importer gives them Bones)
     bpy.ops.export_scene.fbx(
-        filepath=os.path.join(OUT, "kit.fbx"), use_selection=False, object_types={"MESH"},
+        filepath=os.path.join(OUT, "kit.fbx"), use_selection=False, object_types={"MESH", "ARMATURE"},
         apply_scale_options="FBX_SCALE_UNITS", bake_space_transform=True, mesh_smooth_type="FACE",
-        add_leaf_bones=False, path_mode="AUTO",
+        add_leaf_bones=False, path_mode="AUTO", use_armature_deform_only=True, bake_anim=False,
+        primary_bone_axis="Y", secondary_bone_axis="X",
     )
     bpy.ops.wm.save_as_mainfile(filepath=os.path.join(OUT, "kit.blend"))
     json.dump({"roles": stats}, open(os.path.join(OUT, "kit.json"), "w"), indent=1)
     total = sum(s["tris"] for s in stats.values())
-    print(f"kit: {len(stats)} role meshes, {total} triangles (largest {max(s['tris'] for s in stats.values())}) -> tools/blender/out/kit.fbx")
+    bones = sum(s["bones"] for s in stats.values())
+    print(f"kit: {len(stats)} role meshes ({sum(1 for s in stats.values() if s['bones'])} with bones, {bones} bones), {total} triangles (largest {max(s['tris'] for s in stats.values())}) -> tools/blender/out/kit.fbx")
 
 
 if __name__ == "__main__":

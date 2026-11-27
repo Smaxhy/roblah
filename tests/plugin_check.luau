@@ -177,7 +177,18 @@ for i, role in MeshLibrary.ROLES do
 		return sub
 	end)()
 end
+-- the cloth mesh comes with bones (and the importer's welds, which go)
+local capeT = imported:FindFirstChild("cape_skinned", true) or imported:FindFirstChild("cape_skinned_2", true) or imported:FindFirstChild("cape_skinned.001", true)
+if capeT then
+	local b = I.new("Bone")
+	b.Name = "root"
+	b.Parent = capeT
+	I.new("WeldConstraint").Parent = capeT
+end
 local reg = Kit.register(dm, { imported }, MeshLibrary.ROLES)
+local kitCape = dm:GetService("ReplicatedStorage"):FindFirstChild("BitLevelingMeshKit")
+kitCape = kitCape and kitCape:FindFirstChild("cape_skinned")
+check(capeT == nil or (kitCape ~= nil and kitCape:FindFirstChildOfClass("Bone") ~= nil and kitCape:FindFirstChildOfClass("WeldConstraint") == nil), "a cloth mesh keeps its bones when registered (and loses the importer's welds)")
 check(reg.found == #MeshLibrary.ROLES and #reg.missing == 0, string.format("the kit registers from an imported model (%d of %d roles, importer suffixes and nesting)", reg.found, #MeshLibrary.ROLES))
 local st = Kit.status(dm, MeshLibrary.ROLES)
 check(st.present and dm:GetService("ReplicatedStorage"):FindFirstChild("BitLevelingMeshKit") ~= nil, "the kit is saved in the place (ReplicatedStorage.BitLevelingMeshKit)")
