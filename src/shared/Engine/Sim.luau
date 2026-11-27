@@ -5758,8 +5758,13 @@ function Sim:choose(life: any, index: number, approachId: string?)
 		sceneCtx.episode = event.episode
 	end
 	-- (v0.16) a big boss: a battle in turns instead of one clash (Engine/Battle.luau)
-	if choice.battle and Battle.def(self, choice.battle) then
-		Battle.begin(self, life, choice.battle, { eventId = event.id, choice = index, art = event.art, title = title })
+	-- (a list of bosses: this time, one of them)
+	local battleId = choice.battle
+	if type(battleId) == "table" then
+		battleId = if #battleId > 0 then Rng.pick(life, battleId) else nil
+	end
+	if battleId and Battle.def(self, battleId) then
+		Battle.begin(self, life, battleId, { eventId = event.id, choice = index, art = event.art, title = title })
 		report.battle = true
 		life.sceneRel = nil
 		life.scene = nil

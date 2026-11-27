@@ -514,6 +514,16 @@ return {
 			defaultMode = "normal",
 			rewriteForm = "human",
 			minCardAge = 13, -- nobody younger is put in an incident card (Roblox: children are never shown hurt)
+			-- the bestiary's families at each rank (Hunter/Monsters): a life that fights at a Gate
+			-- learns one of its rank's families (a Bestiary codex page, lore_beast_<family>)
+			bestiary = {
+				{ "beetles", "boars", "demons", "elementals", "goblins", "golems", "kobolds", "plants", "slimes", "spiders", "undead", "vermin", "wolves" },
+				{ "ants", "aquatic", "basilisks", "beetles", "boars", "centipedes", "constructs", "dwarves", "forest_elves", "goblins", "harpies", "hounds", "kobolds", "lizardfolk", "orcs", "plants", "scorpions", "slimes", "spiders", "trolls", "undead", "vermin", "wolves" },
+				{ "ants", "aquatic", "bears", "beetles", "boars", "centaurs", "constructs", "drakes", "dwarves", "elementals", "forest_elves", "great_cats", "harpies", "lizardfolk", "mantises", "naga", "orcs", "scorpions", "slimes", "spiders", "trolls", "undead", "wolves" },
+				{ "ants", "aquatic", "bears", "centaurs", "centipedes", "constructs", "dark_elves", "demons", "drakes", "dwarves", "elementals", "forest_elves", "giants", "golems", "great_cats", "harpies", "high_orcs", "hounds", "ice_elves", "lizardfolk", "lycans", "mantises", "minotaurs", "naga", "ogres", "orcs", "plants", "slimes", "spiders", "trolls", "undead" },
+				{ "ants", "basilisks", "bears", "centaurs", "constructs", "dark_elves", "demons", "dragonkin", "drakes", "dwarves", "elementals", "giants", "golems", "great_cats", "harpies", "high_orcs", "ice_elves", "lycans", "mantises", "minotaurs", "naga", "ogres", "plants", "scorpions", "undead" },
+				{ "aquatic", "basilisks", "centipedes", "dark_elves", "demons", "dragonkin", "drakes", "elementals", "giants", "golems", "hounds", "ice_elves", "minotaurs", "undead" },
+			},
 			headlineRank = 4,
 			modes = {
 				normal = { name = "Normal World" },

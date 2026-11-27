@@ -221,6 +221,14 @@ local function summarise(difficulty: string)
 		if life.cause and string.find(life.cause, "Dungeon Break", 1, true) then
 			s.deathsGate += 1
 		end
+		-- the Bestiary pages a life learned at its Gates
+		for id in life.codex or {} do
+			if string.sub(id, 1, 11) == "lore_beast_" then
+				s.beasts = (s.beasts or 0) + 1
+				s.beastKinds = s.beastKinds or {}
+				s.beastKinds[id] = true
+			end
+		end
 		local ok = pcall(function()
 			serde.decode("json", serde.encode("json", life))
 		end)
@@ -260,6 +268,11 @@ for _, diff in { "normal", "crisis" } do
 	check(s.awakened > s.lives * 0.15 and s.awakened < s.lives * 0.8, diff .. ": some lives awaken, many don't")
 	check(s.ranks[6] <= math.max(2, s.awakened * 0.05), diff .. ": S-rank awakenings are rare")
 	check(s.incidents > 0, diff .. ": lives are pulled into Gate incidents")
+	local kinds = 0
+	for _ in s.beastKinds or {} do
+		kinds += 1
+	end
+	check((s.beasts or 0) > 0 and kinds >= 5, string.format("%s: fighting at Gates fills the Bestiary (%d pages learned, %d families)", diff, s.beasts or 0, kinds))
 	check(s.unsaveable == 0, diff .. ": every life (with its world) survives a save")
 	if diff == "normal" then
 		_G.normalSummary = s

@@ -1123,6 +1123,13 @@ function HW.afterChoice(sim: any, life: any, event: any, choice: any, report: an
 	if (role == "helped" or role == "fought" or role == "held") and won then
 		c.saved += 1
 	end
+	-- what you fought there goes in your Bestiary: one of the families at the Gate's rank
+	local cfgB = cfgOf(sim.pack)
+	local fams = cfgB and cfgB.bestiary and cfgB.bestiary[math.clamp(inc.rank, 1, 6)]
+	if fams and #fams > 0 and (role == "raided" or role == "fought" or role == "held" or role == "helped") then
+		local fam = fams[1 + ((inc.n or 0) * 7 + inc.rank) % #fams]
+		sim:unlockCodex(life, { "lore_beast_" .. fam }, report)
+	end
 	-- the incident board shows what you did there
 	for _, r in gw.recent do
 		if r.n == inc.n then

@@ -160,8 +160,11 @@ for _, e in pack.events do
 				lintResult(where, c.result)
 				lintResult(where, c.win)
 				lintResult(where, c.lose)
-				if c.battle and not (pack.bosses and pack.bosses[c.battle]) then
-					err(where .. ": battle '" .. tostring(c.battle) .. "' isn't a boss")
+				-- (one boss, or a list of bosses: each time, one of them)
+				for _, b in (if type(c.battle) == "table" then c.battle else { c.battle }) do
+					if not (pack.bosses and pack.bosses[b]) then
+						err(where .. ": battle '" .. tostring(b) .. "' isn't a boss")
+					end
 				end
 				if c.battle and not c.clash then
 					warn(where .. ": a battle with no clash falls back to nothing when battles are off")

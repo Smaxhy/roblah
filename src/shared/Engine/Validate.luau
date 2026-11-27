@@ -778,8 +778,15 @@ function Validate.run(pack)
 		-- (v0.16) a big boss fought in turns: the boss must exist, and the clash stays as the
 		-- one-tap fallback (a pack without bosses), with the same win and lose
 		if o.battle ~= nil then
-			if not (pack.bosses and pack.bosses[o.battle]) then
-				err(where, "battle '" .. tostring(o.battle) .. "' isn't a boss (Bosses.luau)")
+			-- one boss, or a list of them (each time, one is picked)
+			local list = if type(o.battle) == "table" then o.battle else { o.battle }
+			if #list == 0 then
+				err(where, "battle is an empty list")
+			end
+			for _, b in list do
+				if not (pack.bosses and pack.bosses[b]) then
+					err(where, "battle '" .. tostring(b) .. "' isn't a boss (Bosses.luau)")
+				end
 			end
 			if not hasClash then
 				err(where, "a battle choice keeps a clash too (its win and lose are the battle's)")

@@ -31,9 +31,12 @@ local battleChoices = {}
 for _, e in pack.events do
 	for i, c in e.choices or {} do
 		if c.battle then
-			check(pack.bosses[c.battle] ~= nil, e.id .. ": battle '" .. tostring(c.battle) .. "' isn't a boss")
+			-- (one boss, or a list: each time, one of them)
+			for _, b in (if type(c.battle) == "table" then c.battle else { c.battle }) do
+				check(pack.bosses[b] ~= nil, e.id .. ": battle '" .. tostring(b) .. "' isn't a boss")
+			end
 			check(c.clash ~= nil and c.win ~= nil and c.lose ~= nil, e.id .. ": a battle choice keeps its clash, win and lose")
-			table.insert(battleChoices, { event = e, index = i, boss = c.battle })
+			table.insert(battleChoices, { event = e, index = i, boss = if type(c.battle) == "table" then c.battle[1] else c.battle })
 		end
 	end
 end

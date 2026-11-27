@@ -4,9 +4,10 @@
 	Canon gives every Gate a boss whose death closes it (about an hour later), and a Red Gate
 	that won't open until its boss is dead. These particular bosses are the game's own.
 
-	Two per rank: the first is a raid's boss room (Events/Incidents.luau hw_raid_<rank>), the
-	second waits at the end of a Red Gate whose real rank is that rank (hw_red_<rank-1>: a Red
-	Gate reads one rank lower than it is). Friends on the server can join a boss fight.
+	Several per rank: a raid's boss room (Events/Incidents.luau hw_raid_<rank>) meets one of its
+	rank's (RAID_BOSS there: 2 at E to B, 3 at A, 4 at S), and a Red Gate's throne one of the
+	rank above the reading (RED_BOSS: a Red Gate reads one rank lower than it is). Friends on
+	the server can join a boss fight.
 
 	Tuned by headless fights (Engine/Battle): a Hunter of the boss's rank with middling stats
 	(about a third of the rank's cap) and a plain weapon of that grade wins a solo boss room

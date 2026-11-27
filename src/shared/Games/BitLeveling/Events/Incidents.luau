@@ -33,8 +33,24 @@ local PAY = { { 1, 3 }, { 3, 9 }, { 10, 30 }, { 40, 120 }, { 200, 600 }, { 2000,
 local HURT = { { -14, -6 }, { -26, -11 }, { -44, -20 }, { -75, -34 }, { -130, -60 }, { -240, -110 } }
 local FAME = { 1, 2, 4, 7, 12, 25 }
 -- the boss rooms (Bosses.luau): a raid's boss by the Gate's rank, a Red Gate's by its real rank
-local RAID_BOSS = { "goblin_chief", "brood_mother", "orc_warlord", "frost_bear", "golem_lord", "dragonkin_tyrant" }
-local RED_BOSS = { "bat_matriarch", "hob_captain", "naga_matriarch", "wraith_lord", "wyvern_queen", "hollow_king" }
+-- the boss rooms, by rank: a raid meets one of its rank's bosses; a Red Gate's throne one of the
+-- rank above the reading (Bosses.luau; each list is picked from when the room opens)
+local RAID_BOSS = {
+	{ "goblin_chief", "kobold_tunnel_boss" },
+	{ "brood_mother", "bone_captain" },
+	{ "orc_warlord", "elf_huntmaster" },
+	{ "frost_bear", "forge_lord" },
+	{ "golem_lord", "ice_elf_warchief", "hive_matron" },
+	{ "dragonkin_tyrant", "frost_jarl", "lich_archivist", "demon_noble" },
+}
+local RED_BOSS = {
+	{ "bat_matriarch" },
+	{ "hob_captain" },
+	{ "naga_matriarch" },
+	{ "wraith_lord" },
+	{ "wyvern_queen", "dark_matriarch" },
+	{ "hollow_king" },
+}
 
 local function share(range, f: number)
 	return { math.max(1, math.floor(range[1] * f)), math.max(1, math.floor(range[2] * f)) }

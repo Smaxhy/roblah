@@ -260,15 +260,22 @@ function View.view(self: any, life: any): any
 			-- chips are what you'd really get (their shares out, what they take off a loss)
 			local partyLine: string? = nil
 			local shown = c
+			-- the boss this choice fights (one, or one of a list: then it's a surprise until the room)
+			local bossDef = nil
+			if type(c.battle) == "table" then
+				bossDef = if #c.battle > 0 and pack.bosses and pack.bosses[c.battle[1]] then { name = if #c.battle > 1 then true else pack.bosses[c.battle[1]].name } else nil
+			elseif c.battle and pack.bosses then
+				bossDef = pack.bosses[c.battle]
+			end
 			if c.clash and c.clash.party and ok then
 				local sup = Party.support(self, life, c.clash)
 				partyLine = Party.supportText(self, sup)
-				if c.battle and pack.bosses and pack.bosses[c.battle] and sup then
+				if bossDef and sup then
 					partyLine = (partyLine or "") .. " In the boss room they fight beside you, every turn."
 				end
 				shown = Party.displayChoice(self, life, c)
 			end
-			local hint = if c.battle and pack.bosses and pack.bosses[c.battle]
+			local hint = if bossDef
 				then ((if c.hint then self:render(life, c.hint) .. " " else "") .. "A battle in turns: every turn, you choose.")
 				elseif c.hint then self:render(life, c.hint)
 				else nil
@@ -284,7 +291,7 @@ function View.view(self: any, life: any): any
 				clash = if c.clash and ok then self:clashPreview(life, c.clash) else nil,
 				stakes = if c.clash and ok then self:stakesView(shown, life, sceneCtx) else nil,
 				-- (v0.16) a battle in turns: the way you fight is picked every turn, not here
-				battle = if c.battle and pack.bosses and pack.bosses[c.battle] then (pack.bosses[c.battle].name or true) else nil,
+				battle = if bossDef then (bossDef.name or true) else nil,
 				-- a plain choice says what it gives too
 				gains = if not c.clash and c.result then self:stakesOf(c.result, nil, nil, life, sceneCtx) else nil,
 			})

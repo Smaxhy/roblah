@@ -44,6 +44,21 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local MonsterAnim = {}
 
+-- the monsters' voices (client/WorldSfx: by family, from the model's Kind); quiet if it's missing
+local WorldSfx: any = nil
+local function voice(model: Instance, event: string, opts: any?)
+	if WorldSfx == nil then
+		local ok, mod = pcall(function()
+			return require(script.Parent:FindFirstChild("WorldSfx") :: any)
+		end)
+		WorldSfx = if ok and mod then mod else false
+	end
+	if WorldSfx then
+		pcall(WorldSfx.monsterOf, model, event, opts)
+	end
+end
+MonsterAnim.voice = voice
+
 local FAR, NEAR = 260, 110
 local tracked: { [Model]: any } = setmetatable({}, { __mode = "k" }) :: any
 local IDENT = CFrame.identity
@@ -138,6 +153,7 @@ local function readState(r: any, t: number)
 			-- (a special attack that just landed already played its own move)
 			if t - r.specialT > 0.9 then
 				r.attackT = t
+				voice(m, "attack")
 			end
 		end
 		r.atkVal = atk
@@ -145,6 +161,9 @@ local function readState(r: any, t: number)
 	r.seen = true
 	local sp = m:GetAttribute("Special")
 	if sp ~= r.spVal then
+		if r.spVal ~= nil and sp ~= nil then
+			voice(m, "roar", { volume = 1.2 })
+		end
 		r.spVal = sp
 		r.specialT = t
 		r.attackT = t
@@ -1137,6 +1156,10 @@ function MonsterAnim.start(folderName: string?)
 				if r == nil then
 					r = MonsterAnim.rig(model) or false
 					tracked[model] = r
+					-- a monster that comes into view: most of them let you know
+					if r and math.random() < 0.6 then
+						voice(model, "aggro")
+					end
 				end
 				if r then
 					local dist = (r.root.CFrame.Position - eye).Magnitude
