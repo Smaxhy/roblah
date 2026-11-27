@@ -106,7 +106,7 @@ function Talent.card(ctx, parent: Instance, order: number)
 		if t.affinityName then
 			local sinColor = if t.affinityColor then Theme.rgb(t.affinityColor) else C.sub
 			sin.Visible = true
-			sin.Text = Format.color("SIN  ", C.faint)
+			sin.Text = Format.color(string.upper((ctx.info and ctx.info.affinityLabel) or "Sin") .. "  ", C.faint)
 				.. Format.color(string.upper(Format.escape(t.affinityName)), sinColor)
 				.. (if t.resonance then "   " .. Format.color(string.format("RESONANCE  +%d%% HEADS", (ctx.info and ctx.info.affinityResonance) or 3), sinColor) else "")
 		else

@@ -129,6 +129,38 @@ function HunterLive.install(S)
 		return "normal", cfg.modes.normal
 	end
 
+	-- ── class abilities in the city (Q and R) ──
+	-- Each class has two; their power grows with rank, the weapon in hand, and how many of the
+	-- class's skills the life has learned (Skills.luau). The server decides every hit.
+	local ABILITIES = {
+		fighter = { Q = { id = "cleave", name = "Cleave", cd = 4, range = 13, mult = 1.6 }, R = { id = "slam", name = "Ground Slam", cd = 12, radius = 17, mult = 2.2 } },
+		mage = { Q = { id = "bolt", name = "Mana Bolt", cd = 3, range = 70, mult = 1.9 }, R = { id = "nova", name = "Frost Nova", cd = 12, radius = 19, mult = 1.6 } },
+		assassin = { Q = { id = "step", name = "Shadow Step", cd = 5, range = 34, mult = 2.4 }, R = { id = "flurry", name = "Bleed Flurry", cd = 10, range = 11, mult = 3.3 } },
+		tanker = { Q = { id = "bash", name = "Shield Bash", cd = 5, range = 11, mult = 1.3 }, R = { id = "provoke", name = "Provoke", cd = 14, radius = 45, mult = 0 } },
+		ranger = { Q = { id = "pierce", name = "Piercing Arrow", cd = 4, range = 90, mult = 2 }, R = { id = "rain", name = "Arrow Rain", cd = 12, radius = 15, mult = 2.1 } },
+		healer = { Q = { id = "mend", name = "Mend", cd = 6, radius = 22, mult = 0 }, R = { id = "sanctuary", name = "Sanctuary", cd = 18, radius = 26, mult = 0 } },
+	}
+	local function classOf(life: any): string?
+		for id in ABILITIES do
+			if life and life.flags["class_" .. id] then
+				return id
+			end
+		end
+		return nil
+	end
+	local function skillCount(life: any, class: string): number
+		local n = 0
+		for _, t in life.traits or {} do
+			local def = Content.traits and Content.traits[t]
+			if def and def.class == class then
+				n += 1
+			end
+		end
+		return n
+	end
+	local guardUntil: { [Player]: number } = {}
+	local provoked: { [any]: { player: Player, untilT: number } } = setmetatable({}, { __mode = "k" }) :: any
+
 	-- ── incidents ──
 	local incidents: { any } = {}
 	local serial = 0
@@ -467,6 +499,7 @@ function HunterLive.install(S)
 		end
 	end
 
+	Npcs.provoked = provoked
 	-- Hunters (NPC) fight the monsters out in the street
 	local function stepResponders(now: number)
 		for _, r in Npcs.responders do
@@ -548,6 +581,14 @@ function HunterLive.install(S)
 		hum.DisplayName = player.DisplayName .. (if prank > 0 then " [" .. HW.rankLetter(prank) .. "-rank]" else "")
 		model:SetAttribute("HunterLive", true)
 		model:SetAttribute("Rank", prank)
+		local cls = classOf(life)
+		if cls and prank > 0 then
+			model:SetAttribute("Class", cls)
+			model:SetAttribute("AbilityQ", ABILITIES[cls].Q.name)
+			model:SetAttribute("AbilityR", ABILITIES[cls].R.name)
+			model:SetAttribute("CooldownQ", ABILITIES[cls].Q.cd)
+			model:SetAttribute("CooldownR", ABILITIES[cls].R.cd)
+		end
 		local spot = Map.spawns[math.random(1, math.max(1, #Map.spawns))] or Vector3.new(0, 4, 0)
 		model:PivotTo(CFrame.new(spot + Vector3.new(math.random(-6, 6), 1, math.random(-6, 6))))
 		model.Parent = Workspace
@@ -594,7 +635,8 @@ function HunterLive.install(S)
 				end
 				ch:SetAttribute("LastHitRank", m.rank)
 				ch:SetAttribute("LastHitAt", inc and inc.label or "the street")
-				h:TakeDamage(m.def.dmg)
+				local guarded = (guardUntil[victim] or 0) > os.clock()
+				h:TakeDamage(m.def.dmg * (if guarded then 0.45 else 1))
 				local hp = (ch.HumanoidRootPart :: BasePart).Position
 				fx("hit", { from = { pos.X, pos.Y, pos.Z }, to = { hp.X, hp.Y, hp.Z }, rank = m.rank, player = victim.UserId })
 			end
@@ -613,7 +655,149 @@ function HunterLive.install(S)
 	event.OnServerEvent:Connect(function(player: Player, action: any, data: any)
 		local w = walking[player]
 		local session = S.sessions[player]
-		if not w or not session or action ~= "attack" then
+		if not w or not session then
+			return
+		end
+		if action == "skill" then
+			local life = lifeOf(session)
+			local class = classOf(life)
+			local slot = if type(data) == "table" and (data.slot == "Q" or data.slot == "R") then data.slot else nil
+			local ab = class and slot and ABILITIES[class][slot]
+			local ch = player.Character
+			local root = ch and ch:FindFirstChild("HumanoidRootPart") :: BasePart?
+			local h = ch and ch:FindFirstChildOfClass("Humanoid")
+			local prank = rankOf(session)
+			if not ab or not root or not h or h.Health <= 0 or prank <= 0 then
+				return
+			end
+			w.cool = w.cool or {}
+			local now = os.clock()
+			if (w.cool[slot] or 0) > now then
+				return
+			end
+			local learned = skillCount(life, class :: string)
+			w.cool[slot] = now + ab.cd * (1 - math.min(0.4, learned * 0.06))
+			local Weapons = HW.weapons()
+			local wmult = 1
+			if Weapons then
+				local base, stars, shiny = Weapons.parse(life.gear and life.gear.weapon)
+				if base then
+					wmult = 1 + Weapons.power(base, stars, shiny) / 12
+				end
+			end
+			local dmg = RANK_DMG[prank] * wmult * ab.mult * (1 + learned * 0.15)
+			local look = root.CFrame.LookVector
+			local pos = root.Position
+			local hits = {}
+			local function hit(m: any, amount: number)
+				if m.hum.Health > 0 then
+					m.hum:TakeDamage(amount)
+					table.insert(hits, m)
+				end
+			end
+			local function each(fn: (any, Vector3, number) -> ())
+				for _, m in table.clone(Npcs.monsters) do
+					local mr = m.model.PrimaryPart
+					if mr and m.hum.Health > 0 then
+						fn(m, mr.Position, (mr.Position - pos).Magnitude)
+					end
+				end
+			end
+			local data2: any = { ability = ab.id, player = player.UserId, at = { pos.X, pos.Y, pos.Z }, dir = { look.X, look.Y, look.Z }, rank = prank }
+			if ab.id == "cleave" or ab.id == "bash" then
+				each(function(m, mp, d)
+					if d < ab.range + m.def.size * 2 and look:Dot((mp - pos).Unit) > 0.1 then
+						hit(m, dmg)
+						if ab.id == "bash" then
+							m.model.PrimaryPart.AssemblyLinearVelocity = (mp - pos).Unit * 60 + Vector3.new(0, 30, 0)
+						end
+					end
+				end)
+			elseif ab.id == "slam" or ab.id == "nova" then
+				each(function(m, _, d)
+					if d < ab.radius + m.def.size * 2 then
+						hit(m, dmg)
+						if ab.id == "nova" then
+							local old = m.def.speed
+							m.hum.WalkSpeed = old * 0.35
+							task.delay(4, function()
+								if m.hum.Parent then
+									m.hum.WalkSpeed = old
+								end
+							end)
+						end
+					end
+				end)
+			elseif ab.id == "bolt" or ab.id == "step" or ab.id == "flurry" then
+				-- the nearest monster in front of you
+				local best, bd = nil, ab.range
+				each(function(m, mp, d)
+					if d < bd and (d < 4 or look:Dot((mp - pos).Unit) > 0.35) then
+						best, bd = m, d
+					end
+				end)
+				if best then
+					hit(best, dmg)
+					local tp = best.model.PrimaryPart.Position
+					data2.to = { tp.X, tp.Y, tp.Z }
+				else
+					local tp = pos + look * math.min(ab.range, 30)
+					data2.to = { tp.X, tp.Y, tp.Z }
+				end
+			elseif ab.id == "pierce" then
+				local endp = pos + look * ab.range
+				each(function(m, mp)
+					-- everything along the line, within a few studs of it
+					local t = math.clamp((mp - pos):Dot(look), 0, ab.range)
+					if (pos + look * t - mp).Magnitude < 4 + m.def.size then
+						hit(m, dmg)
+					end
+				end)
+				data2.to = { endp.X, endp.Y, endp.Z }
+			elseif ab.id == "rain" then
+				local center = pos + look * 28
+				each(function(m, mp)
+					if (mp - center).Magnitude < ab.radius + m.def.size * 2 then
+						hit(m, dmg)
+					end
+				end)
+				data2.to = { center.X, center.Y, center.Z }
+			elseif ab.id == "provoke" then
+				guardUntil[player] = now + 6
+				each(function(m, _, d)
+					if d < ab.radius then
+						provoked[m] = { player = player, untilT = now + 6 }
+						table.insert(hits, m)
+					end
+				end)
+			elseif ab.id == "mend" or ab.id == "sanctuary" then
+				local heal = h.MaxHealth * (if ab.id == "mend" then 0.25 else 0.15) * (1 + learned * 0.1)
+				local healed = {}
+				for _, other in Players:GetPlayers() do
+					local och = other.Character
+					local oh = och and och:FindFirstChildOfClass("Humanoid")
+					local orp = och and och:FindFirstChild("HumanoidRootPart") :: BasePart?
+					if oh and orp and oh.Health > 0 and (orp.Position - pos).Magnitude < ab.radius then
+						oh.Health = math.min(oh.MaxHealth, oh.Health + heal)
+						table.insert(healed, { orp.Position.X, orp.Position.Y, orp.Position.Z })
+					end
+				end
+				if ab.id == "sanctuary" then
+					guardUntil[player] = now + 5
+					for _, c in Npcs.civilians do
+						local cr = c.model.PrimaryPart
+						if cr and (cr.Position - pos).Magnitude < ab.radius then
+							Npcs.unfreeze(c)
+						end
+					end
+				end
+				data2.healed = healed
+			end
+			data2.hits = #hits
+			fx("ability", data2)
+			return
+		end
+		if action ~= "attack" then
 			return
 		end
 		local now = os.clock()

@@ -1440,6 +1440,10 @@ function Server.start()
 	info.modes = Progress.modesInfo()
 	info.affinities = Progress.affinitiesInfo()
 	info.affinityResonance = Content.affinityResonance
+	-- (BitLeveling) what a pack calls its affinities (the kit's own word is "sins")
+	info.affinityWord = Content.affinityWord
+	info.affinityTab = Content.affinityTab
+	info.affinityLabel = Content.affinityLabel
 	info.talentTiers = if Progress.enabled() then sim:talentOdds(nil) else nil
 	info.lunacy = Content.meta.premiumName or "Lunacy"
 	info.storeOpen = Store.enabled == true

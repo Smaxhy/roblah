@@ -31,6 +31,7 @@ local C, F = Theme.colors, Theme.fonts
 
 local HunterLive = {
 	walking = false,
+	useAbility = nil :: ((string) -> ())?,
 	setWalking = nil :: ((boolean) -> ())?,
 	call = nil :: any,
 	toast = nil :: any,
@@ -313,8 +314,148 @@ function HunterLive.start(opts: any?)
 		Debris:AddItem(p, 3)
 	end
 
+	-- a ring of light that grows along the ground (slams, novas, sanctuaries)
+	local function ring(at: Vector3, radius: number, color: Color3, life: number, height: number?)
+		local p = fxPart({ Shape = Enum.PartType.Cylinder, Size = Vector3.new(height or 0.4, 2, 2), CFrame = CFrame.new(at.X, at.Y - 2.6, at.Z) * CFrame.Angles(0, 0, math.rad(90)), Color = color, Material = Enum.Material.Neon, Transparency = 0.15 }, fxRoot)
+		TweenService:Create(p, TweenInfo.new(life, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), { Size = Vector3.new(height or 0.4, radius * 2, radius * 2), Transparency = 1 }):Play()
+		Debris:AddItem(p, life + 0.1)
+	end
+	-- a ball that flies from a to b, then bursts
+	local function bolt(a: Vector3, b: Vector3, color: Color3, size: number, speed: number, onLand: (() -> ())?)
+		local p = fxPart({ Shape = Enum.PartType.Ball, Size = Vector3.one * size, Position = a, Color = color, Material = Enum.Material.Neon }, fxRoot)
+		make("PointLight", { Color = color, Range = size * 6, Brightness = 3 }, p)
+		make("ParticleEmitter", { Texture = SPARKLE, Color = ColorSequence.new(color), LightEmission = 1, Rate = 60, Lifetime = NumberRange.new(0.2, 0.4), Speed = NumberRange.new(0, 1), Size = NumberSequence.new(size * 0.5, 0) }, p)
+		local t = math.max(0.08, (b - a).Magnitude / speed)
+		TweenService:Create(p, TweenInfo.new(t, Enum.EasingStyle.Linear), { Position = b }):Play()
+		task.delay(t, function()
+			p:Destroy()
+			if onLand then
+				onLand()
+			end
+		end)
+	end
+	local ABILITY_FX = {
+		cleave = function(at, dir, d)
+			local right = dir:Cross(Vector3.yAxis)
+			for k = -2, 2 do
+				arc(at + dir * 4 + right * k * 2.2 + Vector3.new(0, 2.5 + k * 0.3, 0), at + dir * 8 + right * k * 3 + Vector3.new(0, 1.5, 0), Color3.fromRGB(255, 200, 120), 0.7)
+			end
+			sound(SLASH, at, 0.7, 0.8)
+			local _ = d
+		end,
+		slam = function(at)
+			ring(at, 18, Color3.fromRGB(255, 170, 80), 0.6, 0.8)
+			ring(at, 12, Color3.fromRGB(255, 230, 180), 0.4)
+			flash(at, Color3.fromRGB(255, 180, 100), 10, 0.4)
+			shakeNear(at, 1.5, 80)
+		end,
+		bolt = function(at, _, d)
+			local to = if d.to then v3(d.to) else at
+			bolt(at + Vector3.new(0, 2.5, 0), to + Vector3.new(0, 2, 0), Color3.fromRGB(110, 180, 255), 1.2, 140, function()
+				flash(to + Vector3.new(0, 2, 0), Color3.fromRGB(150, 200, 255), 7, 0.35)
+			end)
+		end,
+		nova = function(at)
+			ring(at, 20, Color3.fromRGB(170, 230, 255), 0.7, 1.2)
+			for k = 0, 9 do
+				local a = k / 10 * math.pi * 2
+				local p = fxPart({ Size = Vector3.new(0.8, 3.5, 0.8), CFrame = CFrame.new(at + Vector3.new(math.cos(a) * 8, -1.5, math.sin(a) * 8)) * CFrame.Angles(math.rad(math.random(-20, 20)), a, math.rad(math.random(-20, 20))), Color = Color3.fromRGB(200, 240, 255), Material = Enum.Material.Ice, Transparency = 0.2 }, fxRoot)
+				TweenService:Create(p, TweenInfo.new(1.2), { Transparency = 1 }):Play()
+				Debris:AddItem(p, 1.3)
+			end
+			flash(at, Color3.fromRGB(200, 240, 255), 12, 0.5)
+		end,
+		step = function(at, _, d)
+			local to = if d.to then v3(d.to) else at
+			arc(at + Vector3.new(0, 2.5, 0), to + Vector3.new(0, 2.5, 0), Color3.fromRGB(170, 90, 255), 1.2)
+			flash(at + Vector3.new(0, 2.5, 0), Color3.fromRGB(120, 60, 200), 5, 0.4)
+			flash(to + Vector3.new(0, 2.5, 0), Color3.fromRGB(200, 120, 255), 6, 0.4)
+			-- the one who stepped lands behind the target (the client moves its own character)
+			if d.player == player.UserId and d.to then
+				local ch = player.Character
+				local hrp = ch and ch:FindFirstChild("HumanoidRootPart") :: BasePart?
+				if hrp then
+					local dir = (to - at)
+					dir = Vector3.new(dir.X, 0, dir.Z)
+					if dir.Magnitude > 0.5 then
+						hrp.CFrame = CFrame.lookAt(to + dir.Unit * 4 + Vector3.new(0, 0.5, 0), to)
+					end
+				end
+			end
+		end,
+		flurry = function(at, _, d)
+			local to = if d.to then v3(d.to) else at
+			for k = 0, 5 do
+				task.delay(k * 0.07, function()
+					local o = Vector3.new(math.random() - 0.5, math.random() - 0.5, math.random() - 0.5) * 4
+					arc(to + o + Vector3.new(0, 3, 0), to - o + Vector3.new(0, 2, 0), Color3.fromRGB(230, 60, 80), 0.35)
+				end)
+			end
+			sound(SLASH, to, 0.6, 1.3)
+		end,
+		bash = function(at, dir)
+			flash(at + dir * 4 + Vector3.new(0, 2.5, 0), Color3.fromRGB(220, 220, 240), 8, 0.3)
+			ring(at + dir * 4, 7, Color3.fromRGB(200, 210, 230), 0.35)
+			shakeNear(at, 1, 40)
+		end,
+		provoke = function(at)
+			ring(at, 45, Color3.fromRGB(255, 70, 60), 0.9, 0.6)
+			flash(at + Vector3.new(0, 3, 0), Color3.fromRGB(255, 80, 60), 9, 0.6)
+		end,
+		pierce = function(at, _, d)
+			local to = if d.to then v3(d.to) else at
+			local a, b = at + Vector3.new(0, 2.5, 0), to + Vector3.new(0, 2.5, 0)
+			local beam = fxPart({ Size = Vector3.new(0.5, 0.5, (b - a).Magnitude), CFrame = CFrame.lookAt((a + b) / 2, b), Color = Color3.fromRGB(170, 255, 170), Material = Enum.Material.Neon }, fxRoot)
+			TweenService:Create(beam, TweenInfo.new(0.35), { Transparency = 1, Size = Vector3.new(0.1, 0.1, (b - a).Magnitude) }):Play()
+			Debris:AddItem(beam, 0.4)
+		end,
+		rain = function(_, _, d)
+			local c = if d.to then v3(d.to) else Vector3.zero
+			for k = 1, 22 do
+				task.delay(math.random() * 0.6, function()
+					local o = Vector3.new((math.random() - 0.5) * 26, 0, (math.random() - 0.5) * 26)
+					local p = fxPart({ Size = Vector3.new(0.15, 0.15, 3), CFrame = CFrame.lookAt(c + o + Vector3.new(0, 30, 0), c + o), Color = Color3.fromRGB(190, 255, 190), Material = Enum.Material.Neon }, fxRoot)
+					TweenService:Create(p, TweenInfo.new(0.25, Enum.EasingStyle.Linear), { CFrame = CFrame.lookAt(c + o + Vector3.new(0, 1, 0), c + o - Vector3.new(0, 1, 0)) }):Play()
+					task.delay(0.26, function()
+						p:Destroy()
+						flash(c + o + Vector3.new(0, 0.5, 0), Color3.fromRGB(190, 255, 190), 2.5, 0.2)
+					end)
+				end)
+				local _ = k
+			end
+		end,
+		mend = function(at, _, d)
+			for _, hp in d.healed or {} do
+				local p = v3(hp)
+				flash(p + Vector3.new(0, 2, 0), Color3.fromRGB(120, 255, 180), 5, 0.6)
+				local holder = fxPart({ Size = Vector3.one, Position = p, Transparency = 1 }, fxRoot)
+				local pe = make("ParticleEmitter", { Texture = SPARKLE, Color = ColorSequence.new(Color3.fromRGB(140, 255, 190)), LightEmission = 1, Rate = 0, Lifetime = NumberRange.new(0.8, 1.4), Speed = NumberRange.new(2, 4), SpreadAngle = Vector2.new(30, 30), EmissionDirection = Enum.NormalId.Top, Size = NumberSequence.new(0.5, 0) }, holder)
+				pe:Emit(30)
+				Debris:AddItem(holder, 1.6)
+			end
+			local _ = at
+		end,
+		sanctuary = function(at)
+			local dome = fxPart({ Shape = Enum.PartType.Ball, Size = Vector3.one * 4, Position = at, Color = Color3.fromRGB(140, 255, 210), Material = Enum.Material.ForceField, Transparency = 0.2 }, fxRoot)
+			TweenService:Create(dome, TweenInfo.new(0.8, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), { Size = Vector3.one * 52 }):Play()
+			task.delay(4, function()
+				TweenService:Create(dome, TweenInfo.new(1), { Transparency = 1 }):Play()
+			end)
+			Debris:AddItem(dome, 5.2)
+			ring(at, 26, Color3.fromRGB(140, 255, 210), 1)
+		end,
+	}
+
 	local function onFx(d: any)
 		local kind = d.fx
+		if kind == "ability" then
+			local draw = ABILITY_FX[d.ability]
+			if draw then
+				local ok = pcall(draw, v3(d.at), v3(d.dir), d)
+				local _ = ok
+			end
+			return
+		end
 		if kind == "slash" then
 			arc(v3(d.from) + Vector3.new(0, 3, 0), v3(d.to) + Vector3.new(0, 3, 0), Color3.fromRGB(160, 220, 255), 0.5)
 			sound(SLASH, v3(d.to), 0.4, 0.9 + math.random() * 0.3)
@@ -513,7 +654,7 @@ function HunterLive.start(opts: any?)
 	end)
 
 	-- ── walk mode ──
-	local hud = make("Frame", { Name = "WalkHud", Visible = false, AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, -16), Size = UDim2.fromOffset(560, 132), BackgroundColor3 = C.panel, BackgroundTransparency = 0.12 }, gui)
+	local hud = make("Frame", { Name = "WalkHud", Visible = false, AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, -16), Size = UDim2.fromOffset(820, 132), BackgroundColor3 = C.panel, BackgroundTransparency = 0.12 }, gui)
 	make("UICorner", { CornerRadius = UDim.new(0, 8) }, hud)
 	make("UIStroke", { Color = C.accent, Transparency = 0.5 }, hud)
 	local rankLabel = make("TextLabel", { Position = UDim2.fromOffset(14, 8), Size = UDim2.new(0.5, 0, 0, 22), BackgroundTransparency = 1, TextXAlignment = Enum.TextXAlignment.Left, Text = "", TextColor3 = C.accentHi, FontFace = F.display, TextSize = 18 }, hud)
@@ -548,6 +689,28 @@ function HunterLive.start(opts: any?)
 	local attackBtn = hudButton("ATTACK [F]", Color3.fromRGB(40, 90, 200), function()
 		Event:FireServer("attack")
 	end)
+	-- the class's two abilities, with their cooldowns counted down on the button
+	local cooldown = { Q = 0, R = 0 }
+	local function useAbility(slot: string)
+		local ch = player.Character
+		if not ch or not ch:GetAttribute("Class") then
+			return
+		end
+		if cooldown[slot] > os.clock() then
+			return
+		end
+		cooldown[slot] = os.clock() + (ch:GetAttribute("Cooldown" .. slot) or 5) * 0.6
+		Event:FireServer("skill", { slot = slot })
+	end
+	local qBtn = hudButton("Q", Color3.fromRGB(120, 70, 190), function()
+		useAbility("Q")
+	end)
+	local rBtn = hudButton("R", Color3.fromRGB(170, 60, 120), function()
+		useAbility("R")
+	end)
+	qBtn.Size = UDim2.fromOffset(112, 38)
+	rBtn.Size = UDim2.fromOffset(112, 38)
+	HunterLive.useAbility = useAbility
 	hudButton("BACK TO LIFE", C.panelHi, function()
 		call("hwWalk", { on = false })
 	end)
@@ -622,6 +785,17 @@ function HunterLive.start(opts: any?)
 					local rank = ch:GetAttribute("Rank") or 0
 					rankLabel.Text = if rank > 0 then (({ "E", "D", "C", "B", "A", "S" })[rank] .. "-RANK HUNTER") else "UNAWAKENED CIVILIAN"
 					attackBtn.Visible = rank > 0
+					local cls = ch:GetAttribute("Class")
+					qBtn.Visible = cls ~= nil
+					rBtn.Visible = cls ~= nil
+					if cls then
+						local now = os.clock()
+						local qLeft, rLeft = cooldown.Q - now, cooldown.R - now
+						qBtn.Text = if qLeft > 0 then string.format("%s %.0f", tostring(ch:GetAttribute("AbilityQ")), qLeft) else "[Q] " .. tostring(ch:GetAttribute("AbilityQ"))
+						rBtn.Text = if rLeft > 0 then string.format("%s %.0f", tostring(ch:GetAttribute("AbilityR")), rLeft) else "[R] " .. tostring(ch:GetAttribute("AbilityR"))
+						qBtn.TextSize = 13
+						rBtn.TextSize = 13
+					end
 					hpFill.Size = UDim2.fromScale(math.clamp(hum.Health / math.max(1, hum.MaxHealth), 0, 1), 1)
 					local best, bd = nil, 160
 					for _, snap in incidents do
@@ -654,6 +828,10 @@ function HunterLive.start(opts: any?)
 			if ch and (ch:GetAttribute("Rank") or 0) > 0 then
 				Event:FireServer("attack")
 			end
+		elseif input.KeyCode == Enum.KeyCode.Q then
+			useAbility("Q")
+		elseif input.KeyCode == Enum.KeyCode.R then
+			useAbility("R")
 		elseif input.KeyCode == Enum.KeyCode.E then
 			local res = call("hwHelp")
 			if res and (res.toast or res.error) then

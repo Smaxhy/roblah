@@ -4154,6 +4154,14 @@ function Sim:passive(life: any, report: any)
 	for _, g in self:gearIn(life) do
 		applyYearly(g.def.yearly)
 	end
+	-- (BitLeveling) skills and talents can work every year too (a Healer's Mend)
+	-- (only in a pack that asks for it: the City pack never applied trait `yearly`)
+	for _, id in (if pack.hunterWorld then life.traits else nil) or {} do
+		local tdef = self:traitDef(id)
+		if tdef and tdef.yearly then
+			applyYearly(tdef.yearly)
+		end
+	end
 	if life.conditions and #life.conditions > 0 then
 		local still = {}
 		for _, c in life.conditions do

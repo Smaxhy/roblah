@@ -22,6 +22,7 @@ local rng = Random.new()
 Npcs.civilians = {} :: { any }
 Npcs.monsters = {} :: { any }
 Npcs.responders = {} :: { any }
+Npcs.provoked = nil :: any -- [monster] = { player, untilT }: who it must chase (a Tanker's Provoke)
 
 local TEMPERS = { flee = 55, freeze = 9, help = 10, shelter = 16, film = 10 }
 local function temper(): string
@@ -484,13 +485,18 @@ function Npcs.stepMonsters(onHit: (any, string, any) -> ())
 		if not root or m.hum.Health <= 0 then
 			continue
 		end
-		-- the nearest living thing: a player character, a responder, a civilian
+		-- the nearest living thing: a player character, a responder, a civilian (or whoever
+		-- provoked it, for a few seconds)
 		local best, bd, bk = nil, 90, nil
+		local pv = Npcs.provoked and Npcs.provoked[m]
+		if pv and pv.untilT > now and pv.player.Character and pv.player.Character:FindFirstChild("HumanoidRootPart") then
+			best, bd, bk = pv.player, ((pv.player.Character.HumanoidRootPart :: BasePart).Position - root.Position).Magnitude, "player"
+		end
 		for _, player in Players:GetPlayers() do
 			local ch = player.Character
 			local hrp = ch and ch:FindFirstChild("HumanoidRootPart") :: BasePart?
 			local h = ch and ch:FindFirstChildOfClass("Humanoid")
-			if hrp and h and h.Health > 0 and ch:GetAttribute("HunterLive") then
+			if hrp and h and h.Health > 0 and ch:GetAttribute("HunterLive") and not (pv and pv.untilT > now) then
 				local d = (hrp.Position - root.Position).Magnitude
 				if d < bd then
 					best, bd, bk = player, d, "player"
@@ -499,7 +505,7 @@ function Npcs.stepMonsters(onHit: (any, string, any) -> ())
 		end
 		for _, r in Npcs.responders do
 			local rr = r.model.PrimaryPart
-			if rr and r.hum.Health > 0 and r.kind == "hunter" then
+			if rr and r.hum.Health > 0 and r.kind == "hunter" and not (pv and pv.untilT > now) then
 				local d = (rr.Position - root.Position).Magnitude
 				if d < bd then
 					best, bd, bk = r, d, "responder"
@@ -508,7 +514,7 @@ function Npcs.stepMonsters(onHit: (any, string, any) -> ())
 		end
 		for _, c in Npcs.civilians do
 			local cr = c.model.PrimaryPart
-			if cr and c.state ~= "down" and c.state ~= "shelter" then
+			if cr and c.state ~= "down" and c.state ~= "shelter" and not (pv and pv.untilT > now) then
 				local d = (cr.Position - root.Position).Magnitude
 				if d < bd then
 					best, bd, bk = c, d, "civilian"

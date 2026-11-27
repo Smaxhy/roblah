@@ -24,7 +24,7 @@
 	relative years of the big public events follow the canon brief, approximate where canon is.
 ]]
 
-local HUNTERS = { "hunter_e", "hunter_d", "hunter_c", "hunter_b", "hunter_a", "hunter_s" }
+local Skills = require(script.Parent:WaitForChild("Skills"))
 
 local function gateYear(y: number): string
 	if y < 0 then
@@ -457,6 +457,16 @@ return {
 	},
 
 	pack = {
+		-- class skills and birth talents (Skills.luau): talents lean to Hunter classes
+		traits = Skills.traits,
+		talents = Skills.talents,
+		affinities = Skills.affinities,
+		affinityResonance = 3,
+		affinityWord = "classes",
+		affinityTab = "Class",
+		affinityLabel = "Class",
+		traitPicks = 0, -- no traits are picked at birth: skills are learned, talents are dealt
+
 		-- the archive of lore (kept across lives): canon facts marked CANON, this game's own marked ORIGINAL
 		codex = {
 			categories = {

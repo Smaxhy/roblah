@@ -3,7 +3,7 @@
 	Money in million won.
 ]]
 local HUNTERS = { "hunter_e", "hunter_d", "hunter_c", "hunter_b", "hunter_a", "hunter_s" }
-return {
+local list = {
 	{ id = "bl_register", category = "self", name = "Register with the Association", desc = "Get measured and licensed. Legal raids, guild work.", minAge = 12, when = { form = HUNTERS, flags = { "unregistered" } }, result = { setFlags = { "licensed" }, clearFlags = { "unregistered" }, codex = { "lore_kha" }, log = "You were measured and licensed. It's official now." } },
 	{ id = "bl_hunter_gym", category = "self", name = "Train at a Hunter gym", desc = "Equipment built for people who can bench a car.", minAge = 14, cost = 1, when = { form = HUNTERS }, result = { strength = { 2, 4 }, vitality = { 1, 2 }, sanity = -1, log = "You trained until the machines complained." } },
 	{ id = "bl_mana_control", category = "self", name = "Mana control drills", desc = "Meditation, breathing and the boring work that keeps a Hunter alive.", minAge = 14, when = { form = HUNTERS }, result = { willpower = { 1, 3 }, intelligence = 1, sanity = 2, log = "An hour of stillness. Your mana settled like silt." } },
@@ -15,3 +15,8 @@ return {
 	{ id = "bl_healer", category = "self", name = "See a Hunter Healer", desc = "Expensive. Fast.", minAge = 6, cost = 6, result = { vitality = { 15, 35 }, log = "Twenty minutes of warm light and the pain was gone." } },
 	{ id = "bl_clinic", category = "self", name = "Go to the clinic", desc = "Slow and cheap.", minAge = 2, cost = 1, result = { vitality = { 4, 10 }, log = "The clinic patched you up." } },
 }
+-- the class skills, one "Learn ..." at a time (Skills.luau)
+for _, a in require(script.Parent:WaitForChild("Skills")).activities do
+	table.insert(list, a)
+end
+return list

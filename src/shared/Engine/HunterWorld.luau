@@ -1012,7 +1012,9 @@ function HW.awakening(sim: any, life: any, cfg: any)
 		local classes = aw.classes or {}
 		local ws = {}
 		for i, c in classes do
-			ws[i] = c.weight or 1
+			-- the classes this life leans toward (the creator's pick) are three times as likely
+			local lean = life.affinities and table.find(life.affinities, c.id) ~= nil
+			ws[i] = (c.weight or 1) * (if lean then 3 else 1)
 		end
 		local ci = Rng.weighted(life, ws)
 		local class = ci and classes[ci]

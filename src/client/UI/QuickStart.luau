@@ -406,7 +406,7 @@ function QuickStart.new(ctx, parent: Instance)
 				BackgroundTransparency = 1,
 				Size = UDim2.new(0, 0, 1, 0),
 				AutomaticSize = Enum.AutomaticSize.X,
-				Text = string.upper(if t.id == "sins" and ctx.info and ctx.info.affinityPick == false then "Talent" else t.name),
+				Text = string.upper(if t.id == "sins" and ctx.info and ctx.info.affinityPick == false then "Talent" elseif t.id == "sins" and ctx.info and ctx.info.affinityTab then ctx.info.affinityTab else t.name),
 				FontFace = F.display,
 				TextSize = 14,
 				TextColor3 = C.faint,
@@ -608,7 +608,7 @@ function QuickStart.new(ctx, parent: Instance)
 		end
 		if #affinities > 0 then
 			order += 1
-			heading(string.format("Lean toward two sins · their talents %dx as likely", (st and st.affinityWeight) or 3), order)
+			heading(string.format("Lean toward two %s · their talents %dx as likely", (ctx.info and ctx.info.affinityWord) or "sins", (st and st.affinityWeight) or 3), order)
 			order += 1
 			local g = grid(order, UDim2.new(if wide then 1 / 2 else 0.5, -4, 0, 58))
 			local cards = {}
