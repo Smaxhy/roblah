@@ -9,6 +9,7 @@ You are never Sung Jinwoo, never the Shadow Monarch's vessel, never chosen. The 
 The world has its own story, and it goes on whether you're part of it or not.
 
 - Canon research: [`BITLEVELING_CANON.md`](BITLEVELING_CANON.md). Every fact there has a confidence label, plus a list of popular claims that are **not** canon.
+- Studio plugin, Blender pipeline, AI/terminal bridge: [`STUDIO_AND_BLENDER.md`](STUDIO_AND_BLENDER.md)
 - Game content: `src/shared/Games/BitLeveling/`
 - World simulation: `src/shared/Engine/HunterWorld.luau`
 - Live city (server): `src/server/HunterLive/`
@@ -222,10 +223,10 @@ hair stands in if one can't load). Your rank is never picked here: it's what you
 for presets, headwear, back items and faces; `-- weapons` for every weapon), and
 `node tools/gui_render/shoot.js --dump <json> --png <png>` draws them.
 
-**About Blender:** there's no Blender in this environment, and meshes made in Blender would need
-uploading to Roblox under your account before a game could use them. The parts-built rig needs
-neither. If you do want custom meshes later (hair, armour), make them in Blender, import them in
-Studio as MeshParts, and add them to `Looks.luau` and `R6Rig.luau`.
+**Blender and Studio:** monsters, weapons and gear can wear smooth Blender-made meshes (a mesh
+kit modeled by scripts in `tools/blender`). There is also a Studio plugin that installs, previews,
+checks and play-tests the game, and a bridge for running Luau in Studio from a terminal or an AI
+tool. All three are covered in [`STUDIO_AND_BLENDER.md`](STUDIO_AND_BLENDER.md).
 
 ## Testing
 
@@ -236,6 +237,9 @@ lune run tests/fates_check 60                   # every ending reachable, every 
 lune run tests/weapons_check                    # weapons, stars, Shiny, drops, the market's value
 lune run tests/live_build_check                 # the live city, every look option, every monster (built and animated)
 lune run tests/live_ui_check                    # the news board, the R6 creator and the market build
+lune run tests/plugin_check                     # the Studio plugin (after bash tools/build_plugin.sh)
+python3 tests/bridge_check.py                   # the Studio bridge
+tools/blender/run.sh                            # the Blender mesh kit and its previews
 lune run tests/compile_check                    # every .luau file parses
 lune run tools/avatar/r6_sheet.luau             # R6 looks on real Roblox types (then shoot.js for a PNG)
 python3 tests/safety_scan.py src/shared/Games/BitLeveling

@@ -18,6 +18,9 @@ into a Gate.
   original content, the two worlds, the live city, weapons and the market, classes and skills,
   monsters and bosses, stories and endings, R6 customization, testing).
 - **The canon research:** [`docs/BITLEVELING_CANON.md`](docs/BITLEVELING_CANON.md).
+- **Studio plugin, Blender mesh kit, AI/terminal bridge to Studio:**
+  [`docs/STUDIO_AND_BLENDER.md`](docs/STUDIO_AND_BLENDER.md) (build the plugin with
+  `bash tools/build_plugin.sh`; model the meshes with `tools/blender/run.sh`).
 
 ---
 
