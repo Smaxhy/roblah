@@ -482,6 +482,10 @@ function Effects.apply(engine, life, result, report, extraCtx)
 	if result.gear then
 		engine:giveGear(life, result.gear, extra)
 	end
+	-- (BitLeveling) a roll for a weapon (Engine/HunterWorld.loot): { rank, chance, minStars, shinyBoost }
+	if result.loot and engine.lootHook then
+		engine.lootHook(engine, life, result.loot, extra)
+	end
 	if result.loseGear then
 		engine:loseGear(life, result.loseGear, extra)
 	end

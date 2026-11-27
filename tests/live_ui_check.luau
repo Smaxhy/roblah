@@ -97,6 +97,7 @@ Loader.globals = {
 local client = Loader.preload(Loader.node("src/client", "Client", nil))
 local Board = Loader.require(client.UI.HunterBoard)
 local Creator = Loader.require(client.UI.R6Creator)
+local MarketUI = Loader.require(client.UI.MarketUI)
 local R6Rig = Loader.require(shared.Hunter.R6Rig)
 local Looks = Loader.require(shared.Hunter.Looks)
 
@@ -130,6 +131,18 @@ local okC, eC = pcall(Creator.open, gui, function(action)
 	return { ok = true }
 end, R6Rig)
 check(okC, "the R6 creator opens, builds its preview and every option tab", eC)
+local sampleMarket = {
+	money = 120, alive = true, odds = { stars = { 70, 24, 6 }, shiny = 1 / 60 },
+	listings = { { id = 1, gear = "w_frostbite_saber_2", name = "★★ Frostbite Saber", base = "frostbite_saber", stars = 2, shiny = false, grade = "B", family = "Sword", power = 9.5, effect = "+9 base (strength).", rarity = "rare", price = 80, seller = "Someone", mine = false } },
+	mine = { { gear = "w_shortsword_1", name = "★ Hunter's Shortsword", grade = "E", family = "Sword", power = 2, effect = "+2 base (strength).", rarity = "common", value = 6, equipped = true } },
+}
+local okM, eM = pcall(MarketUI.open, gui, function(action)
+	if action == "mkOpen" then
+		return { ok = true, market = sampleMarket }
+	end
+	return { ok = true }
+end, function() end)
+check(okM, "the Hunters' Market opens and lists weapons", eM)
 local count = 0
 for _, d in unwrap(gui):GetDescendants() do
 	if d:IsA("GuiObject") then

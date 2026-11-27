@@ -1,5 +1,5 @@
 --[[
-	CONTACT SHEET OF R6 LOOKS (BitLeveling): builds real R6 rigs with Hunter/R6Rig.luau on
+	CONTACT SHEET OF R6 LOOKS (BitLeveling; `-- weapons` draws every weapon instead): builds real R6 rigs with Hunter/R6Rig.luau on
 	@lune/roblox instances (real classes, real property names: anything wrong errors here) and
 	writes a gui-snapshot/1 dump that tools/gui_render draws.
 		lune run tools/avatar/r6_sheet.luau
@@ -14,7 +14,7 @@ local I = roblox.Instance
 local suffix = ""
 
 Loader.globals = {
-	Instance = I, UDim = roblox.UDim, UDim2 = roblox.UDim2, Vector2 = roblox.Vector2, Vector3 = roblox.Vector3,
+	Instance = I, NumberRange = roblox.NumberRange, NumberSequence = roblox.NumberSequence, NumberSequenceKeypoint = roblox.NumberSequenceKeypoint, ColorSequence = roblox.ColorSequence, Vector2 = roblox.Vector2, UDim = roblox.UDim, UDim2 = roblox.UDim2, Vector2 = roblox.Vector2, Vector3 = roblox.Vector3,
 	CFrame = roblox.CFrame, Color3 = roblox.Color3, Enum = roblox.Enum, Font = roblox.Font,
 }
 local shared = Loader.preload(Loader.node("src/shared", "LifeSim", nil))
@@ -149,21 +149,36 @@ local function rand(a, b)
 	seed = (seed * 48271) % 2147483647
 	return a + seed % (b - a + 1)
 end
+local process = require("@lune/process")
+local Weapons = Loader.require(shared.Hunter.Weapons)
+local weaponSheet = table.find(process.args, "weapons") ~= nil
 local cells = {
 	{ label = "Default", look = Looks.DEFAULT },
-	{ label = "Tank (plate, shield)", look = { skin = "tan", top = "tactical", topColor = "olive", trim = "gold", bottom = "armored", bottomColor = "charcoal", armor = "heavy", armorColor = "slate", weapon = "shield", hair = 0, hairDye = "jet", shoes = "boots", build = "broad" } },
-	{ label = "Mage (robe, staff)", look = { skin = "fair", top = "robe", topColor = "shadow", trim = "violet", bottom = "slacks", bottomColor = "black", armor = "cloak", armorColor = "shadow", weapon = "staff", hair = 376526888, hairDye = "silver", shoes = "dress", extra = "none" } },
-	{ label = "Assassin (daggers)", look = { skin = "light", top = "hoodie", topColor = "black", trim = "crimson", bottom = "joggers", bottomColor = "black", armor = "harness", armorColor = "brown", weapon = "dagger", hair = 376524487, hairDye = "jet", extra = "mask", shoes = "sneakers", build = "slim" } },
-	{ label = "Fighter (greatsword)", look = { skin = "warm", top = "leather", topColor = "brown", trim = "mana", bottom = "cargo", bottomColor = "charcoal", armor = "pauldrons", armorColor = "silver", weapon = "greatsword", hair = 7193442167, hairDye = "auburn", shoes = "boots" } },
-	{ label = "Ranger (bow)", look = { skin = "bronze", top = "jacket", topColor = "forest", trim = "khaki", bottom = "cargo", bottomColor = "olive", armor = "vest", armorColor = "olive", weapon = "bow", hair = 9244021842, hairDye = "dark_brown", extra = "headband", shoes = "boots" } },
-	{ label = "Healer (coat)", look = { skin = "porcelain", top = "coat", topColor = "white", trim = "teal", bottom = "skirt", bottomColor = "navy", armor = "none", weapon = "none", hair = 451221329, hairDye = "pink", extra = "earpiece", shoes = "dress", gloves = true } },
+	{ label = "Tank (bulwark, ★★★)", look = { skin = "tan", top = "tactical", topColor = "olive", trim = "gold", bottom = "armored", bottomColor = "charcoal", armor = "heavy", armorColor = "slate", hair = 0, hairDye = "jet", shoes = "boots", build = "broad" }, weapon = { base = "bulwark", stars = 3 } },
+	{ label = "Mage (sage staff)", look = { skin = "fair", top = "robe", topColor = "shadow", trim = "violet", bottom = "slacks", bottomColor = "black", armor = "cloak", armorColor = "shadow", hair = 376526888, hairDye = "silver", shoes = "dress", extra = "none" }, weapon = { base = "sage_staff", stars = 3 } },
+	{ label = "Assassin (Shiny dirks)", look = { skin = "light", top = "hoodie", topColor = "black", trim = "crimson", bottom = "joggers", bottomColor = "black", armor = "harness", armorColor = "brown", hair = 376524487, hairDye = "jet", extra = "mask", shoes = "sneakers", build = "slim" }, weapon = { base = "shadowglass", stars = 2, shiny = true } },
+	{ label = "Fighter (ogre greatsword)", look = { skin = "warm", top = "leather", topColor = "brown", trim = "mana", bottom = "cargo", bottomColor = "charcoal", armor = "pauldrons", armorColor = "silver", hair = 7193442167, hairDye = "auburn", shoes = "boots" }, weapon = { base = "ogre_greatsword", stars = 2 } },
+	{ label = "Ranger (wyvern longbow)", look = { skin = "bronze", top = "jacket", topColor = "forest", trim = "khaki", bottom = "cargo", bottomColor = "olive", armor = "vest", armorColor = "olive", hair = 9244021842, hairDye = "dark_brown", extra = "headband", shoes = "boots" }, weapon = { base = "wyvern_longbow", stars = 3 } },
+	{ label = "Healer (lantern)", look = { skin = "porcelain", top = "coat", topColor = "white", trim = "teal", bottom = "skirt", bottomColor = "navy", armor = "none", hair = 451221329, hairDye = "pink", extra = "earpiece", shoes = "dress", gloves = true }, weapon = { base = "mercy_lantern", stars = 2 } },
 	{ label = "Civilian (uniform)", look = { skin = "olive", top = "uniform", topColor = "navy", trim = "red", bottom = "slacks", bottomColor = "charcoal", hair = 9243992729, hairDye = "jet", extra = "glasses", shoes = "dress" } },
 }
 for k = 1, 8 do
 	table.insert(cells, { label = "Random " .. k, look = Looks.random(rand) })
 end
+local turn = -25
+if weaponSheet then
+	cells = {}
+	for i, w in Weapons.list do
+		local stars = (i % 3) + 1
+		table.insert(cells, { label = Weapons.STARS[stars].label .. " " .. w.name, look = { skin = "light", top = "tactical", topColor = "charcoal", trim = "mana", bottom = "cargo", bottomColor = "black", hair = 9243992729, hairDye = "jet", shoes = "boots" }, weapon = { base = w.id, stars = stars, shiny = i % 9 == 0 } })
+	end
+	turn = -62
+end
 
 local cols, cellW, cellH, gap, labelH, titleH = 8, 150, 230, 6, 14, 30
+if weaponSheet then
+	cols, cellW, cellH = 10, 150, 190
+end
 local rows = math.ceil(#cells / cols)
 local W = gap + cols * (cellW + gap)
 local H = titleH + gap + rows * (cellH + labelH + gap)
@@ -175,7 +190,7 @@ back.Size = roblox.UDim2.fromScale(1, 1)
 back.BackgroundColor3 = roblox.Color3.fromRGB(8, 10, 16)
 back.BorderSizePixel = 0
 back.Parent = gui
-label(back, "BITLEVELING · R6 LOOKS (block hair stands in for the hair accessories)", gap, 6, W - 2 * gap, 16, roblox.Color3.fromRGB(170, 150, 255))
+label(back, if weaponSheet then "BITLEVELING · EVERY WEAPON (★ to ★★★, every ninth one Shiny)" else "BITLEVELING · R6 LOOKS (block hair stands in for the hair accessories)", gap, 6, W - 2 * gap, 16, roblox.Color3.fromRGB(170, 150, 255))
 local total = 0
 for i, cell in cells do
 	local c, r = (i - 1) % cols, (i - 1) // cols
@@ -188,7 +203,7 @@ for i, cell in cells do
 	vp.Ambient = roblox.Color3.fromRGB(150, 150, 165)
 	vp.LightColor = roblox.Color3.fromRGB(255, 244, 230)
 	vp.Parent = back
-	local model = R6Rig.build(cell.look, { name = cell.label })
+	local model = R6Rig.build(cell.look, { name = cell.label, weapon = cell.weapon })
 	model.Parent = vp
 	for _, d in model:GetDescendants() do
 		if d:IsA("BasePart") then
@@ -202,7 +217,7 @@ for i, cell in cells do
 	cam.CFrame = roblox.CFrame.new(target + roblox.Vector3.new(0, 0.6, -15)) * roblox.CFrame.Angles(0, math.pi, 0)
 	for _, d in model:GetDescendants() do
 		if d:IsA("BasePart") then
-			d.CFrame = roblox.CFrame.Angles(0, math.rad(-25), 0) * d.CFrame
+			d.CFrame = roblox.CFrame.Angles(0, math.rad(turn), 0) * d.CFrame
 		end
 	end
 	cam.Parent = vp
@@ -232,5 +247,6 @@ end
 if not fs.isDir("tools/avatar/shots") then
 	fs.writeDir("tools/avatar/shots")
 end
-fs.writeFile("tools/avatar/shots/r6.json", serde.encode("json", { format = "gui-snapshot/1", state = "r6", note = "R6 looks", device = "sheet", screen = { W, H }, inset = 0, defaults = defaults, guis = { node(gui) } }, false))
-print(string.format("wrote tools/avatar/shots/r6.json (%d rigs, %.0f parts each, %dx%d)", #cells, total / #cells, W, H))
+local outName = if weaponSheet then "tools/avatar/shots/weapons.json" else "tools/avatar/shots/r6.json"
+fs.writeFile(outName, serde.encode("json", { format = "gui-snapshot/1", state = "r6", note = "R6 looks", device = "sheet", screen = { W, H }, inset = 0, defaults = defaults, guis = { node(gui) } }, false))
+print(string.format("wrote " .. outName .. " (%d rigs, %.0f parts each, %dx%d)", #cells, total / #cells, W, H))

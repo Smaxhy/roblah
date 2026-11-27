@@ -56,7 +56,7 @@ local BASE_RESULT_KEYS = {
 	book = 1, readBook = 1, dialogue = 1, goal = 1, storyEnd = 1, school = 1, rep = 1, cutscene = 1,
 	careerRank = 1, overheal = 1, maxHealth = 1, renown = 1, foundOffice = 1, officeSize = 1, impact = 1,
 	home = 1, sellHome = 1, becomePartner = 1, endPartner = 1, meet = 1, befriend = 1,
-	expedition = 1, episodeEnd = 1,
+	expedition = 1, episodeEnd = 1, loot = 1,
 	turfJoin = 1, turfTake = 1, turfLose = 1, turfGuard = 1, turfLeave = 1,
 	caseOpen = 1, caseClue = 1, caseClose = 1, limitBreak = 1, marry = 1, reconcile = 1,
 	lifespan = 1, train = 1, -- (v0.17)

@@ -197,20 +197,15 @@ Looks.ARMOR = {
 	{ id = "heavy", name = "Tank Armor" },
 	{ id = "cloak", name = "Shoulder Cloak" },
 }
-Looks.WEAPONS = {
-	{ id = "none", name = "Unarmed" },
-	{ id = "dagger", name = "Twin Daggers" },
-	{ id = "sword", name = "Longsword" },
-	{ id = "greatsword", name = "Greatsword" },
-	{ id = "katana", name = "Katana" },
-	{ id = "spear", name = "Spear" },
-	{ id = "axe", name = "Battle Axe" },
-	{ id = "hammer", name = "War Hammer" },
-	{ id = "staff", name = "Mage's Staff" },
-	{ id = "bow", name = "Bow" },
-	{ id = "shield", name = "Tower Shield" },
-	{ id = "gauntlets", name = "Gauntlets" },
-}
+-- the weapon a look carries in the creator: the workshop weapons (★). A life's own weapon,
+-- whatever its rarity, replaces it in the city (Hunter/Weapons.luau)
+local Weapons = require(script.Parent:WaitForChild("Weapons"))
+Looks.WEAPONS = { { id = "none", name = "Unarmed" } }
+for _, w in Weapons.list do
+	if w.price then
+		table.insert(Looks.WEAPONS, { id = w.id, name = w.name })
+	end
+end
 Looks.EXTRAS = {
 	{ id = "none", name = "Nothing" },
 	{ id = "glasses", name = "Glasses" },

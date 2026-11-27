@@ -108,7 +108,7 @@ function HunterLive.start(opts: any?)
 
 	-- ── the GUI: a dock on the left, the walk HUD, toasts ──
 	local gui = make("ScreenGui", { Name = "HunterLiveGui", ResetOnSpawn = false, IgnoreGuiInset = true, DisplayOrder = 40, ZIndexBehavior = Enum.ZIndexBehavior.Sibling }, playerGui)
-	local dock = make("Frame", { Name = "Dock", AnchorPoint = Vector2.new(0, 0.5), Position = UDim2.new(0, 8, 0.5, 0), Size = UDim2.fromOffset(118, 150), BackgroundTransparency = 1 }, gui)
+	local dock = make("Frame", { Name = "Dock", AnchorPoint = Vector2.new(0, 0.5), Position = UDim2.new(0, 8, 0.5, 0), Size = UDim2.fromOffset(118, 200), BackgroundTransparency = 1 }, gui)
 	make("UIListLayout", { Padding = UDim.new(0, 6), SortOrder = Enum.SortOrder.LayoutOrder }, dock)
 	local function dockButton(text: string, order: number, color: Color3, onClick: () -> ()): TextButton
 		local b = make("TextButton", {
@@ -152,9 +152,6 @@ function HunterLive.start(opts: any?)
 			g.siren:Destroy()
 			g.siren = nil
 		end
-	end
-
-		return BLUE, BLUE_DEEP
 	end
 
 	local function policeCar(parent: Instance, pos: Vector3, yaw: number): { BasePart }
@@ -684,25 +681,29 @@ function HunterLive.start(opts: any?)
 	dockButton("R6 LOOK", 3, Color3.fromRGB(200, 170, 255), function()
 		Creator.open(gui, call, R6Rig)
 	end)
+	local Market = require(script.Parent:WaitForChild("UI"):WaitForChild("MarketUI"))
+	dockButton("MARKET", 4, Color3.fromRGB(255, 200, 90), function()
+		Market.open(gui, call, toast)
+	end)
 	-- admins (and anyone testing in Studio) can open a Gate on demand
 	task.spawn(function()
 		local res = call("adminState")
 		if res and res.ok then
 			local rank = 3
-			dockButton("TEST GATE", 4, C.crimsonHi, function()
+			dockButton("TEST GATE", 10, C.crimsonHi, function()
 				local r = call("hwAdminSpawn", { rank = rank })
 				toast((r and (r.toast or r.error)) or "No answer.", if r and r.ok then C.accentHi else C.crimsonHi)
 				rank = rank % 6 + 1
 			end)
-			dockButton("TEST BREAK", 5, C.crimson, function()
+			dockButton("TEST BREAK", 11, C.crimson, function()
 				local r = call("hwAdminSpawn", { rank = math.random(1, 4), breaks = true })
 				toast((r and (r.toast or r.error)) or "No answer.", if r and r.ok then C.accentHi else C.crimsonHi)
 			end)
-			dockButton("TEST RED GATE", 6, Color3.fromRGB(200, 40, 40), function()
+			dockButton("TEST RED GATE", 12, Color3.fromRGB(200, 40, 40), function()
 				local r = call("hwAdminSpawn", { rank = math.random(2, 4), kind = "red" })
 				toast((r and (r.toast or r.error)) or "No answer.", if r and r.ok then C.accentHi else C.crimsonHi)
 			end)
-			dock.Size = UDim2.fromOffset(118, 290)
+			dock.Size = UDim2.fromOffset(118, 340)
 		end
 	end)
 	local _ = Config

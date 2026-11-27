@@ -37,11 +37,11 @@ local LINES = {
 }
 
 local PARTY = {
-	{ name = "Tanker", off = Vector3.new(0, 0, 0), look = { skin = "tan", face = "stern", top = "tactical", topColor = "charcoal", trim = "mana", bottom = "armored", bottomColor = "charcoal", shoes = "boots", armor = "heavy", armorColor = "slate", weapon = "shield", hair = 9243992729, hairDye = "jet", build = "broad" } },
-	{ name = "Fighter", off = Vector3.new(-4.5, 0, -3), look = { skin = "warm", face = "focused", top = "leather", topColor = "black", trim = "mana", bottom = "cargo", bottomColor = "black", shoes = "boots", armor = "pauldrons", armorColor = "silver", weapon = "greatsword", hair = 376524487, hairDye = "jet" } },
-	{ name = "Mage", off = Vector3.new(4.5, 0, -3), look = { skin = "fair", face = "calm", top = "robe", topColor = "navy", trim = "mana", bottom = "slacks", bottomColor = "black", shoes = "dress", armor = "cloak", armorColor = "navy", weapon = "staff", hair = 376526888, hairDye = "silver" } },
-	{ name = "Assassin", off = Vector3.new(-2.2, 0, -7), look = { skin = "light", face = "fierce", top = "hoodie", topColor = "black", trim = "crimson", bottom = "joggers", bottomColor = "black", shoes = "sneakers", armor = "harness", armorColor = "brown", weapon = "dagger", hair = 3814474927, hairDye = "jet", extra = "mask", build = "slim" } },
-	{ name = "Healer", off = Vector3.new(2.2, 0, -7), look = { skin = "porcelain", face = "soft", top = "coat", topColor = "white", trim = "teal", bottom = "slacks", bottomColor = "navy", shoes = "dress", armor = "none", weapon = "staff", hair = 451221329, hairDye = "chestnut", gloves = true, extra = "earpiece" } },
+	{ name = "Tanker", off = Vector3.new(0, 0, 0), look = { skin = "tan", face = "stern", top = "tactical", topColor = "charcoal", trim = "mana", bottom = "armored", bottomColor = "charcoal", shoes = "boots", armor = "heavy", armorColor = "slate", weapon = "none", hair = 9243992729, hairDye = "jet", build = "broad" }, weapon = { base = "bulwark", stars = 3 } },
+	{ name = "Fighter", off = Vector3.new(-4.5, 0, -3), look = { skin = "warm", face = "focused", top = "leather", topColor = "black", trim = "mana", bottom = "cargo", bottomColor = "black", shoes = "boots", armor = "pauldrons", armorColor = "silver", weapon = "none", hair = 376524487, hairDye = "jet" }, weapon = { base = "ogre_greatsword", stars = 2 } },
+	{ name = "Mage", off = Vector3.new(4.5, 0, -3), look = { skin = "fair", face = "calm", top = "robe", topColor = "navy", trim = "mana", bottom = "slacks", bottomColor = "black", shoes = "dress", armor = "cloak", armorColor = "navy", weapon = "none", hair = 376526888, hairDye = "silver" }, weapon = { base = "sage_staff", stars = 3 } },
+	{ name = "Assassin", off = Vector3.new(-2.2, 0, -7), look = { skin = "light", face = "fierce", top = "hoodie", topColor = "black", trim = "crimson", bottom = "joggers", bottomColor = "black", shoes = "sneakers", armor = "harness", armorColor = "brown", weapon = "none", hair = 3814474927, hairDye = "jet", extra = "mask", build = "slim" }, weapon = { base = "shadowglass", stars = 2, shiny = true } },
+	{ name = "Healer", off = Vector3.new(2.2, 0, -7), look = { skin = "porcelain", face = "soft", top = "coat", topColor = "white", trim = "teal", bottom = "slacks", bottomColor = "navy", shoes = "dress", armor = "none", weapon = "none", hair = 451221329, hairDye = "chestnut", gloves = true, extra = "earpiece" }, weapon = { base = "sanctum_rod", stars = 2 } },
 }
 
 local function part(props: any, parent: Instance): BasePart
@@ -240,7 +240,7 @@ function OpeningCutscene.play()
 			local h = hairCache:FindFirstChild(tostring(p.look.hair))
 			hair = h and h:Clone()
 		end
-		local m = R6Rig.build(p.look, { name = p.name, hair = hair })
+		local m = R6Rig.build(p.look, { name = p.name, hair = hair, weapon = p.weapon })
 		local root = m:FindFirstChild("HumanoidRootPart") :: BasePart
 		root.Anchored = true
 		m:PivotTo(CFrame.new(at(p.off.X, 3, LEAD_START + p.off.Z)))

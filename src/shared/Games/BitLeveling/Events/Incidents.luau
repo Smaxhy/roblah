@@ -114,7 +114,7 @@ for r = 1, 6 do
 				hint = "Entering a Gate you don't hold the rights to is against the law. Whatever's inside is {gRank}.",
 				hw = "entered",
 				clash = monster(r, 1.1),
-				win = { strength = 2, money = share(pay, 0.6), sanity = -2, log = "You came out with a pack of mana crystals and an Association officer waiting with a citation. The fine took a third of it." },
+				win = { strength = 2, money = share(pay, 0.6), sanity = -2, loot = { rank = r, chance = 0.4 }, log = "You came out with a pack of mana crystals and an Association officer waiting with a citation. The fine took a third of it." },
 				lose = { vitality = hurt(r, 0.8), sanity = -6, log = "You got three rooms in before you knew you'd made a mistake. The measurement team found you at the entrance.", cause = "Killed alone inside an unregistered Gate" },
 			},
 			cityCrowd,
@@ -167,7 +167,7 @@ for r = 1, 6 do
 				hint = "These are {gTrueRank} monsters, and they're already out.",
 				hw = "fought",
 				clash = monster(r, 1),
-				win = { strength = 2 + math.floor(r / 2), money = share(pay, 0.5), sanity = -2, log = "You put down what was in your street. The Association's response team arrived to find you sitting on a bus bench, shaking." },
+				win = { strength = 2 + math.floor(r / 2), money = share(pay, 0.5), sanity = -2, loot = { rank = r, chance = 0.3 }, log = "You put down what was in your street. The Association's response team arrived to find you sitting on a bus bench, shaking." },
 				lose = { vitality = hurt(r, 1), sanity = -8, log = "There were more of them than you.", cause = "Killed fighting a Dungeon Break" },
 			},
 			{
@@ -213,7 +213,7 @@ for r = 1, 6 do
 				hint = "Front line with the team. The share is by contribution.",
 				hw = "raided",
 				clash = monster(r, 0.72),
-				win = { strength = 1 + math.floor(r / 2), agility = 1, money = pay, sanity = 1, log = "The boss went down in the last chamber. The Gate started to close an hour after, with the collection team still filling crates." },
+				win = { strength = 1 + math.floor(r / 2), agility = 1, money = pay, sanity = 1, loot = { rank = r, chance = 0.45 }, log = "The boss went down in the last chamber. The Gate started to close an hour after, with the collection team still filling crates." },
 				lose = { vitality = hurt(r, 0.7), sanity = -5, log = "You were carried out by the healer before the boss room.", cause = "Killed on a Gate raid" },
 			},
 			{
@@ -221,7 +221,7 @@ for r = 1, 6 do
 				hint = "Carry, mine crystals, watch the flanks. Safer, and it pays less.",
 				hw = "raided",
 				clash = check("intelligence", r, r * 2, "The dungeon's stragglers"),
-				win = { intelligence = 1, money = share(pay, 0.35), log = "You mined the boss room's crystals while the strikers rested. Honest work, and nobody bled for it." },
+				win = { intelligence = 1, money = share(pay, 0.35), loot = { rank = r, chance = 0.15 }, log = "You mined the boss room's crystals while the strikers rested. Honest work, and nobody bled for it." },
 				lose = { vitality = hurt(r, 0.35), sanity = -3, log = "A straggler came out of a side tunnel at the collection team. You took the worst of it.", cause = "Killed on a collection team" },
 			},
 			{
@@ -246,7 +246,7 @@ for r = 1, 6 do
 				hint = "The only way out is through it. This is {gTrueRank} now.",
 				hw = "fought",
 				clash = monster(math.min(6, r + 1), 0.8),
-				win = { strength = 3, willpower = 3, money = share(PAY[math.min(6, r + 1)], 1.2), sanity = -6, log = "You were there when the boss fell. The red went out of the sky, the Gate opened, and you walked out into an afternoon that hadn't noticed you were gone." },
+				win = { strength = 3, willpower = 3, money = share(PAY[math.min(6, r + 1)], 1.2), sanity = -6, loot = { rank = math.min(6, r + 1), chance = 1, minStars = 2, shinyBoost = 2 }, log = "You were there when the boss fell. The red went out of the sky, the Gate opened, and you walked out into an afternoon that hadn't noticed you were gone." },
 				lose = { vitality = hurt(math.min(6, r + 1), 1), sanity = -10, log = "You didn't reach the boss.", cause = "Lost inside a Red Gate" },
 			},
 			{
@@ -281,7 +281,7 @@ for r = 1, 6 do
 				hint = "The others are going. What's inside reads like {gTrueRank}.",
 				hw = "entered",
 				clash = monster(math.min(6, r + 3), 0.7),
-				win = { strength = 3, willpower = 4, intelligence = 2, luck = 2, money = share(PAY[math.min(6, r + 2)], 1), sanity = -12, log = "You came out. Most of them didn't. You don't talk about the room at the end, even to the Association's investigators." },
+				win = { strength = 3, willpower = 4, intelligence = 2, luck = 2, money = share(PAY[math.min(6, r + 2)], 1), sanity = -12, loot = { rank = math.min(6, r + 2), chance = 1, minStars = 2, shinyBoost = 6 }, log = "You came out. Most of them didn't. You don't talk about the room at the end, even to the Association's investigators." },
 				lose = { vitality = hurt(math.min(6, r + 3), 1), sanity = -14, log = "Nobody who went through that door with you came back to say what happened.", cause = "Killed in a Double Dungeon" },
 			},
 			{

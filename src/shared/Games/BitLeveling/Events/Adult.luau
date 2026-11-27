@@ -106,7 +106,7 @@ return {
 	{ id = "hn_crystal_auction", title = "The Auction", text = "Something you brought out of a Gate turns out to be worth a lot more than crystal: a weapon, an old one, humming. The auction house wants it.", weight = 3, cooldown = 6, lucky = true, when = { minAge = 18, form = HUNTERS },
 		choices = {
 			{ label = "Sell it at auction", result = { money = { 15, 60 }, log = "It went for more than you'd earned all year." } },
-			{ label = "Keep it", result = { gear = "gw_relic_blade", log = "You kept it. It sits right in your hand, like it was made for it." } },
+			{ label = "Keep it", result = { gear = "w_moonlit_katana_2", log = "You kept it. It sits right in your hand, like it was made for it." } },
 		} },
 	{ id = "hn_rank_shame", title = "'Only an E-rank'", text = "At a raid briefing, a C-rank laughs when he sees your licence. 'They let anyone in now?'", weight = 5, cooldown = 4, when = { minAge = 18, form = "hunter_e" },
 		choices = {

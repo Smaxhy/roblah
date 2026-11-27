@@ -26,6 +26,7 @@ local Guide = require(script.Guide)
 local Duels = require(script.Duels)
 local Battles = require(script.Battles)
 local HunterLive = require(script.HunterLive)
+local HunterMarket = require(script.HunterMarket)
 
 local Server = {}
 
@@ -1446,6 +1447,8 @@ function Server.start()
 	Admin.install(S)
 	-- (BitLeveling) the live city: Gates on a clock, R6 characters, NPCs (server/HunterLive)
 	HunterLive.install(S)
+	-- (BitLeveling) the Hunters' Market: weapons between players (server/HunterMarket)
+	HunterMarket.install(S)
 
 	-- ── request plumbing ────────────────────────────────────────────────────
 

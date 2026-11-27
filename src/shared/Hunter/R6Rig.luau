@@ -15,6 +15,7 @@
 ]]
 
 local Looks = require(script.Parent:WaitForChild("Looks"))
+local WeaponModels = require(script.Parent:WaitForChild("WeaponModels"))
 
 local R6Rig = {}
 
@@ -435,67 +436,16 @@ local function armorOn(model: Model, parts: any, look: any)
 	end
 end
 
-local function torso(parts: any): BasePart
-	return parts.Torso
-end
-
--- the weapon a look carries (in the right hand; a shield or a bow on the left, staves upright)
-local function weaponOn(model: Model, parts: any, look: any)
-	local kind = look.weapon or "none"
-	if kind == "none" then
+-- the weapon a rig carries: a real weapon (opts.weapon = { base, stars, shiny }, from a life's
+-- equipped gear) or the look's own pick (a workshop weapon, ★)
+local function weaponOn(model: Model, _parts: any, look: any, item: any?)
+	if type(item) == "table" and item.base then
+		WeaponModels.attach(model, item.base, item.stars, item.shiny)
 		return
 	end
-	local trim = colorOf(look, "trim", { 70, 150, 255 })
-	local steel = Color3.fromRGB(196, 200, 210)
-	local grip = Color3.fromRGB(40, 32, 28)
-	local arm: BasePart = parts["Right Arm"]
-	local left: BasePart = parts["Left Arm"]
-	local hand = CFrame.new(0, -1.05, -0.1)
-	local metal = Enum.Material.Metal
-	local function w(name, size, offset, color, material, base)
-		return shell(model, base or arm, "Weapon" .. name, size, hand * offset, color, material or metal)
-	end
-	if kind == "dagger" then
-		for _, limb in { arm, left } do
-			shell(model, limb, "WeaponGrip", Vector3.new(0.2, 0.2, 0.5), hand * CFrame.new(0, 0, 0), grip)
-			shell(model, limb, "WeaponBlade", Vector3.new(0.08, 0.16, 1.1), hand * CFrame.new(0, 0, -0.75), steel, metal)
-			shell(model, limb, "WeaponGuard", Vector3.new(0.4, 0.1, 0.08), hand * CFrame.new(0, 0, -0.24), trim, Enum.Material.Neon)
-		end
-	elseif kind == "sword" or kind == "katana" or kind == "greatsword" then
-		local len = if kind == "greatsword" then 4.4 elseif kind == "katana" then 3.2 else 3.4
-		local thick = if kind == "greatsword" then 0.5 elseif kind == "katana" then 0.18 else 0.3
-		w("Grip", Vector3.new(0.22, 0.22, 0.8), CFrame.new(0, 0, 0.1), grip, Enum.Material.Fabric)
-		w("Guard", Vector3.new(if kind == "katana" then 0.36 else 1, 0.16, 0.16), CFrame.new(0, 0, -0.32), if kind == "katana" then Color3.fromRGB(180, 150, 80) else trim)
-		w("Blade", Vector3.new(0.08, thick, len), CFrame.new(0, 0, -0.4 - len / 2), steel)
-		w("Edge", Vector3.new(0.04, 0.05, len * 0.92), CFrame.new(0, thick / 2, -0.4 - len / 2), trim, Enum.Material.Neon)
-	elseif kind == "spear" then
-		w("Shaft", Vector3.new(0.16, 0.16, 6), CFrame.new(0, 0, -1.2), Color3.fromRGB(90, 66, 44), Enum.Material.Wood)
-		w("Head", Vector3.new(0.08, 0.36, 0.9), CFrame.new(0, 0, -4.6), steel)
-		w("Tassel", Vector3.new(0.2, 0.2, 0.2), CFrame.new(0, 0, -4.05), trim, Enum.Material.Neon)
-	elseif kind == "axe" or kind == "hammer" then
-		w("Haft", Vector3.new(0.2, 0.2, 2.8), CFrame.new(0, 0, -0.8), Color3.fromRGB(80, 58, 40), Enum.Material.Wood)
-		if kind == "axe" then
-			w("Bit", Vector3.new(0.1, 1.1, 0.9), CFrame.new(0, 0.45, -2), steel)
-		else
-			w("Head", Vector3.new(0.8, 0.8, 1.2), CFrame.new(0, 0, -2.2), shade(steel, 0.8))
-			w("Band", Vector3.new(0.84, 0.84, 0.12), CFrame.new(0, 0, -2.2), trim, Enum.Material.Neon)
-		end
-	elseif kind == "staff" then
-		w("Staff", Vector3.new(0.18, 0.18, 5), CFrame.new(0, 0, -0.6) , Color3.fromRGB(70, 50, 36), Enum.Material.Wood)
-		w("Orb", Vector3.new(0.6, 0.6, 0.6), CFrame.new(0, 0, -3.2), trim, Enum.Material.Neon).Shape = Enum.PartType.Ball
-	elseif kind == "bow" then
-		shell(model, left, "WeaponBow", Vector3.new(0.12, 3.6, 0.16), CFrame.new(0, -1.05, -0.3), Color3.fromRGB(70, 50, 36), Enum.Material.Wood)
-		shell(model, left, "WeaponString", Vector3.new(0.03, 3.4, 0.03), CFrame.new(0, -1.05, 0.05), Color3.fromRGB(230, 230, 220))
-		shell(model, torso(parts), "WeaponQuiver", Vector3.new(0.5, 1.6, 0.5), CFrame.new(0.4, 0.2, 0.7) * CFrame.Angles(0, 0, math.rad(20)), Color3.fromRGB(90, 60, 40), Enum.Material.Leather)
-	elseif kind == "shield" then
-		shell(model, left, "WeaponShield", Vector3.new(0.2, 2.6, 1.8), CFrame.new(-0.62, -0.6, -0.1), shade(steel, 0.75), metal)
-		shell(model, left, "WeaponBoss", Vector3.new(0.26, 0.6, 0.6), CFrame.new(-0.72, -0.6, -0.1), trim, Enum.Material.Neon)
-		w("Mace", Vector3.new(0.2, 0.2, 1.8), CFrame.new(0, 0, -0.7), grip)
-	elseif kind == "gauntlets" then
-		for _, limb in { arm, left } do
-			shell(model, limb, "WeaponGauntlet", Vector3.new(1.16, 0.9, 1.16), CFrame.new(0, -0.6, 0), shade(steel, 0.7), metal)
-			shell(model, limb, "WeaponKnuckle", Vector3.new(1.18, 0.2, 0.3), CFrame.new(0, -0.95, -0.48), trim, Enum.Material.Neon)
-		end
+	local kind = look.weapon or "none"
+	if kind ~= "none" then
+		WeaponModels.attach(model, kind, 1, false)
 	end
 end
 
@@ -673,7 +623,7 @@ function R6Rig.build(rawLook: any, opts: any?): Model
 	if not opts.civilian then
 		armorOn(model, parts, look)
 		if opts.weapon ~= false then
-			weaponOn(model, parts, look)
+			weaponOn(model, parts, look, opts.weapon)
 		end
 	end
 	extraOn(model, parts, look)

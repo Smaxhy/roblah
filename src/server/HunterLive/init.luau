@@ -407,6 +407,31 @@ function HunterLive.install(S)
 						prompt.MaxActivationDistance = 8
 						prompt.Parent = c
 						c.Parent = crystals
+						-- now and then, a weapon where it fell (better the higher the rank)
+						if math.random() < 0.035 + m.rank * 0.01 then
+							local box = Instance.new("Part")
+							box.Name = "WeaponCache"
+							box.Anchored = true
+							box.CanCollide = false
+							box.Size = Vector3.new(1.6, 1, 1)
+							box.Material = Enum.Material.Metal
+							box.Color = Color3.fromRGB(70, 60, 50)
+							box.CFrame = CFrame.new(Vector3.new(pos.X + 2, 1.2, pos.Z))
+							box:SetAttribute("Rank", m.rank)
+							box:SetAttribute("Weapon", true)
+							box:SetAttribute("Expires", os.clock() + 120)
+							local glow = Instance.new("PointLight")
+							glow.Color = Color3.fromRGB(255, 210, 120)
+							glow.Range = 10
+							glow.Parent = box
+							local pp = Instance.new("ProximityPrompt")
+							pp.ActionText = "Open"
+							pp.ObjectText = "Weapon cache"
+							pp.HoldDuration = 0.8
+							pp.MaxActivationDistance = 8
+							pp.Parent = box
+							box.Parent = crystals
+						end
 					end
 					task.delay(0.6, function()
 						Npcs.removeMonster(m)
@@ -503,7 +528,17 @@ function HunterLive.install(S)
 		if tpl then
 			hair = tpl:Clone()
 		end
-		local model = R6Rig.build(look, { name = player.Name, hair = hair })
+		-- the life's own weapon, at its rarity, replaces the look's
+		local item = nil
+		local life = lifeOf(session)
+		local Weapons = HW.weapons()
+		if life and Weapons then
+			local base, stars, shiny = Weapons.parse(life.gear and life.gear.weapon)
+			if base then
+				item = { base = base, stars = stars, shiny = shiny }
+			end
+		end
+		local model = R6Rig.build(look, { name = player.Name, hair = hair, weapon = item })
 		local prank = rankOf(session)
 		local hum = model:FindFirstChildOfClass("Humanoid") :: Humanoid
 		hum.MaxHealth = RANK_HP[prank]
@@ -599,6 +634,14 @@ function HunterLive.install(S)
 		local life = lifeOf(session)
 		local str = (life and life.stats.strength) or 10
 		local dmg = RANK_DMG[prank] * (1 + str / 200)
+		-- the weapon in your hand: its power (stars and shine included) adds to every blow
+		local Weapons = HW.weapons()
+		if life and Weapons then
+			local base, stars, shiny = Weapons.parse(life.gear and life.gear.weapon)
+			if base then
+				dmg *= 1 + Weapons.power(base, stars, shiny) / 12
+			end
+		end
 		local look = root.CFrame.LookVector
 		local hitAny = false
 		for _, m in table.clone(Npcs.monsters) do
@@ -636,8 +679,16 @@ function HunterLive.install(S)
 					return
 				end
 				local rank = c:GetAttribute("Rank") or 1
+				local isWeapon = c:GetAttribute("Weapon") == true
 				c:Destroy()
 				local report = sim.newReport and sim.newReport() or { entries = {} }
+				if isWeapon then
+					sim:applyResult(life, { loot = { rank = rank, chance = 1 }, log = "You pried open a weapon cache the monster had been carrying." }, report)
+					local res = S.lifeResponse(session, report)
+					res.toast = "A weapon! (check your life's log)"
+					S.pushTo(player, res)
+					return
+				end
 				sim:applyResult(life, { money = CRYSTAL_PAY[rank] or 1, log = string.format("You picked up a mana crystal (%s) and sold it to the collection team.", HW.rankWord(rank)) }, report)
 				local res = S.lifeResponse(session, report)
 				res.toast = string.format("+%d million won: a %s mana crystal", CRYSTAL_PAY[rank] or 1, HW.rankWord(rank))

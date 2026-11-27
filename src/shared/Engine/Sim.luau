@@ -268,6 +268,10 @@ function Sim.new(pack)
 	end
 	-- (v0.18) which events follow from which (Engine/Focus.luau)
 	Focus.build(self)
+	-- (BitLeveling) weapons out of Gates (result.loot)
+	if pack.hunterWorld then
+		self.lootHook = HunterWorld.loot
+	end
 	self.activitiesById = {}
 	for _, a in pack.activities do
 		self.activitiesById[a.id] = a

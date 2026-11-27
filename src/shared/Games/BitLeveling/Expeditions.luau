@@ -56,7 +56,7 @@ local function raid(def)
 				},
 			},
 		},
-		success = { money = def.pay, log = "{crew} came out with the boss's core and a share of the crystals." },
+		success = { money = def.pay, loot = { rank = def.minRank, chance = 0.85 }, log = "{crew} came out with the boss's core, a share of the crystals, and whatever the boss was guarding." },
 		fail = { sanity = -4, log = "{crew} came out with nothing but wounds." },
 		retreat = { log = "{crew} left the Gate to someone else." },
 	}

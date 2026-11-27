@@ -87,8 +87,8 @@ local function animate(model: Model, which: string): AnimationTrack?
 end
 Npcs.animate = animate
 
-local function spawnRig(look: any, at: Vector3, name: string, civilian: boolean): Model
-	local model = R6Rig.build(look, { name = name, npc = true, civilian = civilian })
+local function spawnRig(look: any, at: Vector3, name: string, civilian: boolean, weapon: any?): Model
+	local model = R6Rig.build(look, { name = name, npc = true, civilian = civilian, weapon = weapon })
 	-- (the rig's pivot is its root, three studs above its feet)
 	R6Rig.pose(model, CFrame.new(at + Vector3.new(0, 3.2, 0)))
 	model.Parent = folder
@@ -311,12 +311,16 @@ function Npcs.responder(kind: string, at: Vector3, face: Vector3, look: any?): a
 			l = Looks.random(function(a, b)
 				return rng:NextInteger(a, b)
 			end)
-			if l.weapon == "none" then
-				l.weapon = "sword"
-			end
 		end
 	end
-	local model = spawnRig(l, at, if kind == "hunter" then "Hunter" elseif kind == "police" then "Police Officer" else "Association Staff", kind ~= "hunter")
+	-- a Hunter carries a real weapon, of any rarity
+	local item = nil
+	if kind == "hunter" then
+		local Weapons = require(ReplicatedStorage:WaitForChild("LifeSim"):WaitForChild("Hunter"):WaitForChild("Weapons"))
+		local w = Weapons.list[rng:NextInteger(1, #Weapons.list)]
+		item = { base = w.id, stars = rng:NextInteger(1, 3), shiny = rng:NextNumber() < 0.05 }
+	end
+	local model = spawnRig(l, at, if kind == "hunter" then "Hunter" elseif kind == "police" then "Police Officer" else "Association Staff", kind ~= "hunter", item)
 	local root = model.PrimaryPart :: BasePart
 	root.CFrame = CFrame.lookAt(root.Position, Vector3.new(face.X, root.Position.Y, face.Z))
 	local hum = model:FindFirstChildOfClass("Humanoid") :: Humanoid

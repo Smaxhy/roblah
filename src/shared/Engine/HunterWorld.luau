@@ -1154,6 +1154,68 @@ function HW.rewrite(sim: any, life: any, report: any)
 	gw.byEvent = {}
 end
 
+-- ── loot: weapons out of Gates (result.loot) ───────────────────────────────
+-- Hunter/Weapons.luau lives beside the Engine in a BitLeveling build (absent in other packs)
+local weaponsModule: any = nil
+local function weapons(): any
+	if weaponsModule == nil then
+		local shared = script.Parent.Parent
+		local hunter = shared and shared:FindFirstChild("Hunter")
+		local m = hunter and hunter:FindFirstChild("Weapons")
+		weaponsModule = if m then require(m :: any) else false
+	end
+	return weaponsModule or nil
+end
+HW.weapons = weapons
+
+-- spec: { rank = 1..6 (what grade it leans to), chance = 0..1, minStars, shinyBoost }
+function HW.loot(sim: any, life: any, spec: any, extra: any)
+	local Weapons = weapons()
+	if not Weapons or type(spec) ~= "table" or not life.alive then
+		return
+	end
+	if spec.chance and not Rng.chance(life, spec.chance) then
+		return
+	end
+	local rank = math.clamp(math.floor(spec.rank or math.max(1, HW.playerRank(sim, life))), 1, 6)
+	local base, stars, shiny = Weapons.roll(rank, function(n)
+		return Rng.int(life, 1, n)
+	end, function()
+		return Rng.next(life)
+	end, spec)
+	local id = Weapons.gearId(base, stars, shiny)
+	if not (sim.pack.gear and sim.pack.gear[id]) then
+		return
+	end
+	local power = Weapons.power(base, stars, shiny)
+	local cb, cs, csh = Weapons.parse(life.gear and life.gear.weapon)
+	local held = if cb then Weapons.power(cb, cs, csh) else 0
+	local label = Weapons.label(base, stars, shiny)
+	table.insert(extra, { kind = "system", tone = if shiny or stars == 3 then "strange" else "good", text = "LOOT: " .. label .. "." })
+	if power > held then
+		sim:giveGear(life, id, extra)
+	else
+		life.stash = life.stash or {}
+		if #life.stash < 30 and not table.find(life.stash, id) then
+			table.insert(life.stash, id)
+			table.insert(extra, { kind = "system", text = "It's not better than what you carry. It goes in your stash (sell it in the market)." })
+		else
+			local pay = math.max(1, math.floor(power * 2))
+			life.money += pay
+			table.insert(extra, { kind = "system", text = string.format("Your stash is full. A broker took it for %d million won.", pay) })
+		end
+	end
+	local gw = HW.state(life)
+	gw.counts.loot = (gw.counts.loot or 0) + 1
+	if shiny then
+		gw.counts.shiny = (gw.counts.shiny or 0) + 1
+		table.insert(extra, { kind = "system", tone = "strange", text = "It's SHINY: the mana has soaked right into it." })
+		HW.addNews(life, "local", string.format("A Shiny weapon came out of a Gate in %s: %s.", district(sim, life), label), "good")
+		sim:news(life, life.first .. " found a Shiny " .. label .. ".")
+	end
+	HW.addHistory(life, { kind = "loot", base = base, stars = stars, shiny = shiny })
+end
+
 -- ── what the client shows: the incident board and the news ────────────────
 -- the little that rides along with every view of a life (the HUD strip)
 function HW.summary(sim: any, life: any): any
