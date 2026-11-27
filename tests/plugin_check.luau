@@ -196,7 +196,24 @@ Kit.remove(dm)
 check(not Kit.status(dm, MeshLibrary.ROLES).present, "and it can be removed")
 
 -- 4. galleries
-local expect = { monsters = 24, outfits = 16, weapons = 65, gates = 7 }
+-- (as many as the game has: every monster kind, preset, weapon and accessory, and the Gates)
+local function countOf(t)
+	local n = 0
+	for _ in t do
+		n += 1
+	end
+	return n
+end
+local G_Monsters = Loader.require(server.HunterLive.Monsters)
+local nMon = 0
+for r = 1, 6 do
+	nMon += #(G_Monsters.KINDS[r] or {})
+end
+local G_Looks = Loader.require(shared.Hunter.Looks)
+local G_Weapons = Loader.require(shared.Hunter.Weapons)
+local G_Acc = Loader.require(shared.Hunter.Accessories)
+local expect = { monsters = nMon, outfits = #G_Looks.PRESETS, weapons = #G_Weapons.list, accessories = #G_Acc.list, gates = 7 }
+local _ = countOf
 -- (the Gates use Workspace:BulkMoveTo, which @lune/roblox lacks: they're built in a plain folder
 -- standing in for the workspace, so GateVfx moves them through the stub above)
 local gateWorld = I.new("Folder")

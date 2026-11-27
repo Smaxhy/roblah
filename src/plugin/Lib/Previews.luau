@@ -133,27 +133,80 @@ function Previews.build(game: any, what: string, shared: Instance, server: Insta
 			end
 		end
 	elseif what == "outfits" then
+		-- every preset, a row per shelf (each class E to S, the Association, guilds, civilians, iconic)
 		local R6Rig = require(hunter:WaitForChild("R6Rig") :: ModuleScript) :: any
 		local Looks = require(hunter:WaitForChild("Looks") :: ModuleScript) :: any
-		for i, p in Looks.PRESETS do
-			local model = R6Rig.build(Looks.applyPreset(Looks.DEFAULT, p.id), { name = p.name, rank = 4 })
-			anchor(model)
-			model.Parent = into
-			stand(model, grid(i, 8, 8))
-			label(model, p.name)
-			count += 1
+		for row, cat in Looks.CATEGORIES do
+			for col, p in Looks.presetsIn(cat.id) do
+				local look = Looks.applyPreset(Looks.DEFAULT, p.id)
+				look.accessories = p.acc
+				local rank = math.max(1, (table.find(RANK, p.rank or "C") or 3))
+				local model = R6Rig.build(look, { name = p.name, rank = rank })
+				anchor(model)
+				model.Parent = into
+				stand(model, origin + Vector3.new((col - 4) * 8, 0, -(row - 1) * 11))
+				label(model, (if p.rank then p.rank .. " · " else "") .. cat.name .. " · " .. p.name)
+				count += 1
+			end
 		end
 	elseif what == "weapons" then
+		-- every weapon, a row per family, the families grouped by class; stars cycle, every
+		-- ninth one Shiny
 		local R6Rig = require(hunter:WaitForChild("R6Rig") :: ModuleScript) :: any
 		local Weapons = require(hunter:WaitForChild("Weapons") :: ModuleScript) :: any
-		for i, w in Weapons.list do
-			local stars = (i % 3) + 1
-			local model = R6Rig.build({ top = "tactical", topColor = "charcoal", bottom = "cargo" }, { name = w.name, weapon = { base = w.id, stars = stars, shiny = i % 9 == 0 } })
-			anchor(model)
-			model.Parent = into
-			stand(model, grid(i, 10, 8))
-			label(model, Weapons.STARS[stars].label .. " " .. w.name .. (if i % 9 == 0 then " (Shiny)" else ""), if i % 9 == 0 then Color3.fromRGB(255, 214, 110) else nil)
-			count += 1
+		local GRADE = { E = 1, D = 2, C = 3, B = 4, A = 5, S = 6 }
+		local i, row = 0, 0
+		for _, fam in Weapons.FAMILY_ORDER do
+			local inFam = {}
+			for _, w in Weapons.list do
+				if w.family == fam then
+					table.insert(inFam, w)
+				end
+			end
+			table.sort(inFam, function(x, y)
+				local gx, gy = GRADE[x.grade] or 0, GRADE[y.grade] or 0
+				if gx ~= gy then
+					return gx < gy
+				end
+				return x.name < y.name
+			end)
+			if #inFam > 0 then
+				row += 1
+				for col, w in inFam do
+					i += 1
+					local stars = (i % 3) + 1
+					local shiny = i % 9 == 0
+					local model = R6Rig.build({ top = "tactical", topColor = "charcoal", bottom = "cargo" }, { name = w.name, weapon = { base = w.id, stars = stars, shiny = shiny } })
+					anchor(model)
+					model.Parent = into
+					stand(model, origin + Vector3.new((col - 3) * 8, 0, -(row - 1) * 9))
+					local fname = Weapons.FAMILIES[fam] and Weapons.FAMILIES[fam].name or fam
+					label(model, Weapons.STARS[stars].label .. " " .. w.name .. " · " .. tostring(w.grade) .. " " .. fname .. (if w.element and w.element ~= "none" then " · " .. w.element else "") .. (if shiny then " (Shiny)" else ""), if shiny then Color3.fromRGB(255, 214, 110) else nil)
+					count += 1
+				end
+			end
+		end
+	elseif what == "accessories" then
+		-- every accessory on a rig of its class's preset, a row per class (and one for anyone)
+		local R6Rig = require(hunter:WaitForChild("R6Rig") :: ModuleScript) :: any
+		local Looks = require(hunter:WaitForChild("Looks") :: ModuleScript) :: any
+		local Accessories = require(hunter:WaitForChild("Accessories") :: ModuleScript) :: any
+		for row, class in Accessories.CLASSES do
+			local base = Looks.DEFAULT
+			local shelf = Looks.presetsIn(class)
+			if shelf[1] then
+				base = Looks.applyPreset(Looks.DEFAULT, shelf[1].id)
+			end
+			for col, a in Accessories.ofClass(class) do
+				local look = table.clone(base)
+				look.accessories = { a.id }
+				local model = R6Rig.build(look, { name = a.name, rank = 3 })
+				anchor(model)
+				model.Parent = into
+				stand(model, origin + Vector3.new((col - 8) * 7, 0, -(row - 1) * 10))
+				label(model, a.grade .. " · " .. a.name)
+				count += 1
+			end
 		end
 	elseif what == "gates" then
 		local GateVfx = require(client:WaitForChild("GateVfx") :: ModuleScript) :: any

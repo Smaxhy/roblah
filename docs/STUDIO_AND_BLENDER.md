@@ -31,7 +31,7 @@ The panel has these sections:
 |---|---|
 | **GAME** | **Install / Update game** puts the whole game (the plugin carries a copy) in `ServerScriptService.LifeSimKit` and sets the place up the way the game expects. Press Play and it runs. Updating replaces it. |
 | **MESH KIT** | Shows whether the place has the Blender meshes. **Register selected** turns a model imported from `kit.fbx` into the kit, and **Load by id** loads an uploaded one. **Remove kit** goes back to parts. |
-| **PREVIEW** | Builds galleries in front of the camera, in `Workspace.BitLevelingPreview`: **Monsters** (24), **Outfits** (16 presets), **Weapons** (65, with star ratings and Shiny ones), **Gates** (every rank and a Red Gate, swirling). **Clear previews** removes them. |
+| **PREVIEW** | Builds galleries in front of the camera, in `Workspace.BitLevelingPreview`, with the mesh kit if the place has it. **Monsters**: every kind, by rank. **Outfits**: all 59 presets, a row per shelf. **Weapons**: all 202, a row per family, grouped by class, with star ratings, Shiny ones and their elements. **Accessories**: all 106, a row per class. **Gates**: every rank and a Red Gate, swirling. **Clear previews** removes them. |
 | **CHECKS** | **Validate content** checks every card, id and reference. **Simulate 20 lives** runs headless lives and reports median age, awakenings, fates and crashes. Both run on the game installed in the place, so an edit made in Studio is checked in Studio. |
 | **PLAY TEST** | While the game runs (Play or Run, Server view): pick a rank, then open a **Gate**, a **Break** or a **Red Gate** at a free site in the live city. |
 | **BRIDGE** | Connects to `tools/studio_bridge/bridge.py` (see below). |
@@ -179,7 +179,7 @@ What these cover:
   - the built plugin runs nothing of the game's
   - Install and Update work
   - the kit registers from an imported model (importer suffixes, nesting)
-  - all four galleries build, standing on the floor
+  - all five galleries build, one model for everything the game has, standing on the floor
   - Validate and Simulate run on the game's modules
   - the panel builds, and its Install button installs
 - **bridge_check**: the round trip, errors, refusing web pages and requests without the bridge's
