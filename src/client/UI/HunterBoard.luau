@@ -78,7 +78,7 @@ function Board.close()
 	end
 end
 
-function Board.open(gui: ScreenGui, call: (string, any?) -> any, liveList: { any }?)
+function Board.open(gui: Instance, call: (string, any?) -> any, liveList: { any }?, opts: any?)
 	Board.close()
 	local frame = make("Frame", { Name = "HunterBoard", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.new(0.86, 0, 0.82, 0), BackgroundColor3 = C.panel, ZIndex = 20 }, gui)
 	make("UISizeConstraint", { MaxSize = Vector2.new(760, 680) }, frame)
@@ -196,6 +196,9 @@ function Board.open(gui: ScreenGui, call: (string, any?) -> any, liveList: { any
 			current = t[2]
 			current()
 		end)
+	end
+	if opts and opts.tab == "endings" then
+		current = showEndings
 	end
 	frame.Size = UDim2.new(0.86, 0, 0.78, 0)
 	TweenService:Create(frame, TweenInfo.new(0.18), { Size = UDim2.new(0.86, 0, 0.82, 0) }):Play()

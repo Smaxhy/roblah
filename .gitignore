@@ -8,3 +8,4 @@ tools/blender/.venv/
 tools/blender/out/*.png
 tools/blender/out/layout.json
 __pycache__/
+tools/ui/shots/

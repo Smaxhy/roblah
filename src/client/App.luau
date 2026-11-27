@@ -32,6 +32,10 @@ local SurnameRoll = require(UI:WaitForChild("SurnameRoll"))
 local Settings = require(UI:WaitForChild("Settings"))
 local AdminMenu = require(UI:WaitForChild("AdminMenu"))
 local Intro = require(UI:WaitForChild("Intro"))
+-- (BitLeveling) the title screen and main menu, when the game's live city is on
+local okTitle, TitleMenu = pcall(function()
+	return require(UI:WaitForChild("TitleMenu", 2))
+end)
 local QuickStart = require(UI:WaitForChild("QuickStart"))
 local Lobby = require(UI:WaitForChild("Lobby"))
 local Guide = require(UI:WaitForChild("Guide"))
@@ -1994,7 +1998,137 @@ function App.start()
 
 	-- ── the start menu, the intro, the tutorial ──
 	local menu = nil
+	-- (BitLeveling) the title screen and main menu (UI/TitleMenu) stand in for the kit's intro
+	-- and mode select when the pack's live city is on (Config.hunterLive.titleMenu ~= false)
+	local useTitle = false
+	do
+		local okCfg, Cfg = pcall(function()
+			return require(ReplicatedStorage:WaitForChild("LifeSim"):WaitForChild("Config"))
+		end)
+		useTitle = okTitle and okCfg and type(Cfg) == "table" and type(Cfg.hunterLive) == "table" and Cfg.hunterLive.enabled ~= false and Cfg.hunterLive.titleMenu ~= false
+	end
+	local title = nil
+	function actions.showTitleMenu(direct: boolean?)
+		if title then
+			title.destroy()
+			title = nil
+		end
+		if menu then
+			menu.destroy()
+			menu = nil
+		end
+		local life = state.life
+		local hasLife = life ~= nil and life.alive == true
+		local info = state.info or {}
+		local diffs = info.difficulties or {}
+		local hunter = ReplicatedStorage:WaitForChild("LifeSim"):FindFirstChild("Hunter")
+		local function lib(name: string): any
+			local ok, m = pcall(function()
+				return require(hunter:WaitForChild(name, 2))
+			end)
+			return if ok then m else nil
+		end
+		local function ui(name: string): any
+			local ok, m = pcall(function()
+				return require(UI:WaitForChild(name, 2))
+			end)
+			return if ok then m else nil
+		end
+		local R6Rig = hunter and lib("R6Rig")
+		local okG, GateVfx = pcall(function()
+			return require(script.Parent:WaitForChild("GateVfx", 2))
+		end)
+		menuHolder.Size = UDim2.fromScale(1, 1)
+		local modeId = info.modes and info.modes[1] and info.modes[1].id or nil
+		title = TitleMenu.show(menuHolder, {
+			R6Rig = R6Rig,
+			Looks = hunter and lib("Looks"),
+			GateVfx = if okG then GateVfx else nil,
+			direct = direct,
+			hasLife = hasLife,
+			lifeLine = if hasLife then string.format("%s %s, %d", life.first, life.last, life.age) else nil,
+			difficulties = diffs.list or {},
+			difficulty = state.difficulty or (state.meta and state.meta.difficulty) or diffs.default,
+			modes = info.modes,
+			on = {
+				continue = function()
+					showScreen("hud")
+					if state.life and state.life.pending then
+						openEvent()
+					end
+				end,
+				newLife = function(diffId)
+					state.difficulty = diffId
+					state.together = false
+					actions.showQuickStart(modeId)
+				end,
+				together = function(diffId)
+					state.difficulty = diffId
+					actions.openLobby()
+				end,
+				character = function()
+					local Creator = ui("R6Creator")
+					if Creator and R6Rig then
+						Creator.open(menuHolder, call, R6Rig)
+					end
+				end,
+				lifeCreator = function()
+					actions.showQuickStart(modeId)
+				end,
+				talentSpin = function()
+					actions.showQuickStart(modeId)
+				end,
+				surnameSpin = function()
+					actions.openSurnames()
+				end,
+				walk = function()
+					task.spawn(call, "hwWalk", { on = true })
+				end,
+				news = function()
+					local Board = ui("HunterBoard")
+					if Board then
+						Board.open(menuHolder, call, nil)
+					end
+				end,
+				endings = function()
+					local Board = ui("HunterBoard")
+					if Board then
+						Board.open(menuHolder, call, nil, { tab = "endings" })
+					end
+				end,
+				market = function()
+					local Market = ui("MarketUI")
+					if Market then
+						Market.open(menuHolder, call, nil)
+					end
+				end,
+				guide = function()
+					actions.openGuide()
+				end,
+				settings = function()
+					actions.openMenu()
+				end,
+			},
+		})
+		showScreen("menu")
+		-- your Hunter on the podium (the server has the saved look)
+		task.spawn(function()
+			local res = call("r6Get")
+			if title and res and res.look then
+				title.setLook(res.look)
+			end
+		end)
+		updateScene()
+	end
 	function actions.showMenu()
+		if useTitle then
+			actions.showTitleMenu(true)
+			return
+		end
+		if title then
+			title.destroy()
+			title = nil
+		end
 		if menu then
 			menu.destroy()
 		end
@@ -2753,7 +2887,18 @@ function App.start()
 	end
 	local firstJoin = not (state.meta and state.meta.flags and state.meta.flags.seenIntro)
 	local introPref = (state.meta and state.meta.settings and state.meta.settings.intro) or "short"
-	if firstJoin then
+	if useTitle and (hello.life == nil or hello.life.alive) then
+		-- (BitLeveling) the opening has played (client/OpeningCutscene): the title, then PLAY
+		state.life = hello.life
+		if hello.life then
+			hud:resetLog(hello.log or {})
+			hud:setLife(hello.life)
+		end
+		if firstJoin then
+			task.spawn(call, "setFlag", { key = "seenIntro", value = true })
+		end
+		actions.showTitleMenu(false)
+	elseif firstJoin then
 		state.life = hello.life
 		showScreen("menu")
 		actions.playIntro(true)
