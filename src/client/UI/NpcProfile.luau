@@ -625,7 +625,7 @@ function NpcProfile.open(gui: Instance, call: (string, any?) -> any, opts: any)
 		Kit.heading(body, "What you've learned about them", nextOrder())
 		local function listLine(title: string, list: { string }?, hidden: number?, color: Color3)
 			local known = if list and #list > 0 then table.concat(list, ", ") else "nothing yet"
-			local more = if (hidden or 0) > 0 then string.format("  (%d more to learn)", hidden) else ""
+			local more = if (hidden or 0) > 0 then string.format("  (%d more to learn)", hidden or 0) else ""
 			Kit.label(body, { RichText = true, Text = string.format("<font color=\"#%s\"><b>%s</b></font>  %s%s", Kit.hex(color), title, known, more), TextWrapped = true, AutomaticSize = Enum.AutomaticSize.Y, FontFace = F.ui, TextSize = 13, LayoutOrder = nextOrder(), ZIndex = Z })
 		end
 		listLine("LOVES", p.likes, p.likesHidden, C.good)

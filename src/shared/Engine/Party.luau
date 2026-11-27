@@ -39,7 +39,6 @@
 ]]
 
 local Rng = require(script.Parent.Rng)
-local Util = require(script.Parent.Util)
 local Effects = require(script.Parent.Effects)
 local HW = require(script.Parent.HunterWorld)
 
@@ -1745,11 +1744,11 @@ function Party.interact(sim: any, life: any, rel: any, def: any, option: any, re
 		Party.note(life, rel, "Trained with you.")
 		return true
 	elseif kind == "spar" or kind == "raid" then
-		local option = Party.optionFor(sim, life, rel, def)
-		if not option then
+		local fightOpt = Party.optionFor(sim, life, rel, def)
+		if not fightOpt then
 			return false
 		end
-		sim:resolveOption(life, option, report, approachId, tokens)
+		sim:resolveOption(life, fightOpt, report, approachId, tokens)
 		Party.note(life, rel, if kind == "spar" then "Sparred with you." else "Raided a Gate with you.")
 		return true
 	elseif kind == "talk" or kind == "meal" then
@@ -1771,7 +1770,7 @@ function Party.interact(sim: any, life: any, rel: any, def: any, option: any, re
 end
 
 -- ── a year in a party ──────────────────────────────────────────────────────
-local function leaveReason(sim: any, life: any, rel: any, m: any): string?
+local function leaveReason(sim: any, life: any, rel: any, m: any): string
 	local t = traitSet(rel)
 	if (m.unpaid or 0) >= 1 then
 		return "leave_pay"
