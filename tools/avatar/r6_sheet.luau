@@ -1,6 +1,8 @@
 --[[
 	CONTACT SHEET OF R6 LOOKS (BitLeveling; `-- weapons` draws every weapon instead, `-- presets`
-	the outfit presets, face marks, headwear and back items): builds real R6 rigs with Hunter/R6Rig.luau on
+	the outfit presets, headwear, back items and face marks, `-- outfits` every top, bottom,
+	armour, shoe, glove and accessory, `-- zoom id,id` those presets big, front and back):
+	builds real R6 rigs with Hunter/R6Rig.luau on
 	@lune/roblox instances (real classes, real property names: anything wrong errors here) and
 	writes a gui-snapshot/1 dump that tools/gui_render draws.
 		lune run tools/avatar/r6_sheet.luau
@@ -167,21 +169,95 @@ for k = 1, 8 do
 	table.insert(cells, { label = "Random " .. k, look = Looks.random(rand) })
 end
 local turn = -25
-local presetSheet = table.find(process.args, "presets") ~= nil
+-- the presets family: `-- presets` (every outfit preset by shelf, then headwear, back items and
+-- the flat faces), `-- outfits` (every top, bottom, shoe, glove, armour, accessory on one look),
+-- `-- zoom id,id,...` (those presets big, front and back). These are drawn by `flow` below.
+local outfitSheet = table.find(process.args, "outfits") ~= nil
+local zoomAt = table.find(process.args, "zoom")
+local presetSheet = table.find(process.args, "presets") ~= nil or outfitSheet or zoomAt ~= nil
+local sheetMode = if zoomAt then "zoom" elseif outfitSheet then "outfits" else "presets"
+local flowCells = {}
 if presetSheet then
-	-- every outfit preset, then the face marks and headwear on a plain look
 	cells = {}
-	for _, p in Looks.PRESETS do
-		table.insert(cells, { label = p.name, look = Looks.applyPreset(Looks.DEFAULT, p.id), rank = 4 })
+	local function section(title: string)
+		table.insert(flowCells, { header = title })
 	end
-	for _, h in Looks.HEADWEAR do
-		if h.id ~= "none" then
-			table.insert(cells, { label = "Head: " .. h.name, look = { skin = "warm", hair = 0, hairDye = "chestnut", top = "guild", topColor = "navy", trim = "gold", armorColor = "slate", headwear = h.id }, face = true })
+	local function add(c)
+		table.insert(flowCells, c)
+	end
+	local PLAIN = { skin = "warm", hair = 0, hairDye = "chestnut", top = "longsleeve", topColor = "charcoal", trim = "gold", bottom = "slacks", bottomColor = "black", shoes = "boots", armorColor = "slate", backColor = "crimson" }
+	local function on(field: string, id: any, extra: any?)
+		local l = table.clone(PLAIN)
+		l[field] = id
+		for k, v in extra or {} do
+			l[k] = v
 		end
+		return l
 	end
-	for _, b in Looks.BACK do
-		if b.id ~= "none" then
-			table.insert(cells, { label = "Back: " .. b.name, look = { skin = "honey", hair = 0, hairDye = "jet", top = "tactical", topColor = "black", trim = "mana", backColor = "crimson", back = b.id }, back = true })
+	if sheetMode == "presets" then
+		section(string.format("OUTFIT PRESETS (%d): EVERY CLASS FROM E-RANK TO S-RANK, THE ASSOCIATION, GUILDS, CIVILIANS, ORIGINAL ICONS", #Looks.PRESETS))
+		for _, cat in Looks.CATEGORIES do
+			local cls = Looks.find("CLASSES", cat.id)
+			local tint = if cls then roblox.Color3.fromRGB(cls.color[1], cls.color[2], cls.color[3]) else roblox.Color3.fromRGB(200, 190, 230)
+			for _, p in Looks.presetsIn(cat.id) do
+				add({ label = string.upper(cat.name) .. (if p.rank then " " .. p.rank else "") .. " · " .. p.name, tint = tint, look = Looks.applyPreset(Looks.DEFAULT, p.id), rank = 4, w = 170, h = 236 })
+			end
+		end
+		section("HEADWEAR")
+		for _, h in Looks.HEADWEAR do
+			if h.id ~= "none" then
+				add({ label = h.name, look = { skin = "warm", hair = 0, hairDye = "chestnut", top = "guild", topColor = "navy", trim = "gold", armorColor = "slate", headwear = h.id }, face = true, w = 116, h = 116 })
+			end
+		end
+		section("ON THE BACK")
+		for _, b in Looks.BACK do
+			if b.id ~= "none" then
+				add({ label = b.name, look = { skin = "honey", hair = 0, hairDye = "jet", top = "tactical", topColor = "black", trim = "mana", backColor = "crimson", back = b.id }, back = true, w = 116, h = 170 })
+			end
+		end
+	elseif sheetMode == "outfits" then
+		local colors = { "navy", "crimson", "forest", "shadow", "white", "brown", "slate", "wine" }
+		section("TOPS")
+		for i, t in Looks.TOPS do
+			add({ label = t.name, look = on("top", t.id, { topColor = colors[(i - 1) % #colors + 1] }), w = 128, h = 200 })
+		end
+		section("BOTTOMS")
+		for i, b in Looks.BOTTOMS do
+			add({ label = b.name, look = on("bottom", b.id, { bottomColor = colors[(i - 1) % #colors + 1], top = "tee", topColor = "white" }), w = 128, h = 200 })
+		end
+		section("ARMOR")
+		for _, a in Looks.ARMOR do
+			add({ label = a.name, look = on("armor", a.id, { armorColor = "silver" }), w = 128, h = 200 })
+		end
+		section("SHOES AND GLOVES")
+		for _, sh in Looks.SHOES do
+			add({ label = sh.name, look = on("shoes", sh.id), legs = true, w = 100, h = 110 })
+		end
+		for _, g in Looks.GLOVES do
+			add({ label = g.name, look = on("gloves", g.id, { top = "tee" }), w = 100, h = 150 })
+		end
+		section("FACE AND NECK")
+		for _, e in Looks.EXTRAS do
+			add({ label = e.name, look = on("extra", e.id, { top = "tee", topColor = "white" }), face = true, w = 100, h = 100 })
+		end
+		local okAcc, Accessories = pcall(function()
+			return Loader.require(shared.Hunter.Accessories)
+		end)
+		if okAcc and Accessories and Accessories.list then
+			section("ACCESSORIES (class, grade)")
+			for _, a in Accessories.list do
+				add({ label = a.grade .. " " .. a.name, look = on("top", "tee", { accessories = { a.id }, topColor = "slate" }), w = 100, h = 150, near = true })
+			end
+		end
+	else
+		local ids = string.split(process.args[zoomAt + 1] or "", ",")
+		for _, id in ids do
+			local p = Looks.find("PRESETS", id)
+			if p then
+				local look = Looks.applyPreset(Looks.DEFAULT, p.id)
+				add({ label = p.name .. " (front)", look = look, rank = 4, w = 320, h = 460, near = true })
+				add({ label = p.name .. " (back)", look = look, rank = 4, w = 320, h = 460, near = true, back = true })
+			end
 		end
 	end
 end
@@ -198,7 +274,7 @@ local cols, cellW, cellH, gap, labelH, titleH = 8, 150, 230, 6, 14, 30
 if weaponSheet then
 	cols, cellW, cellH = 10, 150, 190
 elseif presetSheet then
-	cols, cellW, cellH = 10, 150, 200
+	cols, cellW, cellH = 9, 170, 240
 end
 local rows = math.ceil(#cells / cols)
 local W = gap + cols * (cellW + gap)
@@ -211,7 +287,7 @@ back.Size = roblox.UDim2.fromScale(1, 1)
 back.BackgroundColor3 = roblox.Color3.fromRGB(8, 10, 16)
 back.BorderSizePixel = 0
 back.Parent = gui
-label(back, if presetSheet then "BITLEVELING · OUTFIT PRESETS, SCARS AND MARKS, HEADWEAR, BACK ITEMS" elseif weaponSheet then "BITLEVELING · EVERY WEAPON (★ to ★★★, every ninth one Shiny)" else "BITLEVELING · R6 LOOKS (block hair stands in for the hair accessories)", gap, 6, W - 2 * gap, 16, roblox.Color3.fromRGB(170, 150, 255))
+label(back, if presetSheet then (if sheetMode == "outfits" then "BITLEVELING · EVERY TOP, BOTTOM, ARMOUR, SHOE, GLOVE, ACCESSORY" elseif sheetMode == "zoom" then "BITLEVELING · PRESETS, CLOSE UP" else "BITLEVELING · OUTFIT PRESETS BY CLASS, HEADWEAR, BACK ITEMS, SCARS AND MARKS") elseif weaponSheet then "BITLEVELING · EVERY WEAPON (★ to ★★★, every ninth one Shiny)" else "BITLEVELING · R6 LOOKS (block hair stands in for the hair accessories)", gap, 6, W - 2 * gap, 16, roblox.Color3.fromRGB(170, 150, 255))
 local total = 0
 for i, cell in cells do
 	local c, r = (i - 1) % cols, (i - 1) // cols
@@ -246,9 +322,66 @@ for i, cell in cells do
 	cam.Parent = vp
 	vp.CurrentCamera = cam
 end
+-- (the presets family) cells of their own sizes, flowing in rows, with section headers
+if presetSheet then
+	local x, y, rowH = gap, H, 0
+	local maxParts = 0
+	for _, cell in flowCells do
+		if cell.header then
+			if x > gap then
+				y += rowH + labelH + gap
+			end
+			label(back, cell.header, gap, y + 2, W - 2 * gap, 13, roblox.Color3.fromRGB(230, 200, 120))
+			y += 20
+			x, rowH = gap, 0
+			continue
+		end
+		if x + cell.w > W - gap + 1 then
+			x = gap
+			y += rowH + labelH + gap
+			rowH = 0
+		end
+		label(back, cell.label, x, y, cell.w, 10, cell.tint)
+		local vp = I.new("ViewportFrame")
+		vp.Position = roblox.UDim2.fromOffset(x, y + labelH)
+		vp.Size = roblox.UDim2.fromOffset(cell.w, cell.h)
+		vp.BackgroundColor3 = roblox.Color3.fromRGB(20, 26, 40)
+		vp.Ambient = roblox.Color3.fromRGB(150, 150, 165)
+		vp.LightColor = roblox.Color3.fromRGB(255, 244, 230)
+		vp.Parent = back
+		local model = R6Rig.build(cell.look, { name = cell.label, weapon = cell.weapon, rank = cell.rank })
+		model.Parent = vp
+		local n = 0
+		for _, d in model:GetDescendants() do
+			if d:IsA("BasePart") then
+				n += 1
+			end
+		end
+		total += n
+		maxParts = math.max(maxParts, n)
+		local cam = I.new("Camera")
+		cam.FieldOfView = 30
+		local target = if cell.face then roblox.Vector3.new(0, 4.5, 0) elseif cell.legs then roblox.Vector3.new(0, 0.9, 0) else roblox.Vector3.new(0, 2.75, 0)
+		local dist = if cell.face then 5.6 elseif cell.legs then 6.5 elseif cell.near then 17 elseif cell.back then 15 else 15.5
+		cam.CFrame = roblox.CFrame.new(target + roblox.Vector3.new(0, 0.6, -dist)) * roblox.CFrame.Angles(0, math.pi, 0)
+		local spin = if cell.back then 160 elseif cell.face then -20 else turn
+		for _, d in model:GetDescendants() do
+			if d:IsA("BasePart") then
+				d.CFrame = roblox.CFrame.Angles(0, math.rad(spin), 0) * d.CFrame
+			end
+		end
+		cam.Parent = vp
+		vp.CurrentCamera = cam
+		x += cell.w + gap
+		rowH = math.max(rowH, cell.h)
+		table.insert(cells, cell)
+	end
+	H = y + rowH + labelH + gap
+	print(string.format("most parts on one rig: %d", maxParts))
+end
 -- (presets sheet) the faces, flat: the sheet renderer doesn't draw SurfaceGuis on parts, so the
 -- face plate's own gui (and its glow) is copied into frames along the bottom
-if presetSheet then
+if presetSheet and sheetMode == "presets" then
 	local faces = {}
 	for _, m in Looks.MARKS do
 		table.insert(faces, { label = m.name, look = { skin = "light", hairDye = "jet", trim = "crimson", marks = m.id, face = "calm" } })
@@ -309,6 +442,6 @@ end
 if not fs.isDir("tools/avatar/shots") then
 	fs.writeDir("tools/avatar/shots")
 end
-local outName = if presetSheet then "tools/avatar/shots/presets.json" elseif weaponSheet then "tools/avatar/shots/weapons.json" else "tools/avatar/shots/r6.json"
+local outName = if presetSheet then "tools/avatar/shots/" .. sheetMode .. ".json" elseif weaponSheet then "tools/avatar/shots/weapons.json" else "tools/avatar/shots/r6.json"
 fs.writeFile(outName, serde.encode("json", { format = "gui-snapshot/1", state = "r6", note = "R6 looks", device = "sheet", screen = { W, H }, inset = 0, defaults = defaults, guis = { node(gui) } }, false))
 print(string.format("wrote " .. outName .. " (%d rigs, %.0f parts each, %dx%d)", #cells, total / #cells, W, H))
