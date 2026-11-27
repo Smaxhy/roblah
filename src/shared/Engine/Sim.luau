@@ -271,6 +271,10 @@ function Sim.new(pack)
 	-- (BitLeveling) weapons out of Gates (result.loot)
 	if pack.hunterWorld then
 		self.lootHook = HunterWorld.loot
+		self.fatesById = {}
+		for _, f in HunterWorld.fatesOf(pack) do
+			self.fatesById[f.id] = f
+		end
 		-- a boss fight in turns ends later than its card: the incident hears how it went then
 		self.battleHook = function(sim: any, life: any, event: any, choice: any, outcome: string)
 			if life.gw then
@@ -1120,6 +1124,11 @@ function Sim:kill(life, report, cause: string)
 	end
 	life.alive = false
 	life.cause = cause
+	-- (BitLeveling) the fate this life ended in (Engine/HunterWorld.fateOf, pack.hunterWorld.fates)
+	if self.pack.hunterWorld and self.pack.hunterWorld.fates then
+		local f = HunterWorld.fateOf(self, life)
+		life.fate = f and f.id or nil
+	end
 	life.death = self:deathReport(life, cause)
 	life.pending = nil
 	life.queue = {}

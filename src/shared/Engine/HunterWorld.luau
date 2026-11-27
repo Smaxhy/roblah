@@ -42,6 +42,7 @@
 ]]
 
 local Rng = require(script.Parent.Rng)
+local Conditions = require(script.Parent.Conditions)
 
 local HW = {}
 
@@ -1220,6 +1221,67 @@ end
 
 -- ── what the client shows: the incident board and the news ────────────────
 -- the little that rides along with every view of a life (the HUD strip)
+-- ── FATES: how a life ends (pack.hunterWorld.fates, BitLeveling/Fates.luau) ──────
+-- Every fate has a `when` (the same keys as a card's) and maybe a `cause` (a piece of the
+-- death cause, lower case). At death, of the fates that fit, the highest priority wins (then
+-- the rarer). The fallback has priority 0 and no conditions, so every life has a fate.
+function HW.fatesOf(pack: any): { any }
+	local cfg = pack.hunterWorld
+	return (cfg and cfg.fates) or {}
+end
+
+function HW.fateOf(sim: any, life: any): any
+	local cause = string.lower(tostring(life.cause or ""))
+	local best = nil
+	for _, f in HW.fatesOf(sim.pack) do
+		local fits = true
+		if f.cause and not string.find(cause, string.lower(f.cause), 1, true) then
+			fits = false
+		end
+		if fits and f.when and next(f.when) ~= nil and not Conditions.check(f.when, life, sim.pack, { noChance = true }) then
+			fits = false
+		end
+		if fits then
+			local p, bp = f.priority or 0, if best then best.priority or 0 else -math.huge
+			if best == nil or p > bp or (p == bp and (f.rarity or 1) > (best.rarity or 1)) then
+				best = f
+			end
+		end
+	end
+	return best
+end
+
+-- what a player's collection shows: found fates in full, locked ones as a hint
+function HW.fateList(pack: any, found: { [string]: number }?): any
+	local list, got = {}, 0
+	for i, f in HW.fatesOf(pack) do
+		local n = found and found[f.id] or 0
+		if n > 0 then
+			got += 1
+		end
+		table.insert(list, {
+			id = f.id,
+			order = i,
+			name = if n > 0 then f.name else "???",
+			desc = if n > 0 then f.desc else nil,
+			hint = f.hint,
+			rarity = f.rarity or 1,
+			canon = f.canon ~= false,
+			count = n,
+		})
+	end
+	table.sort(list, function(a, b)
+		if a.canon ~= b.canon then
+			return a.canon
+		end
+		if a.rarity ~= b.rarity then
+			return a.rarity < b.rarity
+		end
+		return a.order < b.order
+	end)
+	return { list = list, found = got, total = #list }
+end
+
 function HW.summary(sim: any, life: any): any
 	local cfg = cfgOf(sim.pack)
 	local gw = life.gw

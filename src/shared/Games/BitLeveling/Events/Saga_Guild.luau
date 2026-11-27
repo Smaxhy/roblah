@@ -45,7 +45,7 @@ return {
 		text = "You've raided under other people's names for long enough. A registration form for a new guild is on your table: a name, a master, three licensed members and a fee to the Association. The fee is the easy part. The hard part is everything after.",
 		weight = 4,
 		once = true,
-		when = { minAge = 24, maxAge = 45, minYear = 3, form = MID_UP, flags = { "licensed" }, notFlags = { "sg_career_arc", "world_rewritten" } },
+		when = { minAge = 22, maxAge = 45, minYear = 3, form = MID_UP, flags = { "licensed" }, notFlags = { "sg_career_arc", "world_rewritten" } },
 		choices = {
 			{
 				label = "Found it with your own savings",
@@ -98,16 +98,16 @@ return {
 			{
 				label = "Offer a real share and a real role",
 				clash = { stat = "charisma", foe = "Ironvale's offer", coins = 2, base = 8, coinPower = 3 },
-				win = { charisma = 2, setFlags = { "sgg_star" }, schedule = { event = "sg_guild_04", inYears = 2 }, log = "They signed with you, on the back of a takeaway menu, then properly the next day." },
-				lose = { sanity = -2, schedule = { event = "sg_guild_04", inYears = 2 }, log = "They signed with Ironvale. They looked sorry about it." },
+				win = { charisma = 2, setFlags = { "sgg_star" }, schedule = { event = "sg_guild_04", inYears = 1 }, log = "They signed with you, on the back of a takeaway menu, then properly the next day." },
+				lose = { sanity = -2, schedule = { event = "sg_guild_04", inYears = 1 }, log = "They signed with Ironvale. They looked sorry about it." },
 			},
 			{
 				label = "Match Ironvale's money",
 				hint = "40 {currency}.",
 				requires = { min = { money = 40 } },
-				result = { money = -40, setFlags = { "sgg_star" }, schedule = { event = "sg_guild_04", inYears = 2 }, log = "You matched it. Your accountant made a noise you'd never heard a person make." },
+				result = { money = -40, setFlags = { "sgg_star" }, schedule = { event = "sg_guild_04", inYears = 1 }, log = "You matched it. Your accountant made a noise you'd never heard a person make." },
 			},
-			{ label = "Let them go", result = { schedule = { event = "sg_guild_04", inYears = 2 }, log = "You wished them luck. You meant it, and it still stung." } },
+			{ label = "Let them go", result = { schedule = { event = "sg_guild_04", inYears = 1 }, log = "You wished them luck. You meant it, and it still stung." } },
 		},
 	}),
 	beat({
@@ -192,16 +192,16 @@ return {
 				label = "Take it",
 				hint = "An A-rank boss room.",
 				clash = { stat = "strength", foe = "An A-rank Gate", enemy = "gate_a", coins = 4, base = 28, coinPower = 8, fight = true, fixed = true },
-				win = { strength = 4, charisma = 3, money = { 40, 120 }, setFlags = { "sgg_top" }, schedule = { event = "sg_guild_08", inYears = 2 }, log = "You cleared it with six hours to spare. The hospital sent the guild a cake shaped like a Gate. It was on the news for a week." },
+				win = { strength = 4, charisma = 3, money = { 40, 120 }, setFlags = { "sgg_top" }, schedule = { event = "sg_guild_08", inYears = 1 }, log = "You cleared it with six hours to spare. The hospital sent the guild a cake shaped like a Gate. It was on the news for a week." },
 				lose = { vitality = { -130, -60 }, sanity = -8, setFlags = { "sgg_falling" }, schedule = { event = "sg_guild_07x", inYears = 1 }, cause = "Killed leading an emergency A-rank raid", log = "A bigger guild had to come and finish it. The headlines were theirs." },
 			},
 			{
 				label = "Take it with a coalition of small guilds",
 				clash = { stat = "charisma", foe = "Five guild masters in one room", coins = 3, base = 10, coinPower = 4 },
-				win = { charisma = 3, money = { 20, 60 }, setFlags = { "sgg_top" }, schedule = { event = "sg_guild_08", inYears = 2 }, log = "Five small guilds, one plan, your name at the top of it. You cleared it together, and the others still send you new-year cards." },
+				win = { charisma = 3, money = { 20, 60 }, setFlags = { "sgg_top" }, schedule = { event = "sg_guild_08", inYears = 1 }, log = "Five small guilds, one plan, your name at the top of it. You cleared it together, and the others still send you new-year cards." },
 				lose = { sanity = -6, money = -10, setFlags = { "sgg_falling" }, schedule = { event = "sg_guild_07x", inYears = 1 }, log = "The coalition fell apart over who'd lead. The Gate went to someone else, and so did half your members." },
 			},
-			{ label = "Turn it down", result = { sanity = -2, schedule = { event = "sg_guild_08", inYears = 3 }, log = "You said your people weren't ready. It was true, and it cost you. The {last} Guild grew the slow way after that." } },
+			{ label = "Turn it down", result = { sanity = -2, schedule = { event = "sg_guild_08", inYears = 2 }, log = "You said your people weren't ready. It was true, and it cost you. The {last} Guild grew the slow way after that." } },
 		},
 	}),
 	beat({
@@ -216,7 +216,7 @@ return {
 				hint = "30 {currency}, and a lot of luck.",
 				requires = { min = { money = 30 } },
 				clash = { stat = "luck", foe = "A guild's last month", coins = 2, base = 8, coinPower = 3 },
-				win = { money = -30, sanity = 2, clearFlags = { "sgg_falling" }, schedule = { event = "sg_guild_08", inYears = 2 }, log = "A big contract came in the week your savings ran out. It worked, somehow. You never quite believed it." },
+				win = { money = -30, sanity = 2, clearFlags = { "sgg_falling" }, schedule = { event = "sg_guild_08", inYears = 1 }, log = "A big contract came in the week your savings ran out. It worked, somehow. You never quite believed it." },
 				lose = { money = -30, sanity = -6, setFlags = { "fate_guild_fell" }, clearFlags = { "sgg_on" }, log = "It wasn't enough. It was never going to be enough." },
 			},
 			{ label = "Fold it into a bigger guild", result = { money = { 10, 30 }, setFlags = { "fate_guild_fell" }, clearFlags = { "sgg_on" }, log = "The {last} Guild became a branch office of someone else's. You kept a desk, and the sign, which nobody else wanted." } },

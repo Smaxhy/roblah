@@ -163,9 +163,34 @@ function Board.open(gui: ScreenGui, call: (string, any?) -> any, liveList: { any
 			line(body, i, string.upper(s.stage or "?"), if s.broke or s.red then C.crimson else C.accentLo, string.format("%s-rank reading at %s · %s", RANKS[s.rank] or "?", s.label or "?", s.headline or ""), if s.broke or s.red then TONES.danger else C.text)
 		end
 	end
-	local current = showNews
-	for _, t in { { "NEWS", showNews }, { "INCIDENTS", showIncidents }, { "RECORD", showRecord }, { "LIVE", showLive } } do
-		local b = make("TextButton", { Size = UDim2.fromOffset(120, 30), BackgroundColor3 = C.panelHi, Text = t[1], TextColor3 = C.text, FontFace = F.display, TextSize = 14 }, tabs)
+	-- every fate a life can end in: found ones in full, locked ones as a hint
+	local fates: any = nil
+	local current: any = nil
+	local STAR_COLORS = { Color3.fromRGB(150, 156, 166), Color3.fromRGB(110, 190, 140), Color3.fromRGB(100, 160, 255), Color3.fromRGB(180, 110, 255), Color3.fromRGB(255, 190, 70) }
+	local function showEndings()
+		clear()
+		if not fates then
+			line(body, 1, nil, nil, "Loading your endings...", C.sub)
+			task.spawn(function()
+				local res = call("hwFates")
+				fates = (res and res.fates) or { list = {}, found = 0, total = 0 }
+				if open and current == showEndings then
+					showEndings()
+				end
+			end)
+			return
+		end
+		line(body, 0, "FOUND", C.accentLo, string.format("%d of %d endings. Each new one is worth 1 Glow. Non-canon endings happen only on the world line where the Gates were kept.", fates.found, fates.total), C.sub)
+		for i, f in fates.list do
+			local stars = string.rep("★", f.rarity or 1)
+			local chip = (if f.canon then "" else "NC ") .. stars
+			local text = if f.count > 0 then string.format("%s: %s%s", f.name, f.desc or "", if f.count > 1 then string.format(" (x%d)", f.count) else "") else string.format("???  Hint: %s", f.hint or "keep living")
+			line(body, i, chip, if f.count > 0 then STAR_COLORS[math.clamp(f.rarity or 1, 1, 5)] else C.panelHi, text, if f.count > 0 then C.text else C.faint)
+		end
+	end
+	current = showNews
+	for _, t in { { "NEWS", showNews }, { "INCIDENTS", showIncidents }, { "RECORD", showRecord }, { "LIVE", showLive }, { "ENDINGS", showEndings } } do
+		local b = make("TextButton", { Size = UDim2.fromOffset(112, 30), BackgroundColor3 = C.panelHi, Text = t[1], TextColor3 = C.text, FontFace = F.display, TextSize = 14 }, tabs)
 		make("UICorner", { CornerRadius = UDim.new(0, 5) }, b)
 		b.Activated:Connect(function()
 			current = t[2]

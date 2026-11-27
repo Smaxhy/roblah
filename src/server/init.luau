@@ -35,6 +35,7 @@ local started = false
 local TEMPLATE = {
 	version = 2,
 	lanterns = {},
+	fates = {}, -- (BitLeveling) [fate id] = times this player's lives ended in it
 	glow = 0,
 	unlocked = {},
 	livesPlayed = 0,
@@ -545,6 +546,18 @@ function Server.start()
 		end
 		if #fresh > 0 then
 			lantern.records = fresh
+		end
+		-- (BitLeveling) the fates this player has found: a new one pays 1 Glow
+		if life.fate then
+			data.fates = data.fates or {}
+			if data.fates[life.fate] == nil then
+				lantern.newFate = true
+				data.glow = (data.glow or 0) + 1
+			end
+			data.fates[life.fate] = (data.fates[life.fate] or 0) + 1
+			if Config.chatNews ~= false and (lantern.fateRarity or 0) >= 4 then
+				City.news(string.format("%s %s's life ended as %s.", life.first, life.last, lantern.title or life.fate), "good")
+			end
 		end
 		lantern.lunacy = Progress.onLifeEnd(data, #fresh)
 		table.insert(data.lanterns, 1, lantern)

@@ -490,6 +490,8 @@ return {
 		-- ── THE GATES (Engine/HunterWorld.luau) ──────────────────────────────
 		hunterWorld = {
 			firstYear = 0,
+			-- the 40 endings a life can be filed under (Fates.luau; Engine/HunterWorld.fateOf)
+			fates = require(script.Parent:WaitForChild("Fates")),
 			-- canon: an uncleared Gate breaks; the figure usually cited is about seven days,
 			-- but canon's Tokyo Gate broke in about three. Seven is typical here, not fixed
 			-- (ORIGINAL: the spread is this game's).

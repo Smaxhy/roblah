@@ -285,6 +285,12 @@ function Report.deathReport(self: any, life: any, cause: any)
 	if #d.lines == 0 then
 		table.insert(d.lines, if life.scene then "It happened during: " .. tostring(life.scene) .. "." else "Nothing in particular did it. The years did.")
 	end
+	-- (BitLeveling) the fate this life ended in, first
+	local fate = life.fate and self.fatesById and self.fatesById[life.fate]
+	if fate then
+		d.fate = { id = fate.id, name = fate.name, desc = self:render(life, fate.desc or ""), rarity = fate.rarity or 1, canon = fate.canon ~= false }
+		table.insert(d.lines, 1, string.format("FATE: %s%s. %s", fate.name, if fate.canon == false then " (non-canon)" else "", d.fate.desc))
+	end
 	return d
 end
 
@@ -309,6 +315,14 @@ function Report.lantern(self: any, life: any)
 	end
 	local glow = 1 + (if worth >= 10 then 1 else 0) + (if worth >= 18 then 1 else 0)
 	local ribbon = self:ribbon(life)
+	-- (BitLeveling) a fate other than the plain fallback names the life and writes its epitaph
+	local fate = life.fate and self.fatesById and self.fatesById[life.fate]
+	if fate and (fate.priority or 0) > 0 then
+		ribbon = { name = fate.name, desc = self:render(life, fate.desc or "") }
+		if fate.epitaph then
+			pick = fate.epitaph
+		end
+	end
 	local highlights = {}
 	for i = #life.highlights, math.max(1, #life.highlights - 2), -1 do
 		table.insert(highlights, life.highlights[i].text)
@@ -331,6 +345,9 @@ function Report.lantern(self: any, life: any)
 		title = if ribbon then ribbon.name else nil,
 		titleDesc = if ribbon then ribbon.desc else nil,
 		generation = life.generation or 1,
+		fate = if fate then fate.id else nil,
+		fateRarity = if fate then fate.rarity else nil,
+		fateCanon = if fate then fate.canon ~= false else nil,
 		peakMoney = life.peakMoney or 0,
 		fixerGrade = self:fixerRating(life),
 		fightsWon = (life.tally and life.tally.fightsWon) or 0,

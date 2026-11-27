@@ -902,6 +902,10 @@ function HunterLive.install(S)
 		end
 		return { ok = true, board = HW.view(sim, life) }
 	end
+	-- the endings this player's lives have found, and the ones still locked (with a hint)
+	function handlers.hwFates(_player, session)
+		return { ok = true, fates = HW.fateList(sim.pack, session.profile.Data.fates) }
+	end
 	function handlers.hwWalk(player, session, payload)
 		local on = type(payload) == "table" and payload.on == true
 		if on then
