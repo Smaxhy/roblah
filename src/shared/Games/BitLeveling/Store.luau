@@ -1,15 +1,12 @@
 --[[
-	THE STORE (server/Store.luau). Honest by design: no fake timers or scarcity, and odds shown
-	before anything random. Prices are Robux suggestions; paste each product or pass id (from the
-	Creator Dashboard) into `id`. Grant keys: "lunacy:<n>" (the premium currency, whatever meta.premiumName calls it),
-	"perk:extraTrait", "perk:bonusPoints", "perk:vip", "outfit:<id>", "frame:<id>", "light:<n>"...
+	THE STORE. BitLeveling is a non-commercial fan game (spec fanWork = true), so the Robux
+	store is OFF unless Config.store.sellInFanPacks is switched on, which is the owner's call
+	and not recommended for someone else's IP. What's here can be earned with Mana in play.
+	Honest by design: no timers, no fake scarcity, odds before anything random.
 ]]
 return {
-	note = "Gems buy boosts and looks. Passes last forever.",
+	note = "Crystals buy small boosts. Nothing here changes your Hunter rank: rank is rolled, never sold.",
 	items = {
-		{ key = "gems_60", kind = "product", id = 0, price = 25, tier = "Gems", consumable = true, name = "60 Gems", desc = "A little something.", grants = { "lunacy:60" } },
-		{ key = "gems_250", kind = "product", id = 0, price = 89, tier = "Gems", consumable = true, name = "250 Gems", desc = "220 Gems, plus 30 free.", bonus = "+30 free", grants = { "lunacy:250" } },
-		{ key = "pass_gifted", kind = "pass", id = 0, price = 149, tier = "Passes", name = "Born Gifted", desc = "+2 to every stat at birth, in every life.", grants = { "perk:bonusPoints" } },
-		{ key = "boost_heal", lunacy = 50, tier = "Boosts", consumable = true, name = "Second Wind", desc = "+40 Health, +15 Mood, and every treatable injury gone.", grants = { "boost:heal" } },
+		{ key = "boost_heal", lunacy = 50, tier = "Boosts", consumable = true, name = "Healer's Visit", desc = "+40 Vitality, +15 Composure, and every treatable injury gone.", grants = { "boost:heal" } },
 	},
 }

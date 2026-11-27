@@ -40,6 +40,8 @@ function View.view(self: any, life: any): any
 		last = life.last,
 		age = life.age,
 		year = life.year,
+		-- (BitLeveling) a calendar can say how a year is written (pack.calendar.label)
+		yearLabel = if type(pack.calendar.label) == "function" then pack.calendar.label(life.year) else nil,
 		bornYear = life.bornYear,
 		bornEra = life.bornEra,
 		-- the age this life opens in: the one it was born into, or, for a life that starts

@@ -954,13 +954,13 @@ function Hud:setLife(life)
 	self.placeLabel.Text = string.upper(table.concat(parts, " · "))
 	self.nameLabel.Text = string.upper(life.first .. " " .. life.last)
 	local work = if life.career then (life.career.rank .. ", " .. life.career.name) else "No work"
-	self.subLabel.Text = string.upper(string.format("Age %d  ·  Year %d  ·  %s", life.age, life.year, work))
+	self.subLabel.Text = string.upper(string.format("Age %d  ·  %s  ·  %s", life.age, life.yearLabel or ("Year " .. tostring(life.year)), work))
 	self.moneyLabel.Text = Format.number(life.money)
 	self.moneyLabel.TextColor3 = if life.money < 0 then C.bad else C.money
 	if self.left then
 		self.leftFile.Text = self.fileLabel.Text
 		self.leftName.Text = self.nameLabel.Text
-		self.leftSub.Text = string.upper(string.format("Age %d  ·  Year %d", life.age, life.year))
+		self.leftSub.Text = string.upper(string.format("Age %d  ·  %s", life.age, life.yearLabel or ("Year " .. tostring(life.year))))
 		self.leftWork.Text = string.upper(work)
 		self.leftPlace.Text = self.placeLabel.Text
 		self.leftMoney.Text = self.moneyLabel.Text

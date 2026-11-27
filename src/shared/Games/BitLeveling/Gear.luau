@@ -1,12 +1,21 @@
 --[[
-	GEAR: one item per slot (spec.gear.slots). Each:
-		id, name, slot, price, minAge, desc, effect (the line the shop shows),
-		clash = { <stat id> = { coins, base, coinPower } }, yearly = {...}, hazardGuard = 0.85,
-		resist = { burn = 2 }, requires = {...}, look = { kind = "sword" | "knife" | "spear" |
-		"axe" | "hammer" | "coat" | "jacket" | "book" | "stone" | "bell" | "token" | ..., color = {...} }
+	GEAR (ORIGINAL items in the canon economy: Hunters buy weapons and armour made from monster
+	materials and mana crystals). Prices in million won. Slots: weapon, armor, charm.
 ]]
+local HUNTERS = { "hunter_e", "hunter_d", "hunter_c", "hunter_b", "hunter_a", "hunter_s" }
+
 return {
-	{ id = "short_sword", name = "Short Sword", slot = "tool", price = 60, minAge = 14, desc = "Plain and sharp.", effect = "+2 base power in Strength fights", clash = { strength = { base = 2 } }, look = { kind = "sword" } },
-	{ id = "padded_coat", name = "Padded Coat", slot = "coat", price = 80, desc = "Quilted canvas that has stopped a knife or two.", effect = "+1 base in Strength fights, bad years 15% less likely", clash = { strength = { base = 1 } }, hazardGuard = 0.85, look = { kind = "jacket", color = { 122, 98, 70 } } },
-	{ id = "lucky_coin", name = "Lucky Coin", slot = "charm", price = 35, desc = "Heads every time. Almost.", effect = "+1 mood a year", yearly = { sanity = 1 }, look = { kind = "token" } },
+	{ id = "gw_steel_dagger", name = "Hunter's Steel Dagger", slot = "weapon", price = 3, minAge = 16, rarity = "common", desc = "Mass-produced, licensed-Hunters-only, and enough for an E-rank Gate.", effect = "+2 base in Strength fights.", clash = { strength = { base = 2 } }, requires = { form = HUNTERS }, look = { kind = "knife" } },
+	{ id = "gw_longsword", name = "Crystal-Tempered Longsword", slot = "weapon", price = 12, minAge = 17, rarity = "uncommon", desc = "Steel quenched in crystal water. It holds an edge on things steel shouldn't cut.", effect = "+3 base and +1 power per heads in Strength fights.", clash = { strength = { base = 3, coinPower = 1 } }, requires = { form = HUNTERS }, look = { kind = "sword" } },
+	{ id = "gw_spear", name = "Lizardman-Bone Spear", slot = "weapon", price = 18, minAge = 18, rarity = "uncommon", desc = "Long reach, light, and nasty on the tip.", effect = "+1 coin in Strength fights.", fight = { coins = 1 }, requires = { form = HUNTERS }, look = { kind = "spear" } },
+	{ id = "gw_staff", name = "Mana-Conductive Staff", slot = "weapon", price = 20, minAge = 18, rarity = "rare", desc = "A Mage's tool: a crystal core in carved wood.", effect = "+4 base in Intelligence clashes, +1 in fights.", clash = { intelligence = { base = 4 } }, fight = { base = 1 }, requires = { form = HUNTERS }, look = { kind = "lamp" } },
+	{ id = "gw_greatsword", name = "Ogre-Iron Greatsword", slot = "weapon", price = 60, minAge = 20, rarity = "rare", desc = "Forged from what a B-rank Gate left behind. Heavy enough to argue with an ogre.", effect = "+5 base and +1 power per heads in Strength fights.", clash = { strength = { base = 5, coinPower = 1 } }, requires = { form = { "hunter_c", "hunter_b", "hunter_a", "hunter_s" } }, look = { kind = "greatsword" } },
+	{ id = "gw_relic_blade", name = "Relic Blade", slot = "weapon", price = 0, unique = true, rarity = "epic", desc = "Old, humming, found in a Gate. Nobody can say who made it.", effect = "+6 base, +2 power per heads, +5% heads in fights.", clash = { strength = { base = 6, coinPower = 2 } }, heads = 5, look = { kind = "katana", color = { 120, 180, 255 } } },
+	{ id = "gw_raid_vest", name = "Raid Vest", slot = "armor", price = 4, minAge = 16, rarity = "common", desc = "Kevlar, pouches, an Association patch. Stops a goblin's knife.", effect = "15% less damage taken.", toughness = 0.85, requires = { form = HUNTERS }, look = { kind = "jacket", color = { 60, 66, 76 } } },
+	{ id = "gw_bear_coat", name = "Ice Bear Hide Coat", slot = "armor", price = 30, minAge = 18, rarity = "rare", desc = "Warm, tough, and a little terrifying to look at.", effect = "25% less damage taken; Mana Burn is weaker.", toughness = 0.75, resist = { burn = 1 }, requires = { form = HUNTERS }, look = { kind = "coat", color = { 230, 232, 236 } } },
+	{ id = "gw_plate", name = "Golem-Plate Armour", slot = "armor", price = 120, minAge = 20, rarity = "epic", desc = "Stone-grey plates cut from an A-rank golem. A Tanker's dream.", effect = "35% less damage taken, +2 base in Vitality fights. Debuff: -1 Agility a year.", toughness = 0.65, clash = { vitality = { base = 2 } }, yearly = { agility = -1 }, requires = { form = { "hunter_b", "hunter_a", "hunter_s" } }, look = { kind = "coat", color = { 120, 124, 130 } } },
+	{ id = "gw_jacket", name = "Good Winter Jacket", slot = "armor", price = 1, minAge = 10, rarity = "common", desc = "Not armour. Warm, though.", effect = "Bad years 10% less likely.", hazardGuard = 0.9, look = { kind = "jacket", color = { 40, 50, 70 } } },
+	{ id = "gw_alert_band", name = "Gate Alert Band", slot = "charm", price = 1, minAge = 8, rarity = "common", desc = "Buzzes on your wrist when a Gate opens nearby.", effect = "Bad years 15% less likely.", hazardGuard = 0.85, look = { kind = "token" } },
+	{ id = "gw_crystal_charm", name = "Crystal Charm", slot = "charm", price = 6, minAge = 14, rarity = "uncommon", desc = "A sliver of mana crystal on a cord. Hunters swear it steadies their nerve.", effect = "+2 Composure a year, +3% heads.", yearly = { sanity = 2 }, heads = 3, look = { kind = "stone", color = { 90, 170, 255 } } },
+	{ id = "gw_healing_potion", name = "Healer's Draught", slot = "charm", price = 10, minAge = 16, rarity = "rare", desc = "A Healer's work in a bottle: one emergency, once a year.", effect = "+6 Vitality a year.", yearly = { vitality = 6 }, look = { kind = "bell" } },
 }

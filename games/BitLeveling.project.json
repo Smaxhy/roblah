@@ -10,6 +10,7 @@
         "Shared": {
           "$className": "Folder",
           "Engine": { "$path": "../src/shared/Engine" },
+          "Hunter": { "$path": "../src/shared/Hunter" },
           "Base": { "$path": "../src/shared/Base" },
           "Games": {
             "$className": "Folder",

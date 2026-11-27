@@ -438,6 +438,10 @@ function Backdrop.build()
 	Backdrop._view = { angle = math.rad(20), eyeY = 46, targetR = 300, targetY = 40, orbit = true }
 	local clock = 0
 	RunService:BindToRenderStep("LifeSimBackdrop", Enum.RenderPriority.Camera.Value + 1, function(dt)
+		-- (BitLeveling) walking the live city: the camera is the player's own
+		if Backdrop.paused then
+			return
+		end
 		clock += dt
 		local view = Backdrop._view
 		if view.orbit then

@@ -41,6 +41,8 @@ local Cases: any = require(script.Parent.Cases) :: any
 local Feats: any = require(script.Parent.Feats) :: any
 local Battle: any = require(script.Parent.Battle) :: any
 
+local HunterWorld = require(script.Parent.HunterWorld)
+
 local Sim = {}
 Sim.__index = Sim
 
@@ -536,6 +538,12 @@ function Sim:salaryFor(life, id: string, rank: number): number
 	local base = def.salary[rank] or 0
 	local d = self:districtDef(life)
 	local mult = self:wageMult(life) * ((d.careerPay and d.careerPay[id]) or 1) * (1 + self:perkSum(life, "wage"))
+	-- (BitLeveling) a Hunter's pay follows their rank: careers with `hunter = true` pay
+	-- what the form says (pack.forms[form].wage)
+	if def.hunter then
+		local form = self.pack.forms[life.form or ""]
+		mult *= (form and form.wage) or 1
+	end
 	return math.floor(base * mult + 0.5)
 end
 
@@ -626,6 +634,12 @@ function Sim:render(life, text: any, extra): string
 			ctx.rel = rel.first
 			ctx.relName = rel.first .. (if rel.last ~= "" then " " .. rel.last else "")
 			ctx.relKind = string.lower(if rel.userId then "friend" else (kindDef.name or rel.kind))
+		end
+	end
+	-- (BitLeveling) a card about a Gate incident fills its {g...} tokens from the incident
+	if life.gw and life.gw.tokens then
+		for k, v in life.gw.tokens do
+			ctx[k] = v
 		end
 	end
 	if extra then
@@ -4871,6 +4885,9 @@ function Sim:advance(life: any, report: any)
 				event = nil
 			end
 		end
+		if event and life.gw then
+			HunterWorld.onShow(self, life, event)
+		end
 		if event then
 			life.history[id] = life.age
 			-- (v0.13) how many times this life has seen it (Sim:eventWeight makes a repeat rarer)
@@ -4996,6 +5013,10 @@ function Sim:ageUp(life: any)
 	Talent.wakeCheck(self, life, report)
 
 	self:rollWorld(life, report)
+	-- (BitLeveling) the Gates: the world's own incidents this year (Engine/HunterWorld.luau)
+	if self.pack.hunterWorld then
+		HunterWorld.year(self, life, report)
+	end
 	self:rollCrisis(life, report)
 	-- (v0.12) a year with a mood of its own (Engine/Mood.luau); a hard year has none
 	Mood.roll(self, life, report, yearEntry)
@@ -5671,6 +5692,10 @@ function Sim:choose(life: any, index: number, approachId: string?)
 	if report.clash then
 		report.clash.art = event.art -- the fight is staged where the scene was
 	end
+	-- (BitLeveling) the incident (and the life's record) learns what the player did
+	if life.gw then
+		HunterWorld.afterChoice(self, life, event, choice, report)
+	end
 	life.sceneRel = nil
 	life.scene = nil
 	life.focusLink = nil
@@ -6322,6 +6347,10 @@ function Sim:view(life: any): any
 	self.viewSeq = (self.viewSeq or 0) + 1
 	if type(v) == "table" then
 		v.seq = self.viewSeq
+		-- (BitLeveling) the Gates around this life, in brief (the full board: HunterWorld.view)
+		if life.gw and self.pack.hunterWorld then
+			v.hw = HunterWorld.summary(self, life)
+		end
 	end
 	return v
 end

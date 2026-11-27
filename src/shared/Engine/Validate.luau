@@ -14,7 +14,9 @@ local EVENT_KEYS = { id = 1, title = 1, text = 1, weight = 1, once = 1, cooldown
 -- (v0.14) an event's cutscene: client/UI/Stage.luau
 local SCENE_KEYS = { set = 1, time = 1, title = 1, kicker = 1, line = 1, voice = 1, reply = 1, color = 1, stand = 1, other = 1 }
 local SCENE_SETS = { street = 1, alley = 1, facility = 1, rooftop = 1, room = 1, nest = 1, underpass = 1, hall = 1, lake = 1, stairs = 1, gym = 1 }
-local CHOICE_KEYS = { label = 1, hint = 1, requires = 1, result = 1, clash = 1, win = 1, lose = 1, battle = 1, fled = 1 }
+local CHOICE_KEYS = { label = 1, hint = 1, requires = 1, result = 1, clash = 1, win = 1, lose = 1, battle = 1, fled = 1, hw = 1, hwRewrite = 1 }
+-- (BitLeveling) the tokens a Gate incident card fills (Engine/HunterWorld.luau: HW.tokens)
+local GATE_TOKENS = { gRank = 1, gARank = 1, gTrueRank = 1, gPlace = 1, gCity = 1, gCountry = 1, gAssoc = 1, gGuild = 1, gMonster = 1, gEnv = 1, gDead = 1, gScene = 1, gCrowd = 1, gTime = 1, gWarn = 1, gClass = 1 }
 local ACTIVITY_KEYS = {
 	id = 1, name = 1, desc = 1, minAge = 1, maxAge = 1, cost = 1, cooldown = 1, when = 1, result = 1, clash = 1, win = 1, lose = 1,
 	category = 1, move = 1, daily = 1, icon = 1, family = 1, schools = 1, shop = 1, market = 1, turfFoe = 1, caseId = 1,
@@ -304,7 +306,7 @@ function Validate.run(pack)
 			if (token == "actor" or token == "actorDistrict") and not (cond and cond.chronicle) then
 				warn(where, "uses {" .. token .. "} without when.chronicle (it will read \"someone\")")
 			end
-			if not BASE_TOKENS[token] and not (allowRelTokens and REL_TOKENS[token]) and not (allowCrewTokens and CREW_TOKENS[token]) then
+			if not BASE_TOKENS[token] and not GATE_TOKENS[token] and not (allowRelTokens and REL_TOKENS[token]) and not (allowCrewTokens and CREW_TOKENS[token]) then
 				if pack.relationKinds[token] then
 					local gated = false
 					for _, k in asList(cond and cond.hasRelation) do

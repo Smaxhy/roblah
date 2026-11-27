@@ -276,6 +276,10 @@ function BackdropCity.build(districts)
 	local clock = 0
 	local trainAngle = 0
 	RunService:BindToRenderStep("LifeSimBackdrop", Enum.RenderPriority.Camera.Value + 1, function(dt)
+		-- (BitLeveling) walking the live city: the camera is the player's own
+		if BackdropCity.paused then
+			return
+		end
 		clock += dt
 		local view = BackdropCity._view
 		if view.orbit then

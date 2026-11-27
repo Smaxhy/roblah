@@ -1,12 +1,13 @@
 --[[
-	FOES: who stands across the fight screen. A clash names one with `enemy = "<id>"`.
-		id, name, kind = "human" | "creature", temper = "brute" | "quick" | "cunning",
-		look (human: an avatar look) or shape/color/eye (creature: client/UI/CreatureView shapes:
-		beast, bird, blob, serpent, swarm, tall, mantis, crab, moth, whale, scrapgolem, ...),
-		ability = { id = "bleed" | "burn" | "guard" | "quick" | ..., potency = n },
-		barks = { start = {...}, win = {...}, lose = {...} }
+	FOES: what stands across the fight screen. gate_<rank> is what a Gate of that rank's
+	monsters look like in a fight (creature shapes: client/UI/CreatureView). ORIGINAL looks.
 ]]
 return {
-	{ id = "brawler", name = "Champion Brawler", temper = "brute", ability = { id = "crush", potency = 1 }, look = { skin = "bronze", hair = "shorn", hairColor = "ink", eyes = "brown", outfit = "trainer_wraps", mark = "scar" }, barks = { start = { "Another one." }, win = { "Next!" }, lose = { "...Good fight." } } },
-	{ id = "rat_king", name = "The Rat King", kind = "creature", shape = "swarm", color = { 90, 80, 70 }, eye = { 255, 80, 60 }, temper = "quick", ability = { id = "bleed", potency = 2 }, barks = { start = { "*a thousand teeth chatter*" } } },
+	{ id = "gate_e", name = "Goblin pack", kind = "creature", shape = "swarm", color = { 96, 130, 70 }, eye = { 255, 220, 80 }, temper = "quick", ability = { id = "bleed", potency = 1 }, barks = { start = { "*chattering*" }, win = { "*cackling*" }, lose = { "*scattering*" } } },
+	{ id = "gate_d", name = "Armoured beetles", kind = "creature", shape = "crab", color = { 70, 76, 96 }, eye = { 140, 220, 255 }, temper = "brute", ability = { id = "guard", potency = 1 }, barks = { start = { "*clicking*" } } },
+	{ id = "gate_c", name = "Orc raider", kind = "creature", shape = "tall", color = { 92, 120, 70 }, eye = { 255, 80, 60 }, temper = "brute", ability = { id = "crush", potency = 2 }, barks = { start = { "*a war cry*" }, win = { "*roaring*" } } },
+	{ id = "gate_b", name = "Ice bear", kind = "creature", shape = "beast", color = { 220, 228, 238 }, eye = { 120, 200, 255 }, temper = "brute", ability = { id = "bleed", potency = 2 }, barks = { start = { "*a deep growl*" } } },
+	{ id = "gate_a", name = "Stone golem", kind = "creature", shape = "armor", color = { 120, 116, 110 }, eye = { 255, 170, 60 }, temper = "cunning", ability = { id = "guard", potency = 3 }, barks = { start = { "*grinding stone*" } } },
+	{ id = "gate_s", name = "Something from the deep Gate", kind = "creature", shape = "serpent", color = { 40, 30, 60 }, eye = { 255, 60, 90 }, temper = "cunning", ability = { id = "burn", potency = 3 }, barks = { start = { "*the air goes heavy*" } } },
+	{ id = "rogue_hunter", name = "Rogue Hunter", temper = "cunning", ability = { id = "bleed", potency = 2 }, look = { skin = "sand", hair = "crop", hairColor = "ink", eyes = "brown", outfit = "hoodie", mark = "scar" }, barks = { start = { "You're not taking my licence." }, win = { "Stay out of my way." }, lose = { "Fine! Fine." } } },
 }

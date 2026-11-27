@@ -161,6 +161,20 @@ return {
 		chance = 0.65, -- chance each roll starts one
 	},
 
+	-- (BitLeveling) THE LIVE CITY: Gates that open in real time in the walkable 3D city
+	-- (server/HunterLive). `every` is the seconds between new Gates (a High-Danger life on the
+	-- server makes it about half), `maxIncidents` how many run at once, `civilians` how many
+	-- people walk the streets. Admins (and anyone in Studio) get a TEST GATE button.
+	hunterLive = {
+		enabled = true,
+		firstDelay = 45,
+		every = { 150, 320 },
+		maxIncidents = 2,
+		civilians = 24,
+		cityName = "Seoul",
+		country = "korea",
+	},
+
 	-- The store: Robux purchases that are looks only. Nothing here changes stats,
 	-- money, Glow, odds, lifespans or leaderboard scores.
 	-- Paste ids from the Creator Dashboard: Developer Products (kind = "product")

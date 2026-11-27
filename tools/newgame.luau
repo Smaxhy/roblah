@@ -85,6 +85,7 @@ local function projectFor(id: string): string
         "Shared": {
           "$className": "Folder",
           "Engine": { "$path": "../src/shared/Engine" },
+          "Hunter": { "$path": "../src/shared/Hunter" },
           "Base": { "$path": "../src/shared/Base" },
           "Games": {
             "$className": "Folder",
@@ -121,6 +122,7 @@ local function kitFor(id: string): string
     "Shared": {
       "$className": "Folder",
       "Engine": { "$path": "../src/shared/Engine" },
+          "Hunter": { "$path": "../src/shared/Hunter" },
       "Base": { "$path": "../src/shared/Base" },
       "Games": {
         "$className": "Folder",

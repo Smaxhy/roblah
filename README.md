@@ -1,4 +1,22 @@
-# A Life in the City — LifeSim Kit v0.18
+# BitLeveling
+
+A Roblox life simulator set in the world of the original **Solo Leveling** manhwa (a
+non-commercial fan game), built on the LifeSim blueprint kit below. Live a whole life before
+and under the Gates; awaken or don't; raid, run, hide, rebuild. The world simulates its own
+Gates (discovery, Association response, raids, Dungeon Breaks, Red Gates, Double Dungeons),
+follows the manhwa's public timeline on the news, and has two worlds (Normal and High-Danger).
+A live 3D city lets you walk as your own customizable **R6** character while Gates open around
+you in real time.
+
+- **Play:** open `build/BitLeveling.rbxlx` in Roblox Studio and press Play (build it with
+  `bash tools/build_game.sh BitLeveling --no-test`).
+- **Everything about it:** [`docs/BITLEVELING.md`](docs/BITLEVELING.md) (systems, canon vs.
+  original content, the two worlds, the live city, R6 customization, testing).
+- **The canon research:** [`docs/BITLEVELING_CANON.md`](docs/BITLEVELING_CANON.md).
+
+---
+
+# The LifeSim kit (v0.18) this is built on
 
 A BitLife-style life simulator for Roblox, mostly GUI, with a procedural 3D city drawn behind
 it. You live one life in the City, year by year, from birth to the end. The default content

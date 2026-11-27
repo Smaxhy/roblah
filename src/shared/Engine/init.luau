@@ -20,4 +20,5 @@ return {
 	Battle = require(script.Battle),
 	Pvp = require(script.Pvp),
 	Training = require(script.Training),
+	HunterWorld = require(script.HunterWorld),
 }

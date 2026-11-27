@@ -1,15 +1,17 @@
 --[[
-	ACTIVITIES of this game's own (Base gives one per stat, healing, the shop, odd jobs, moving).
-	Same shape as a card's choice, plus id, name, desc, category ("self" | "money" | "gear" |
-	"people" | "home"), minAge, maxAge, cost, cooldown, when.
+	ACTIVITIES of this game's own (the DO tab). Base adds training, study, rest and moving.
+	Money in million won.
 ]]
+local HUNTERS = { "hunter_e", "hunter_d", "hunter_c", "hunter_b", "hunter_a", "hunter_s" }
 return {
-	{
-		id = "st_fishing",
-		category = "self",
-		name = "Go fishing",
-		desc = "A quiet river, a long afternoon.",
-		minAge = 6,
-		result = { sanity = { 2, 5 }, money = { 0, 12 }, log = "You fished all afternoon. Sometimes the fish even cooperated." },
-	},
+	{ id = "bl_register", category = "self", name = "Register with the Association", desc = "Get measured and licensed. Legal raids, guild work.", minAge = 12, when = { form = HUNTERS, flags = { "unregistered" } }, result = { setFlags = { "licensed" }, clearFlags = { "unregistered" }, codex = { "lore_kha" }, log = "You were measured and licensed. It's official now." } },
+	{ id = "bl_hunter_gym", category = "self", name = "Train at a Hunter gym", desc = "Equipment built for people who can bench a car.", minAge = 14, cost = 1, when = { form = HUNTERS }, result = { strength = { 2, 4 }, vitality = { 1, 2 }, sanity = -1, log = "You trained until the machines complained." } },
+	{ id = "bl_mana_control", category = "self", name = "Mana control drills", desc = "Meditation, breathing and the boring work that keeps a Hunter alive.", minAge = 14, when = { form = HUNTERS }, result = { willpower = { 1, 3 }, intelligence = 1, sanity = 2, log = "An hour of stillness. Your mana settled like silt." } },
+	{ id = "bl_public_raid", category = "money", name = "Sign up for a public raid", desc = "The Association posts low-rank Gates for any licensed Hunter. Small shares, real risk.", minAge = 16, cooldown = 1, when = { form = HUNTERS, flags = { "licensed" } }, clash = { stat = "strength", foe = "A public raid's monsters", enemy = "gate_e", coins = 2, base = 5, coinPower = 3, fight = true, fixed = true }, win = { money = { 1, 4 }, strength = 1, log = "The raid went cleanly. Your share covered the month." }, lose = { vitality = { -16, -6 }, log = "You were hurt in the first chamber and sat out the rest.", cause = "Killed on a public raid" } },
+	{ id = "bl_sell_crystals", category = "money", name = "Sell crystals to a broker", desc = "Whatever you brought out. Brokers pay less than the market and ask fewer questions.", minAge = 16, cooldown = 1, when = { form = HUNTERS }, result = { money = { 1, 6 }, log = "The broker weighed them, sniffed, and paid." } },
+	{ id = "bl_gate_drill", category = "self", name = "Take a Gate safety course", desc = "Free from the district office: shelters, routes, what not to do.", minAge = 10, cooldown = 4, result = { willpower = 1, intelligence = 1, sanity = 1, log = "You learned where every shelter in your district is." } },
+	{ id = "bl_watch_news", category = "self", name = "Catch up on Hunter news", desc = "Raids, breaks, rankings. Everyone does.", minAge = 8, result = { intelligence = 1, sanity = { -1, 1 }, log = "You read the news. The world kept going." } },
+	{ id = "bl_part_time", category = "money", name = "Pick up shifts", desc = "Deliveries, a restaurant kitchen, a night counter.", minAge = 15, result = { money = { 1, 3 }, sanity = -1, log = "You worked a few shifts. It paid what it paid." } },
+	{ id = "bl_healer", category = "self", name = "See a Hunter Healer", desc = "Expensive. Fast.", minAge = 6, cost = 6, result = { vitality = { 15, 35 }, log = "Twenty minutes of warm light and the pain was gone." } },
+	{ id = "bl_clinic", category = "self", name = "Go to the clinic", desc = "Slow and cheap.", minAge = 2, cost = 1, result = { vitality = { 4, 10 }, log = "The clinic patched you up." } },
 }

@@ -25,6 +25,7 @@ local Progress = require(script.Progress)
 local Guide = require(script.Guide)
 local Duels = require(script.Duels)
 local Battles = require(script.Battles)
+local HunterLive = require(script.HunterLive)
 
 local Server = {}
 
@@ -1443,6 +1444,8 @@ function Server.start()
 	info.storeOpen = Store.enabled == true
 	Surnames.install(S)
 	Admin.install(S)
+	-- (BitLeveling) the live city: Gates on a clock, R6 characters, NPCs (server/HunterLive)
+	HunterLive.install(S)
 
 	-- ── request plumbing ────────────────────────────────────────────────────
 
