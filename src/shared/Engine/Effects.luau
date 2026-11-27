@@ -310,7 +310,7 @@ function Effects.apply(engine, life, result, report, extraCtx)
 	end
 	-- (v0.19) the party (Engine/Party.luau): loyalty, partyLoyalty, partyJoin, partyLeave,
 	-- partyShare, partyRecover
-	if engine.partyEffect and (result.loyalty ~= nil or result.partyLoyalty ~= nil or result.partyJoin or result.partyLeave or result.partyShare ~= nil or result.partyRecover ~= nil) then
+	if engine.partyEffect and (result.loyalty ~= nil or result.partyLoyalty ~= nil or result.partyJoin or result.partyLeave or result.partyShare ~= nil or result.partyRecover ~= nil or result.partyPay ~= nil) then
 		engine:partyEffect(life, result, target, extra)
 	end
 	if result.befriend and type(target) == "table" and target.alive and target.kind == "acquaintance" then

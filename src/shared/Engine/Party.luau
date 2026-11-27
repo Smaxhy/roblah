@@ -182,6 +182,9 @@ function Party.enabled(sim: any): boolean
 end
 
 -- ── the roster (pack.roster: a list of NPC defs) ──────────────────────────────
+-- The game's named people come from two lists of the same shape: pack.roster (the game's
+-- Roster.luau) and pack.party.cast (the people its own cards introduce). The roster wins
+-- when both name the same id.
 function Party.rosterDef(sim: any, id: any): any
 	if type(id) ~= "string" then
 		return nil
@@ -189,9 +192,12 @@ function Party.rosterDef(sim: any, id: any): any
 	local idx = sim._rosterIndex
 	if not idx then
 		idx = {}
-		for _, d in sim.pack.roster or {} do
-			if type(d) == "table" and type(d.id) == "string" then
-				idx[d.id] = d
+		local cast = (sim.pack.party and sim.pack.party.cast) or {}
+		for _, list in { sim.pack.roster or {}, cast } do
+			for _, d in list do
+				if type(d) == "table" and type(d.id) == "string" and idx[d.id] == nil then
+					idx[d.id] = d
+				end
 			end
 		end
 		sim._rosterIndex = idx
@@ -199,7 +205,8 @@ function Party.rosterDef(sim: any, id: any): any
 	return idx[id]
 end
 
--- an addRelation spec with a roster id fills in what the event didn't say (name, age)
+-- an addRelation spec with a roster id: the roster says who they are (their name, and their
+-- age from the Gate Year they were born in), whatever the card guessed
 function Party.prepare(sim: any, life: any, spec: any): any
 	if not Party.enabled(sim) or type(spec) ~= "table" or type(spec.roster) ~= "string" then
 		return spec
@@ -209,23 +216,24 @@ function Party.prepare(sim: any, life: any, spec: any): any
 		return spec
 	end
 	local out = table.clone(spec)
-	if out.name == nil and type(def.first) == "string" then
+	if type(def.first) == "string" and def.first ~= "" then
 		out.name = def.first .. (if type(def.last) == "string" and def.last ~= "" then " " .. def.last else "")
 	end
-	if out.age == nil and type(def.born) == "number" then
+	if type(def.born) == "number" then
 		out.age = math.max(0, (life.year or 0) - def.born)
 	end
 	return out
 end
 
--- a relation already in this life for the same roster NPC (an NPC is met once)
+-- a relation already in this life for the same roster NPC (an NPC is met once, and someone
+-- who died stays gone: a card that would introduce them again changes nothing)
 function Party.existing(sim: any, life: any, spec: any): any
 	if not Party.enabled(sim) or type(spec) ~= "table" or type(spec.roster) ~= "string" then
 		return nil
 	end
 	for _, rel in life.relations do
-		if rel.roster == spec.roster and rel.alive then
-			if type(spec.bond) == "number" then
+		if rel.roster == spec.roster then
+			if rel.alive and type(spec.bond) == "number" then
 				rel.bond = math.max(rel.bond or 0, math.min(100, spec.bond))
 			end
 			return rel
@@ -235,9 +243,10 @@ function Party.existing(sim: any, life: any, spec: any): any
 end
 
 -- ── a person's profile ─────────────────────────────────────────────────────
-local function pickTraits(roll: (number) -> number, kind: string, n: number): { string }
+-- (have: traits they already have, topped up to n with ones that don't clash with them)
+local function pickTraits(roll: (number) -> number, kind: string, n: number, have: { string }?): { string }
 	local lean = KIND_TRAITS[kind] or {}
-	local out = {}
+	local out = if have then table.clone(have) else {}
 	local guard = 0
 	while #out < n and guard < 40 do
 		guard += 1
@@ -320,17 +329,16 @@ function Party.ensure(sim: any, life: any, rel: any, spec: any?)
 			end
 			rel.class = c
 		end
-		if type(s.traits) == "table" and #s.traits > 0 then
-			rel.traits = {}
+		local said = {}
+		if type(s.traits) == "table" then
 			for _, t in s.traits do
-				if Party.TRAITS[t] then
-					table.insert(rel.traits, t)
+				if Party.TRAITS[t] and not table.find(said, t) then
+					table.insert(said, t)
 				end
 			end
 		end
-		if not rel.traits or #rel.traits == 0 then
-			rel.traits = pickTraits(roll, rel.kind, 2)
-		end
+		-- (what the meeting said about them, and the rest of who they are)
+		rel.traits = pickTraits(roll, rel.kind, math.max(2, #said), said)
 		if type(s.work) == "string" then
 			rel.work = s.work
 		end
@@ -360,6 +368,8 @@ function Party.onAdd(sim: any, life: any, rel: any, spec: any)
 	end
 	if type(spec) == "table" and type(spec.roster) == "string" then
 		rel.roster = spec.roster
+		-- (the flag a card can wait on: met_<npc id>)
+		life.flags["met_" .. spec.roster] = true
 	end
 	Party.ensure(sim, life, rel, spec)
 	local how = type(spec) == "table" and (spec.role or spec.text)
@@ -436,25 +446,38 @@ function Party.likesOf(sim: any, life: any, rel: any): ({ string }, { string })
 	while #dislikes < math.min(2, #bad) and guard < 30 do
 		guard += 1
 		local l = bad[roll(#bad)]
-		if not table.find(dislikes, l) then
+		-- (nobody can't stand the thing they love)
+		if not table.find(dislikes, l) and not table.find(likes, l) then
 			table.insert(dislikes, l)
 		end
 	end
 	return likes, dislikes
 end
 
--- does a gift answer to one of these likes? (a gift's `words`, anywhere in the like)
+-- does a gift answer to one of these likes? (one of a gift's `words`, as a whole word or a
+-- plural of one, anywhere in the like: "tea" is in "green tea" but not in "steamed buns")
+local function wordIn(hay: string, word: string): boolean
+	local w = string.gsub(string.lower(word), "[%(%)%.%%%+%-%*%?%[%]%^%$]", "%%%0")
+	for _, tail in { "", "s", "es" } do
+		if string.find(hay, "%f[%w]" .. w .. tail .. "%f[%W]") then
+			return true
+		end
+	end
+	return false
+end
+Party.wordIn = wordIn
 local function giftMatches(gift: any, list: { string }): string?
 	for _, l in list do
 		local low = string.lower(l)
 		for _, w in gift.words or {} do
-			if string.find(low, string.lower(w), 1, true) then
+			if wordIn(low, w) then
 				return l
 			end
 		end
 	end
 	return nil
 end
+Party.giftMatches = giftMatches
 
 function Party.gift(sim: any, id: any): any
 	for _, g in cfgOf(sim).gifts or {} do
@@ -756,6 +779,8 @@ function Party.odds(sim: any, life: any, rel: any): (number, { any }, string?)
 		why = "Too young for a party."
 	elseif life.age < (cfg.minAge or 16) then
 		why = "You're too young to lead a party."
+	elseif (rel.age or 0) >= (cfg.retireAge or 62) - 2 then
+		why = "Their raiding days are over."
 	end
 	local t = traitSet(rel)
 	local p = cfg.baseOdds or 0.3
@@ -838,8 +863,8 @@ function Party.odds(sim: any, life: any, rel: any): (number, { any }, string?)
 	if rel.refusedAt and life.age - rel.refusedAt < 2 then
 		p += add("They said no not long ago", -0.12)
 	end
-	if (rel.age or 0) >= 55 then
-		p += add("Their raiding days are behind them", -0.22)
+	if (rel.age or 0) >= 50 then
+		p += add("They're getting old for Gates", if (rel.age or 0) >= 55 then -0.3 else -0.14)
 	end
 	p = math.clamp(p, 0.02, 0.95)
 	return math.floor(p * 100 + 0.5) / 100, factors, why
@@ -1313,16 +1338,57 @@ function Party.afterChoice(sim: any, life: any, event: any, index: number, repor
 		local wonOk = not spec.won or (report and report.clash and report.clash.won == true)
 		if (spec.choice == nil or table.find(choices, index) ~= nil) and wonOk and not life.flags[key] then
 			life.flags[key] = true
-			local extra = {}
-			local rel = sim:meetSomeone(life, extra, spec)
-			if rel and spec.kind and sim.pack.relationKinds[spec.kind] then
-				rel.kind = spec.kind
-			end
-			for _, e in extra do
-				sim:push(life, report, e)
+			if spec.adopt then
+				-- the card already brought someone into your life (its own addRelation): they
+				-- are this person (the newest relation of that kind, met this year)
+				Party.adopt(sim, life, spec)
+			else
+				local extra = {}
+				local rel = sim:meetSomeone(life, extra, spec)
+				if rel and rel.alive and spec.kind and sim.pack.relationKinds[spec.kind] then
+					rel.kind = spec.kind
+				end
+				for _, e in extra do
+					sim:push(life, report, e)
+				end
 			end
 		end
 	end
+end
+
+-- a castMeet with adopt = true: the person the card just added becomes the roster's (or gets
+-- the rank, class and personality the meeting says)
+function Party.adopt(sim: any, life: any, spec: any): any
+	local kind = spec.kind or "friend"
+	local pick = nil
+	for _, rel in life.relations do
+		if rel.alive and rel.kind == kind and rel.userId == nil and rel.roster == nil and (rel.metAt or -1) == life.age then
+			if pick == nil or rel.id > pick.id then
+				pick = rel
+			end
+		end
+	end
+	if not pick then
+		return nil
+	end
+	local def = type(spec.roster) == "string" and Party.rosterDef(sim, spec.roster)
+	if def and Party.existing(sim, life, spec) == nil then
+		pick.roster = def.id
+		life.flags["met_" .. def.id] = true
+		pick.first = def.first or pick.first
+		pick.last = def.last or pick.last
+		if type(def.born) == "number" then
+			pick.age = math.max(0, (life.year or 0) - def.born)
+		end
+	end
+	if type(spec.role) == "string" then
+		pick.role = sim:render(life, spec.role)
+	end
+	-- profile them again with what the meeting says
+	pick.prof = nil
+	pick.traits = nil
+	Party.ensure(sim, life, pick, spec)
+	return pick
 end
 
 -- a party card (pack.party.cards[kind]) about one person, queued for this year
@@ -1361,6 +1427,23 @@ function Party.effect(sim: any, life: any, result: any, target: any, extra: { an
 	end
 	if type(result.partyShare) == "number" and m then
 		m.share = math.clamp((m.share or 0) + result.partyShare, 0, 0.4)
+	end
+	-- partyPay = n: pay them what you owe (every retainer missed) and n more years of it, if
+	-- you can; if you can't, it's a promise you couldn't keep
+	if type(result.partyPay) == "number" and m then
+		local owed = (m.retainer or 0) * ((m.unpaid or 0) + math.max(0, result.partyPay))
+		if owed <= 0 then
+			m.unpaid = 0
+		elseif life.money >= owed then
+			life.money -= owed
+			m.unpaid = 0
+			m.prepaid = (m.prepaid or 0) + math.max(0, math.floor(result.partyPay))
+			m.loyalty = math.clamp(m.loyalty + 10, 0, 100)
+			table.insert(extra, { kind = "system", tone = "good", text = string.format("You paid %s %d %s.", target.first, owed, sim.pack.meta.currency), deltas = { money = -owed } })
+		else
+			m.loyalty = math.clamp(m.loyalty - 8, 0, 100)
+			table.insert(extra, { kind = "system", tone = "bad", text = string.format("You don't have the %d %s you owe %s. They saw you count it twice.", owed, sim.pack.meta.currency, target.first) })
+		end
 	end
 	if result.partyJoin and type(target) == "table" and target.alive and not m then
 		Party.addMember(sim, life, target, extra, "Asked to join your party, and you said yes.")
@@ -1553,7 +1636,13 @@ local function trainResult(sim: any, life: any, rel: any, def: any): any
 			end
 		end
 	end
-	best = best or (if t > 0 then sim.roles.fight else sim.roles.work)
+	if not best then
+		-- someone without a rank: you run and lift together (Speed, a little strength)
+		best = if t > 0 then sim.roles.fight else (sim.roles.speed or sim.roles.fight)
+		if t == 0 and sim.roles.speed and sim.roles.fight ~= best then
+			second = sim.roles.fight
+		end
+	end
 	result[best] = { gain, gain + 1 }
 	if second then
 		result[second] = { 0, 1 }
@@ -1605,6 +1694,10 @@ function Party.interact(sim: any, life: any, rel: any, def: any, option: any, re
 			end
 		else
 			result = { bond = if t.greedy then { 4, 8 } elseif t.cold then { 1, 4 } else { 3, 6 }, log = string.format("You gave %s %s. They seemed glad of it.", rel.first, g.name) }
+			if (g.price or 0) <= 0 then
+				-- (something that cost you nothing but time: it counts, a little)
+				result.bond = if t.kind or t.loyal then { 2, 5 } elseif t.greedy then { 0, 2 } else { 1, 3 }
+			end
 			if t.greedy and (g.price or 0) >= 10 then
 				result.bond = { 7, 12 }
 			end
@@ -1707,11 +1800,52 @@ local function peopleYearly(sim: any, life: any, report: any)
 	end
 end
 
+-- the game's named people (pack.roster) come into a life on their own too: now and then you
+-- meet one, most likely someone who lives in your city. (Cards introduce them as well; the
+-- people a card is about, pack.party.cast, only ever come through their card.)
+function Party.rosterMeet(sim: any, life: any, report: any)
+	local roster = sim.pack.roster
+	local cfg = cfgOf(sim)
+	if type(roster) ~= "table" or #roster == 0 or life.age < (cfg.minAge or 16) then
+		return
+	end
+	if (life.year or 0) < firstGateYear(sim) - 6 or not Rng.chance(life, cfg.rosterMeet or 0.14) then
+		return
+	end
+	local pool, weights = {}, {}
+	for _, d in roster do
+		if type(d) == "table" and type(d.id) == "string" and not d.canon and not life.flags["met_" .. d.id] then
+			local age = if type(d.born) == "number" then (life.year or 0) - d.born else 30
+			if age >= 16 and age <= 75 and math.abs(age - life.age) <= 30 then
+				table.insert(pool, d)
+				table.insert(weights, if d.home ~= nil and d.home == life.district then 5 else 1)
+			end
+		end
+	end
+	if #pool == 0 then
+		return
+	end
+	local d = pool[Rng.weighted(life, weights) or 1]
+	local role = if type(d.role) == "string" and d.role ~= "" then d.role else "someone from around the city"
+	if type(d.guild) == "string" and d.guild ~= "" then
+		role ..= ", " .. d.guild
+	end
+	if d.home ~= nil and d.home == life.district then
+		role ..= " (they live nearby)"
+	end
+	local extra = {}
+	sim:meetSomeone(life, extra, { roster = d.id, role = role, bond = { 14, 26 } })
+	for _, e in extra do
+		sim:push(life, report, e)
+	end
+end
+
 function Party.yearly(sim: any, life: any, report: any)
 	if not Party.enabled(sim) or not life.alive then
 		return
 	end
 	peopleYearly(sim, life, report)
+	Party.rosterMeet(sim, life, report)
 	local st = life.party
 	if not st then
 		return
@@ -1763,7 +1897,11 @@ function Party.yearly(sim: any, life: any, report: any)
 		m.loyalty = math.clamp(m.loyalty + math.clamp((target - m.loyalty) * 0.25, -3, 3), 0, 100)
 		-- the retainer
 		local due = m.retainer or 0
-		if due > 0 then
+		if due > 0 and (m.prepaid or 0) > 0 then
+			-- (paid ahead, the year they asked about it)
+			m.prepaid -= 1
+			m.unpaid = 0
+		elseif due > 0 then
 			if life.money >= due then
 				life.money -= due
 				paid += due
@@ -1937,14 +2075,37 @@ function Party.lookOf(sim: any, life: any, rel: any): any
 	end
 	local civ = (rel.rank or 0) == 0
 	if type(preset) ~= "string" then
-		if civ then
-			local list = presets.civilian or { "office" }
-			preset = list[roller(tostring(life.id) .. ":" .. tostring(rel.id) .. ":look")(#list)]
-		else
-			preset = presets[rel.class or "fighter"] or "striker"
+		preset = nil
+		-- what they do says what they wear (a Surveillance agent, a porter, a cook...)
+		local hay = string.lower((rel.role or "") .. " " .. (rel.work or ""))
+		for _, b in presets.byWords or {} do
+			for _, w in b.words or {} do
+				if wordIn(hay, w) then
+					preset = b.preset
+					break
+				end
+			end
+			if preset then
+				break
+			end
 		end
+		if not preset and civ then
+			-- everyone else without a rank: everyday clothes (a student's, if they're young)
+			local list = if (rel.age or 30) < 20 and presets.young then presets.young else (presets.civilian or { "office" })
+			preset = list[roller(tostring(life.id) .. ":" .. tostring(rel.id) .. ":look")(#list)]
+		end
+		-- (a Hunter with nothing else to go on wears their class's outfit for their rank:
+		-- the client's Looks.classPreset(class, rank))
 	end
-	return { preset = preset, overrides = overrides, seed = hashOf(tostring(life.id) .. ":" .. tostring(rel.id)), rank = rel.rank or 0, civilian = civ }
+	return {
+		preset = preset,
+		overrides = overrides,
+		seed = hashOf(tostring(life.id) .. ":" .. tostring(rel.id)),
+		rank = rel.rank or 0,
+		class = if civ then nil else (rel.class or "fighter"),
+		civilian = civ,
+		age = rel.age,
+	}
 end
 
 local function traitsView(rel: any): { any }

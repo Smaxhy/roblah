@@ -25,6 +25,13 @@
 ]]
 
 local Skills = require(script.Parent:WaitForChild("Skills"))
+-- (v0.19) bonds with everyone you meet, and a party of NPCs (Interactions.luau, Engine/Party)
+local Interactions = require(script.Parent:WaitForChild("Interactions"))
+-- the game's named NPCs (Roster.luau), when the game has one: an empty list until then
+local Roster = (function(): { any }
+	local m = script.Parent:FindFirstChild("Roster")
+	return if m then require(m :: any) else {}
+end)()
 
 local function gateYear(y: number): string
 	if y < 0 then
@@ -456,7 +463,14 @@ return {
 		oldAge = { "Died in their sleep, an old person", "Died of old age, with family close", "Died peacefully, years after the last Gate they saw" },
 	},
 
+	-- (v0.19) everyone you meet, what you can do with them, and the party's own cards
+	people = Interactions.people,
+	events = Interactions.cards,
+
 	pack = {
+		-- (v0.19) the party (Engine/Party.luau) and the game's named NPCs (Roster.luau)
+		party = Interactions.party,
+		roster = Roster,
 		-- class skills and birth talents (Skills.luau): talents lean to Hunter classes
 		traits = Skills.traits,
 		talents = Skills.talents,

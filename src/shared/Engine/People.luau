@@ -52,10 +52,15 @@ function People.meet(self: any, life: any, extra: { any }?, role: any): any
 	local spec: any = nil
 	if type(role) == "table" then
 		spec = role
-		if type(spec.chance) == "number" and not Rng.chance(life, spec.chance) then
+		if spec.when and not Conditions.check(spec.when, life, self.pack, { noChance = true }) then
 			return nil
 		end
-		if spec.when and not Conditions.check(spec.when, life, self.pack, { noChance = true }) then
+		-- (v0.19) a card's meetings stop when your life is already full of half-known faces
+		-- (the game's named people always come: they're who the card is about)
+		if spec.roster == nil and People.count(life) >= (cfg.cap or 6) + 4 then
+			return nil
+		end
+		if type(spec.chance) == "number" and not Rng.chance(life, spec.chance) then
 			return nil
 		end
 		role = spec.role or spec.text
@@ -92,7 +97,12 @@ function People.meet(self: any, life: any, extra: { any }?, role: any): any
 		end
 		add.role = role
 		add.age = if spec and spec.age ~= nil then Rng.roll(life, spec.age) else ageRoll()
+		local before = life.nextRelId
 		rel = self:addRelation(life, add)
+		if rel and rel.id < before then
+			-- (one of the game's named people you already know: nobody new to meet)
+			return rel
+		end
 	else
 		-- (a pack without a party: the dice fall exactly as they always did)
 		rel = self:addRelation(life, add)

@@ -61,7 +61,7 @@ local BASE_RESULT_KEYS = {
 	turfJoin = 1, turfTake = 1, turfLose = 1, turfGuard = 1, turfLeave = 1,
 	caseOpen = 1, caseClue = 1, caseClose = 1, limitBreak = 1, marry = 1, reconcile = 1,
 	lifespan = 1, train = 1, -- (v0.17)
-	loyalty = 1, partyLoyalty = 1, partyJoin = 1, partyLeave = 1, partyShare = 1, partyRecover = 1, -- (v0.19) Engine/Party.luau
+	loyalty = 1, partyLoyalty = 1, partyJoin = 1, partyLeave = 1, partyShare = 1, partyRecover = 1, partyPay = 1, -- (v0.19) Engine/Party.luau
 }
 -- filled from the pack's own stats (pack.stats.order) at the start of every run
 local RESULT_KEYS: { [string]: number } = {}
@@ -101,7 +101,16 @@ function Validate.run(pack)
 	local PARTY_CLASSES = { fighter = 1, mage = 1, assassin = 1, tanker = 1, ranger = 1, healer = 1 }
 	local PARTY_TRAITS = { brave = 1, cautious = 1, greedy = 1, loyal = 1, proud = 1, kind = 1, reckless = 1, cold = 1, cheerful = 1, ambitious = 1, honest = 1, scheming = 1 }
 	local rosterIds: { [string]: any } = {}
-	local rosterList: { any } = if type(pack.roster) == "table" then pack.roster else {}
+	-- (the roster, and the people a pack's own cards introduce: pack.party.cast, same shape)
+	local rosterList: { any } = {}
+	if pack.roster ~= nil and type(pack.roster) ~= "table" then
+		table.insert(errors, "roster: must be a list of NPC defs")
+	end
+	for _, list in { if type(pack.roster) == "table" then pack.roster else {}, (type(pack.party) == "table" and type(pack.party.cast) == "table" and pack.party.cast) or {} } do
+		for _, d in list do
+			table.insert(rosterList, d)
+		end
+	end
 	for i, d in rosterList do
 		if type(d) == "table" and type(d.id) == "string" then
 			rosterIds[d.id] = d
@@ -128,7 +137,7 @@ function Validate.run(pack)
 			err(where, "rank must be a letter E..S, a number, or a { low, high } range")
 		end
 	end
-	local MEET_KEYS = { role = 1, text = 1, rank = 1, class = 1, hunter = 1, kind = 1, bond = 1, age = 1, chance = 1, traits = 1, work = 1, roster = 1, name = 1, when = 1, choice = 1, won = 1 }
+	local MEET_KEYS = { role = 1, text = 1, rank = 1, class = 1, hunter = 1, kind = 1, bond = 1, age = 1, chance = 1, traits = 1, work = 1, roster = 1, name = 1, when = 1, choice = 1, won = 1, adopt = 1 }
 	local function checkMeet(where, m)
 		for k in m do
 			if not MEET_KEYS[k] then
@@ -586,7 +595,7 @@ function Validate.run(pack)
 			warn(where, "bond only does something in interactions (with one person)")
 		end
 		-- (v0.19) the party: loyalty and leaving are about one person (a party card, a scene)
-		if (r.loyalty ~= nil or r.partyLeave or r.partyJoin or r.partyShare ~= nil) and not allowRelTokens then
+		if (r.loyalty ~= nil or r.partyLeave or r.partyJoin or r.partyShare ~= nil or r.partyPay ~= nil) and not allowRelTokens then
 			warn(where, "loyalty, partyJoin, partyLeave and partyShare only do something with one person (an interaction, a scene, a party card)")
 		end
 		if r.partyShare ~= nil and (type(r.partyShare) ~= "number" or r.partyShare < -0.4 or r.partyShare > 0.4) then
