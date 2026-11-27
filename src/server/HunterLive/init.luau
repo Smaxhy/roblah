@@ -575,8 +575,8 @@ function HunterLive.install(S)
 				item = { base = base, stars = stars, shiny = shiny }
 			end
 		end
-		local model = R6Rig.build(look, { name = player.Name, hair = hair, weapon = item })
 		local prank = rankOf(session)
+		local model = R6Rig.build(look, { name = player.Name, hair = hair, weapon = item, rank = prank })
 		local hum = model:FindFirstChildOfClass("Humanoid") :: Humanoid
 		hum.MaxHealth = RANK_HP[prank]
 		hum.Health = hum.MaxHealth
@@ -987,7 +987,7 @@ function HunterLive.install(S)
 		return { ok = false, error = "Nobody near you needs help right now." }
 	end
 	function handlers.r6Get(_player, session)
-		return { ok = true, look = lookOf(session) }
+		return { ok = true, look = lookOf(session), rank = rankOf(session) }
 	end
 	function handlers.r6Save(player, session, payload)
 		local look = Looks.clean(type(payload) == "table" and payload.look or nil)

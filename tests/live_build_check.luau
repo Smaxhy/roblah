@@ -30,6 +30,8 @@ end }
 Loader.globals = {
 	Instance = I, UDim = roblox.UDim, UDim2 = roblox.UDim2, Vector2 = roblox.Vector2, Vector3 = roblox.Vector3,
 	CFrame = roblox.CFrame, Color3 = roblox.Color3, Enum = roblox.Enum, Font = roblox.Font, Random = RandomStub,
+	ColorSequence = roblox.ColorSequence, ColorSequenceKeypoint = roblox.ColorSequenceKeypoint,
+	NumberSequence = roblox.NumberSequence, NumberSequenceKeypoint = roblox.NumberSequenceKeypoint, NumberRange = roblox.NumberRange,
 	game = { GetService = function(_, name)
 		if name == "ReplicatedStorage" then
 			return { WaitForChild = function()
@@ -91,6 +93,50 @@ local okCiv, e2 = pcall(function()
 	end
 end)
 check(okCiv, "civilian R6 rigs build" .. (if okCiv then "" else ": " .. tostring(e2)))
+
+-- every option of every field builds (a Hunter rig, with armor and a rank for the aura), and
+-- every preset makes a clean look
+do
+	local Looks = Loader.require(shared.Hunter.Looks)
+	local R6Rig = Loader.require(shared.Hunter.R6Rig)
+	local built, bad = 0, {}
+	for field, listName in Looks.FIELDS do
+		if field ~= "hair" then
+			for _, o in Looks[listName] do
+				local look = table.clone(Looks.DEFAULT)
+				look[field] = o.id
+				look.armor = if field == "armor" then o.id else "plate"
+				local ok, err = pcall(R6Rig.build, look, { name = "Opt", rank = 4 })
+				if ok then
+					built += 1
+				else
+					table.insert(bad, field .. "=" .. tostring(o.id) .. ": " .. tostring(err))
+				end
+			end
+		end
+	end
+	check(#bad == 0, string.format("every look option builds on a real rig (%d built)%s", built, if #bad > 0 then ": " .. table.concat(bad, "; ") else ""))
+	local presetsOk = true
+	for _, p in Looks.PRESETS do
+		local look = Looks.applyPreset(Looks.DEFAULT, p.id)
+		for k, v in p.look do
+			if look[k] ~= v then
+				presetsOk = false
+				print("   preset " .. p.id .. " lost " .. k .. "=" .. tostring(v))
+			end
+		end
+		local ok = pcall(R6Rig.build, look, { name = "Preset", rank = 3 })
+		presetsOk = presetsOk and ok
+	end
+	check(presetsOk, string.format("all %d outfit presets are valid looks and build", #Looks.PRESETS))
+	local m = R6Rig.build(Looks.applyPreset(Looks.DEFAULT, "mage"), { name = "Glow", rank = 6 })
+	local aura = m:FindFirstChild("Torso") and m.Torso:FindFirstChild("AuraAttachment")
+	check(aura ~= nil and aura:FindFirstChild("Aura") ~= nil, "an aura is particles on the body")
+	local plate = m:FindFirstChild("FacePlate")
+	check(plate ~= nil and plate:FindFirstChild("Glow") ~= nil, "glowing eyes are drawn unlit on the face")
+	local helm = R6Rig.build(Looks.applyPreset(Looks.DEFAULT, "tank"), { name = "Helm" })
+	check(helm:FindFirstChild("Helm") ~= nil and helm:FindFirstChild("BlockHair") == nil, "a helmet covers the hair")
+end
 -- every monster kind builds, with its joints
 local Monsters = Npcs.Monsters
 local kinds = 0

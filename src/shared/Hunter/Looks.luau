@@ -171,6 +171,14 @@ Looks.TOPS = {
 	{ id = "uniform", name = "School Uniform", sleeves = "long", tie = true, collar = true },
 	{ id = "robe", name = "Mage's Robe", sleeves = "long", tails = true, hood = true },
 	{ id = "tank", name = "Tank Top", sleeves = "none" },
+	{ id = "turtleneck", name = "Turtleneck", sleeves = "long", highNeck = true },
+	{ id = "guild", name = "Guild Uniform", sleeves = "long", collar = true, emblem = true, belt = true },
+	{ id = "assoc", name = "Association Blazer", sleeves = "long", open = true, tie = true, badge = true },
+	{ id = "sleeveless_hoodie", name = "Sleeveless Hoodie", sleeves = "none", hood = true, pocket = true },
+	{ id = "gi", name = "Martial Gi", sleeves = "long", wrap = true, belt = true },
+	{ id = "waistcoat", name = "Waistcoat & Shirt", sleeves = "long", waistcoat = true, tie = true },
+	{ id = "apron", name = "Shop Apron", sleeves = "short", apron = true },
+	{ id = "medic", name = "Healer's Coat", sleeves = "long", open = true, collar = true, tails = true, cross = true },
 }
 Looks.BOTTOMS = {
 	{ id = "jeans", name = "Jeans" },
@@ -180,12 +188,18 @@ Looks.BOTTOMS = {
 	{ id = "shorts", name = "Shorts", short = true },
 	{ id = "skirt", name = "Pleated Skirt", skirt = true },
 	{ id = "armored", name = "Armored Greaves", plates = true },
+	{ id = "ripped", name = "Ripped Jeans", rips = true },
+	{ id = "wide", name = "Wide Trousers", wide = true },
+	{ id = "tactical_skirt", name = "Tactical Skirt", skirt = true, pockets = true },
 }
 Looks.SHOES = {
 	{ id = "sneakers", name = "Sneakers" },
 	{ id = "boots", name = "Combat Boots", tall = true },
 	{ id = "dress", name = "Dress Shoes" },
 	{ id = "sandals", name = "Sandals", low = true },
+	{ id = "sabatons", name = "Armored Sabatons", tall = true, metal = true },
+	{ id = "runners", name = "Running Shoes", trimSole = true },
+	{ id = "geta", name = "Wooden Clogs", low = true, wood = true },
 }
 -- Hunter gear over the clothes (the look only; real gear is bought in a life)
 Looks.ARMOR = {
@@ -218,6 +232,112 @@ Looks.EXTRAS = {
 	{ id = "beanie", name = "Beanie" },
 	{ id = "eyepatch", name = "Eyepatch" },
 	{ id = "bandage", name = "Bandaged Cheek" },
+	{ id = "choker", name = "Choker" },
+	{ id = "earrings", name = "Earrings" },
+	{ id = "monocle", name = "Monocle" },
+	{ id = "half_mask", name = "Raider's Half Mask" },
+	{ id = "medical", name = "Medical Mask" },
+	{ id = "nose_band", name = "Nose Bandage" },
+}
+
+-- marks on the face: scars a Gate left, freckles, paint (drawn on the face plate)
+Looks.MARKS = {
+	{ id = "none", name = "None" },
+	{ id = "scar_eye", name = "Scar Over the Eye" },
+	{ id = "scar_cheek", name = "Cheek Scar" },
+	{ id = "scar_nose", name = "Scar Across the Nose" },
+	{ id = "scar_cross", name = "Crossed Scar" },
+	{ id = "scar_lip", name = "Split-Lip Scar" },
+	{ id = "claw", name = "Claw Marks" },
+	{ id = "burn", name = "Burn Scar" },
+	{ id = "freckles", name = "Freckles" },
+	{ id = "beauty", name = "Beauty Mark" },
+	{ id = "blush", name = "Blush" },
+	{ id = "dark_circles", name = "Dark Circles" },
+	{ id = "war_paint", name = "War Paint" },
+	{ id = "tear", name = "Tear Mark" },
+	{ id = "mana_veins", name = "Mana Veins (glow)", glow = true },
+}
+-- eyes that shine with mana (a glow drawn over the irises, unlit)
+Looks.EYE_GLOW = {
+	{ id = "none", name = "No glow" },
+	{ id = "blue", name = "Mana Blue", color = { 90, 180, 255 } },
+	{ id = "red", name = "Red", color = { 255, 60, 60 } },
+	{ id = "gold", name = "Gold", color = { 255, 200, 70 } },
+	{ id = "violet", name = "Violet", color = { 180, 110, 255 } },
+	{ id = "green", name = "Green", color = { 110, 255, 150 } },
+	{ id = "white", name = "White", color = { 235, 245, 255 } },
+}
+-- on the head, over the hair (some cover it)
+Looks.HEADWEAR = {
+	{ id = "none", name = "Nothing" },
+	{ id = "hood", name = "Hood Up", hidesHair = true },
+	{ id = "raid_helmet", name = "Raid Helmet", hidesHair = true },
+	{ id = "knight_helm", name = "Knight's Helm", hidesHair = true },
+	{ id = "horned_helm", name = "Horned Helm", hidesHair = true },
+	{ id = "assassin_wrap", name = "Assassin's Wrap", hidesHair = true },
+	{ id = "hardhat", name = "Mining Hard Hat", hidesHair = true },
+	{ id = "mage_hat", name = "Mage's Hat" },
+	{ id = "circlet", name = "Mana Circlet" },
+	{ id = "healer_veil", name = "Healer's Veil" },
+	{ id = "bandana", name = "Bandana" },
+	{ id = "goggles", name = "Hunter Goggles" },
+	{ id = "headphones", name = "Headphones" },
+	{ id = "hairpin", name = "Crystal Hairpin" },
+}
+-- on the back
+Looks.BACK = {
+	{ id = "none", name = "Nothing" },
+	{ id = "cape", name = "Cape" },
+	{ id = "long_cape", name = "Commander's Cape" },
+	{ id = "tattered", name = "Tattered Cape" },
+	{ id = "quiver", name = "Quiver" },
+	{ id = "pack", name = "Raid Pack" },
+	{ id = "sheath", name = "Back Sheath" },
+	{ id = "shield", name = "Back Shield" },
+	{ id = "staff", name = "Staff on the Back" },
+	{ id = "scrolls", name = "Scroll Case" },
+	{ id = "crystal_crate", name = "Crystal Crate" },
+	{ id = "banner", name = "Guild Banner" },
+	{ id = "mana_wings", name = "Mana Wings (glow)" },
+}
+-- mana around the body: particles and a light (the rank's colour, or one you pick)
+Looks.AURA = {
+	{ id = "none", name = "No aura" },
+	{ id = "rank", name = "My Rank's Colour" },
+	{ id = "mana", name = "Mana Blue", color = { 90, 170, 255 } },
+	{ id = "crimson", name = "Crimson", color = { 255, 60, 70 } },
+	{ id = "violet", name = "Violet", color = { 170, 100, 255 } },
+	{ id = "gold", name = "Gold", color = { 255, 200, 80 } },
+	{ id = "frost", name = "Frost", color = { 170, 230, 255 } },
+	{ id = "verdant", name = "Verdant", color = { 110, 230, 130 } },
+	{ id = "ember", name = "Ember", color = { 255, 130, 50 } },
+	{ id = "void", name = "Void", color = { 70, 44, 110 } },
+}
+-- the colour of each rank (Spec forms), for the Rank aura: 0 unawakened, 1 E .. 6 S
+Looks.RANK_COLORS = {
+	[0] = { 200, 200, 210 },
+	{ 150, 160, 170 }, { 120, 200, 150 }, { 110, 170, 255 }, { 190, 120, 255 }, { 255, 170, 70 }, { 255, 90, 90 },
+}
+
+-- whole outfits in one click (the creator's PRESETS tab); a preset only sets what it names
+Looks.PRESETS = {
+	{ id = "assoc_agent", name = "Association Agent", desc = "Black blazer, the badge, an earpiece.", look = { top = "assoc", topColor = "black", trim = "white", bottom = "slacks", bottomColor = "black", shoes = "dress", armor = "none", extra = "earpiece", headwear = "none", back = "none", aura = "none" } },
+	{ id = "surveillance", name = "Surveillance Team", desc = "Tactical shirt, goggles, a pack of sensors.", look = { top = "tactical", topColor = "navy", trim = "mana", bottom = "cargo", bottomColor = "charcoal", shoes = "boots", armor = "vest", armorColor = "navy", headwear = "goggles", back = "pack", backColor = "navy", extra = "earpiece" } },
+	{ id = "striker", name = "Guild Striker", desc = "Guild colours, plate, a cape that's seen a few Gates.", look = { top = "guild", topColor = "crimson", trim = "gold", bottom = "armored", bottomColor = "black", shoes = "sabatons", armor = "plate", armorColor = "slate", back = "cape", backColor = "crimson", aura = "rank", weapon = "assoc_longsword" } },
+	{ id = "tank", name = "Tanker", desc = "Heavy armor and a shield on the back.", look = { top = "tactical", topColor = "olive", trim = "orange", bottom = "armored", bottomColor = "olive", shoes = "sabatons", armor = "heavy", armorColor = "slate", headwear = "knight_helm", back = "shield", backColor = "slate", build = "broad" } },
+	{ id = "assassin", name = "Assassin", desc = "Dark wraps, light feet, a blade across the back.", look = { top = "hoodie", topColor = "black", trim = "violet", bottom = "joggers", bottomColor = "black", shoes = "sneakers", armor = "harness", armorColor = "black", headwear = "assassin_wrap", back = "sheath", backColor = "black", eyeGlow = "violet", build = "slim", weapon = "twin_stilettos" } },
+	{ id = "mage", name = "Mage", desc = "The robe, the hat, the staff, and mana in the eyes.", look = { top = "robe", topColor = "navy", trim = "gold", bottom = "slacks", bottomColor = "navy", shoes = "boots", armor = "none", headwear = "mage_hat", back = "scrolls", backColor = "brown", eyeGlow = "blue", aura = "mana", weapon = "mana_staff" } },
+	{ id = "healer", name = "Healer", desc = "White coat, the veil, a quiet glow.", look = { top = "medic", topColor = "white", trim = "teal", bottom = "slacks", bottomColor = "white", shoes = "dress", armor = "none", headwear = "healer_veil", back = "scrolls", backColor = "white", aura = "verdant" } },
+	{ id = "ranger", name = "Ranger", desc = "Field coat, quiver, a hood against the weather.", look = { top = "trench", topColor = "forest", trim = "khaki", bottom = "cargo", bottomColor = "olive", shoes = "boots", armor = "pauldrons", armorColor = "brown", headwear = "hood", back = "quiver", backColor = "brown", weapon = "hunting_bow" } },
+	{ id = "collector", name = "Collection Crew", desc = "Hard hat, work clothes, a crate of crystals.", look = { top = "tactical", topColor = "orange", trim = "silver", bottom = "cargo", bottomColor = "charcoal", shoes = "boots", armor = "vest", armorColor = "orange", headwear = "hardhat", back = "crystal_crate", backColor = "slate", gloves = true } },
+	{ id = "rogue", name = "Rogue Hunter", desc = "Leather, a half mask, a red glow nobody trusts.", look = { top = "leather", topColor = "black", trim = "red", bottom = "ripped", bottomColor = "charcoal", shoes = "boots", armor = "harness", armorColor = "crimson", extra = "half_mask", back = "tattered", backColor = "black", eyeGlow = "red", aura = "crimson", marks = "scar_eye" } },
+	{ id = "commander", name = "Raid Commander", desc = "The long cape, the guild banner, an S-rank's bearing.", look = { top = "coat", topColor = "white", trim = "gold", bottom = "slacks", bottomColor = "white", shoes = "sabatons", armor = "pauldrons", armorColor = "gold", back = "long_cape", backColor = "navy", headwear = "circlet", aura = "gold" } },
+	{ id = "student", name = "Student", desc = "School uniform and a bag. Not awakened. Yet.", look = { top = "uniform", topColor = "navy", trim = "red", bottom = "slacks", bottomColor = "charcoal", shoes = "sneakers", armor = "none", weapon = "none", headwear = "none", back = "pack", backColor = "navy", aura = "none", eyeGlow = "none" } },
+	{ id = "office", name = "Office Worker", desc = "Waistcoat, tie, tired eyes. Gates are on the news.", look = { top = "waistcoat", topColor = "charcoal", trim = "white", bottom = "slacks", bottomColor = "charcoal", shoes = "dress", armor = "none", weapon = "none", headwear = "none", back = "none", aura = "none", marks = "dark_circles", face = "tired" } },
+	{ id = "shopkeeper", name = "Shopkeeper", desc = "The family restaurant's apron and a bandana.", look = { top = "apron", topColor = "white", trim = "crimson", bottom = "jeans", bottomColor = "navy", shoes = "sneakers", armor = "none", weapon = "none", headwear = "bandana", back = "none", aura = "none" } },
+	{ id = "brawler", name = "Martial Fighter", desc = "A gi, wraps on the hands, an ember in the fists.", look = { top = "gi", topColor = "white", trim = "black", bottom = "wide", bottomColor = "white", shoes = "geta", armor = "none", headwear = "bandana", gloves = true, aura = "ember", marks = "scar_cheek", weapon = "iron_knuckles" } },
+	{ id = "frost_knight", name = "Frost Knight", desc = "Silver plate, horned helm, frost on the breath.", look = { top = "guild", topColor = "silver", trim = "mana", bottom = "armored", bottomColor = "silver", shoes = "sabatons", armor = "heavy", armorColor = "silver", headwear = "horned_helm", back = "long_cape", backColor = "navy", aura = "frost", eyeGlow = "white" } },
 }
 Looks.BUILD = {
 	{ id = "slim", name = "Slim", pad = 0.04 },
@@ -233,6 +353,7 @@ Looks.DEFAULT = {
 	shoes = "boots", gloves = false,
 	armor = "none", armorColor = "slate",
 	weapon = "none", extra = "none", build = "regular",
+	marks = "none", eyeGlow = "none", headwear = "none", back = "none", backColor = "charcoal", aura = "none",
 }
 
 -- the fields that pick from each list
@@ -240,24 +361,27 @@ Looks.FIELDS = {
 	skin = "SKIN", face = "FACE", eyes = "EYES", brows = "BROWS", hair = "HAIR", hairDye = "HAIR_DYES",
 	top = "TOPS", topColor = "PALETTE", trim = "PALETTE", bottom = "BOTTOMS", bottomColor = "PALETTE",
 	shoes = "SHOES", armor = "ARMOR", armorColor = "PALETTE", weapon = "WEAPONS", extra = "EXTRAS", build = "BUILD",
+	marks = "MARKS", eyeGlow = "EYE_GLOW", headwear = "HEADWEAR", back = "BACK", backColor = "PALETTE", aura = "AURA",
 }
 -- the order the creator shows them in, with their tab
 Looks.TABS = {
-	{ id = "body", name = "Body", fields = { "skin", "build" } },
-	{ id = "face", name = "Face", fields = { "face", "eyes", "brows", "extra" } },
-	{ id = "hair", name = "Hair", fields = { "hair", "hairDye" } },
+	{ id = "presets", name = "Presets", presets = true, fields = {} },
+	{ id = "body", name = "Body", fields = { "skin", "build", "aura" } },
+	{ id = "face", name = "Face", fields = { "face", "eyes", "eyeGlow", "brows", "marks", "extra" } },
+	{ id = "hair", name = "Head", fields = { "hair", "hairDye", "headwear" } },
 	{ id = "clothes", name = "Clothes", fields = { "top", "topColor", "trim", "bottom", "bottomColor", "shoes", "gloves" } },
-	{ id = "gear", name = "Hunter Gear", fields = { "armor", "armorColor", "weapon" } },
+	{ id = "gear", name = "Gear", fields = { "armor", "armorColor", "back", "backColor", "weapon" } },
 }
 Looks.LABELS = {
 	skin = "Skin tone", build = "Build", face = "Expression", eyes = "Eye color", brows = "Brows", extra = "Accessory",
 	hair = "Hairstyle", hairDye = "Hair color", top = "Top", topColor = "Top color", trim = "Trim color",
 	bottom = "Bottoms", bottomColor = "Bottoms color", shoes = "Shoes", gloves = "Gloves", armor = "Armor",
 	armorColor = "Armor color", weapon = "Weapon",
+	marks = "Scars and marks", eyeGlow = "Eye glow", headwear = "Headwear", back = "On your back", backColor = "Back color", aura = "Aura",
 }
 
 local index: { [string]: { [any]: any } } = {}
-for _, listName in { "SKIN", "PALETTE", "HAIR_DYES", "HAIR", "FACE", "EYES", "BROWS", "TOPS", "BOTTOMS", "SHOES", "ARMOR", "WEAPONS", "EXTRAS", "BUILD" } do
+for _, listName in { "SKIN", "PALETTE", "HAIR_DYES", "HAIR", "FACE", "EYES", "BROWS", "TOPS", "BOTTOMS", "SHOES", "ARMOR", "WEAPONS", "EXTRAS", "BUILD", "MARKS", "EYE_GLOW", "HEADWEAR", "BACK", "AURA", "PRESETS" } do
 	local m = {}
 	for _, o in Looks[listName] do
 		m[o.id] = o
@@ -291,6 +415,18 @@ function Looks.clean(raw: any): any
 	return out
 end
 
+-- a look with a preset laid over it (only what the preset names changes)
+function Looks.applyPreset(look: any, presetId: string): any
+	local p = Looks.find("PRESETS", presetId)
+	local out = table.clone(look)
+	if p then
+		for k, v in p.look do
+			out[k] = v
+		end
+	end
+	return Looks.clean(out)
+end
+
 -- a random look (NPCs, the creator's dice)
 function Looks.random(rand: (number, number) -> number, opts: any?): any
 	local function pick(list)
@@ -316,7 +452,16 @@ function Looks.random(rand: (number, number) -> number, opts: any?): any
 		weapon = if civilian then "none" else pick(Looks.WEAPONS),
 		extra = if rand(1, 3) == 1 then pick(Looks.EXTRAS) else "none",
 		build = pick(Looks.BUILD),
+		marks = if rand(1, 3) == 1 then pick(Looks.MARKS) else "none",
+		eyeGlow = if not civilian and rand(1, 5) == 1 then pick(Looks.EYE_GLOW) else "none",
+		headwear = if rand(1, 4) == 1 then pick(Looks.HEADWEAR) else "none",
+		back = if not civilian and rand(1, 3) == 1 then pick(Looks.BACK) else "none",
+		backColor = pick(Looks.PALETTE),
+		aura = if not civilian and rand(1, 6) == 1 then pick(Looks.AURA) else "none",
 	}
+	if civilian and (l.headwear == "knight_helm" or l.headwear == "horned_helm" or l.headwear == "raid_helmet" or l.headwear == "assassin_wrap") then
+		l.headwear = "none"
+	end
 	if l.skin == "classic" and rand(1, 3) > 1 then
 		l.skin = "light"
 	end

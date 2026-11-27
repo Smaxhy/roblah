@@ -1,7 +1,9 @@
 --[[
 	THE R6 CREATOR (BitLeveling): your character for walking the live city, built on the real
 	R6 rig (Hunter/R6Rig.luau). A turntable preview on the left, the options on the right in
-	tabs: Body, Face, Hair, Clothes, Hunter Gear. Hair is Roblox's own hair accessories (the
+	tabs: Presets (whole outfits in a click), Body (and aura), Face (expression, eyes, a mana
+	glow, scars and marks), Head (hair, dye, headwear), Clothes, Gear (armor, what's on your
+	back, the weapon you carry). Hair is Roblox's own hair accessories (the
 	server loads one the first time someone picks it); colours are swatches. Randomize rolls a
 	whole look; Save keeps it on your profile (the server checks every field).
 ]]
@@ -38,7 +40,7 @@ function Creator.close()
 	end
 end
 
-local SWATCH_LISTS = { SKIN = true, PALETTE = true, EYES = true, HAIR_DYES = true }
+local SWATCH_LISTS = { SKIN = true, PALETTE = true, EYES = true, HAIR_DYES = true, EYE_GLOW = true }
 
 function Creator.open(gui: ScreenGui, call: (string, any?) -> any, R6Rig: any)
 	Creator.close()
@@ -68,6 +70,7 @@ function Creator.open(gui: ScreenGui, call: (string, any?) -> any, R6Rig: any)
 	local rig: Model? = nil
 
 	local look = table.clone(Looks.DEFAULT)
+	local myRank = 0 -- (the server says: the Rank aura shows your rank's colour)
 	local function hairFor(id: number): Instance?
 		if not hairCache or id == 0 then
 			return nil
@@ -84,7 +87,7 @@ function Creator.open(gui: ScreenGui, call: (string, any?) -> any, R6Rig: any)
 		if rig then
 			rig:Destroy()
 		end
-		local ok, m = pcall(R6Rig.build, look, { name = "Preview", hair = hairFor(look.hair) })
+		local ok, m = pcall(R6Rig.build, look, { name = "Preview", hair = hairFor(look.hair), rank = myRank })
 		if ok and m then
 			for _, d in m:GetDescendants() do
 				if d:IsA("BasePart") then
@@ -134,6 +137,23 @@ function Creator.open(gui: ScreenGui, call: (string, any?) -> any, R6Rig: any)
 				c:Destroy()
 			end
 		end
+		if currentTab.presets then
+			make("TextLabel", { LayoutOrder = 0, Size = UDim2.new(1, -8, 0, 18), BackgroundTransparency = 1, Text = "WHOLE OUTFITS: PICK ONE, THEN CHANGE ANYTHING", TextXAlignment = Enum.TextXAlignment.Left, TextColor3 = C.sub, FontFace = F.display, TextSize = 13 }, body)
+			local grid = make("Frame", { LayoutOrder = 1, Size = UDim2.new(1, -8, 0, 0), AutomaticSize = Enum.AutomaticSize.Y, BackgroundTransparency = 1 }, body)
+			make("UIGridLayout", { CellSize = UDim2.fromOffset(206, 62), CellPadding = UDim2.fromOffset(6, 6) }, grid)
+			for _, p in Looks.PRESETS do
+				local b = make("TextButton", { BackgroundColor3 = C.panelHi, Text = "", AutoButtonColor = true }, grid)
+				make("UICorner", { CornerRadius = UDim.new(0, 6) }, b)
+				make("UIStroke", { Color = Color3.fromRGB(200, 170, 255), Transparency = 0.7 }, b)
+				make("TextLabel", { Position = UDim2.fromOffset(8, 5), Size = UDim2.new(1, -16, 0, 18), BackgroundTransparency = 1, Text = p.name, TextXAlignment = Enum.TextXAlignment.Left, TextColor3 = Color3.fromRGB(220, 205, 255), FontFace = F.uiBold, TextSize = 14 }, b)
+				make("TextLabel", { Position = UDim2.fromOffset(8, 24), Size = UDim2.new(1, -16, 0, 32), BackgroundTransparency = 1, Text = p.desc, TextWrapped = true, TextXAlignment = Enum.TextXAlignment.Left, TextYAlignment = Enum.TextYAlignment.Top, TextColor3 = C.sub, FontFace = F.ui, TextSize = 11 }, b)
+				b.Activated:Connect(function()
+					look = Looks.applyPreset(look, p.id)
+					pick("hair", look.hair)
+				end)
+			end
+			return
+		end
 		for order, field in currentTab.fields do
 			local section = make("Frame", { LayoutOrder = order, Size = UDim2.new(1, -8, 0, 0), AutomaticSize = Enum.AutomaticSize.Y, BackgroundTransparency = 1 }, body)
 			make("UIListLayout", { Padding = UDim.new(0, 4), SortOrder = Enum.SortOrder.LayoutOrder }, section)
@@ -178,7 +198,7 @@ function Creator.open(gui: ScreenGui, call: (string, any?) -> any, R6Rig: any)
 		end
 	end
 	for _, t in Looks.TABS do
-		local b = make("TextButton", { Size = UDim2.fromOffset(112, 32), BackgroundColor3 = C.panelHi, Text = string.upper(t.name), TextColor3 = C.text, FontFace = F.display, TextSize = 14 }, tabs)
+		local b = make("TextButton", { Size = UDim2.fromOffset(96, 32), BackgroundColor3 = C.panelHi, Text = string.upper(t.name), TextColor3 = C.text, FontFace = F.display, TextSize = 14 }, tabs)
 		make("UICorner", { CornerRadius = UDim.new(0, 5) }, b)
 		b.Activated:Connect(function()
 			currentTab = t
@@ -218,6 +238,7 @@ function Creator.open(gui: ScreenGui, call: (string, any?) -> any, R6Rig: any)
 
 	task.spawn(function()
 		local res = call("r6Get")
+		myRank = (res and tonumber(res.rank)) or 0
 		if res and res.look then
 			look = res.look
 			if type(look.hair) == "number" and look.hair > 0 then

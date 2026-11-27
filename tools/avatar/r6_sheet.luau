@@ -1,5 +1,6 @@
 --[[
-	CONTACT SHEET OF R6 LOOKS (BitLeveling; `-- weapons` draws every weapon instead): builds real R6 rigs with Hunter/R6Rig.luau on
+	CONTACT SHEET OF R6 LOOKS (BitLeveling; `-- weapons` draws every weapon instead, `-- presets`
+	the outfit presets, face marks, headwear and back items): builds real R6 rigs with Hunter/R6Rig.luau on
 	@lune/roblox instances (real classes, real property names: anything wrong errors here) and
 	writes a gui-snapshot/1 dump that tools/gui_render draws.
 		lune run tools/avatar/r6_sheet.luau
@@ -166,6 +167,24 @@ for k = 1, 8 do
 	table.insert(cells, { label = "Random " .. k, look = Looks.random(rand) })
 end
 local turn = -25
+local presetSheet = table.find(process.args, "presets") ~= nil
+if presetSheet then
+	-- every outfit preset, then the face marks and headwear on a plain look
+	cells = {}
+	for _, p in Looks.PRESETS do
+		table.insert(cells, { label = p.name, look = Looks.applyPreset(Looks.DEFAULT, p.id), rank = 4 })
+	end
+	for _, h in Looks.HEADWEAR do
+		if h.id ~= "none" then
+			table.insert(cells, { label = "Head: " .. h.name, look = { skin = "warm", hair = 0, hairDye = "chestnut", top = "guild", topColor = "navy", trim = "gold", armorColor = "slate", headwear = h.id }, face = true })
+		end
+	end
+	for _, b in Looks.BACK do
+		if b.id ~= "none" then
+			table.insert(cells, { label = "Back: " .. b.name, look = { skin = "honey", hair = 0, hairDye = "jet", top = "tactical", topColor = "black", trim = "mana", backColor = "crimson", back = b.id }, back = true })
+		end
+	end
+end
 if weaponSheet then
 	cells = {}
 	for i, w in Weapons.list do
@@ -178,6 +197,8 @@ end
 local cols, cellW, cellH, gap, labelH, titleH = 8, 150, 230, 6, 14, 30
 if weaponSheet then
 	cols, cellW, cellH = 10, 150, 190
+elseif presetSheet then
+	cols, cellW, cellH = 10, 150, 200
 end
 local rows = math.ceil(#cells / cols)
 local W = gap + cols * (cellW + gap)
@@ -190,7 +211,7 @@ back.Size = roblox.UDim2.fromScale(1, 1)
 back.BackgroundColor3 = roblox.Color3.fromRGB(8, 10, 16)
 back.BorderSizePixel = 0
 back.Parent = gui
-label(back, if weaponSheet then "BITLEVELING · EVERY WEAPON (★ to ★★★, every ninth one Shiny)" else "BITLEVELING · R6 LOOKS (block hair stands in for the hair accessories)", gap, 6, W - 2 * gap, 16, roblox.Color3.fromRGB(170, 150, 255))
+label(back, if presetSheet then "BITLEVELING · OUTFIT PRESETS, SCARS AND MARKS, HEADWEAR, BACK ITEMS" elseif weaponSheet then "BITLEVELING · EVERY WEAPON (★ to ★★★, every ninth one Shiny)" else "BITLEVELING · R6 LOOKS (block hair stands in for the hair accessories)", gap, 6, W - 2 * gap, 16, roblox.Color3.fromRGB(170, 150, 255))
 local total = 0
 for i, cell in cells do
 	local c, r = (i - 1) % cols, (i - 1) // cols
@@ -203,7 +224,7 @@ for i, cell in cells do
 	vp.Ambient = roblox.Color3.fromRGB(150, 150, 165)
 	vp.LightColor = roblox.Color3.fromRGB(255, 244, 230)
 	vp.Parent = back
-	local model = R6Rig.build(cell.look, { name = cell.label, weapon = cell.weapon })
+	local model = R6Rig.build(cell.look, { name = cell.label, weapon = cell.weapon, rank = cell.rank })
 	model.Parent = vp
 	for _, d in model:GetDescendants() do
 		if d:IsA("BasePart") then
@@ -212,16 +233,57 @@ for i, cell in cells do
 	end
 	local cam = I.new("Camera")
 	cam.FieldOfView = 30
-	local target = roblox.Vector3.new(0, 3, 0)
+	local target = if cell.face then roblox.Vector3.new(0, 4.4, 0) else roblox.Vector3.new(0, 3, 0)
+	local dist = if cell.face then 6 else 15
 	-- (the sheet renderer draws cameras looking along a world axis reliably; turn the rig instead)
-	cam.CFrame = roblox.CFrame.new(target + roblox.Vector3.new(0, 0.6, -15)) * roblox.CFrame.Angles(0, math.pi, 0)
+	cam.CFrame = roblox.CFrame.new(target + roblox.Vector3.new(0, 0.6, -dist)) * roblox.CFrame.Angles(0, math.pi, 0)
+	local spin = if cell.back then 160 elseif cell.face then -20 else turn
 	for _, d in model:GetDescendants() do
 		if d:IsA("BasePart") then
-			d.CFrame = roblox.CFrame.Angles(0, math.rad(turn), 0) * d.CFrame
+			d.CFrame = roblox.CFrame.Angles(0, math.rad(spin), 0) * d.CFrame
 		end
 	end
 	cam.Parent = vp
 	vp.CurrentCamera = cam
+end
+-- (presets sheet) the faces, flat: the sheet renderer doesn't draw SurfaceGuis on parts, so the
+-- face plate's own gui (and its glow) is copied into frames along the bottom
+if presetSheet then
+	local faces = {}
+	for _, m in Looks.MARKS do
+		table.insert(faces, { label = m.name, look = { skin = "light", hairDye = "jet", trim = "crimson", marks = m.id, face = "calm" } })
+	end
+	for _, g in Looks.EYE_GLOW do
+		if g.id ~= "none" then
+			table.insert(faces, { label = "Glow: " .. g.name, look = { skin = "warm", hairDye = "jet", eyeGlow = g.id, face = "focused" } })
+		end
+	end
+	local fw, fh = 120, 108
+	local per = math.floor((W - gap) / (fw + gap))
+	local top = H
+	H += gap + math.ceil(#faces / per) * (fh + labelH + gap)
+	for i, f in faces do
+		local c, r = (i - 1) % per, (i - 1) // per
+		local x, y = gap + c * (fw + gap), top + gap + r * (fh + labelH + gap)
+		label(back, f.label, x, y, fw)
+		local holder = I.new("Frame")
+		holder.Position = roblox.UDim2.fromOffset(x, y + labelH)
+		holder.Size = roblox.UDim2.fromOffset(fw, fh)
+		local sk = Looks.color("SKIN", f.look.skin)
+		holder.BackgroundColor3 = roblox.Color3.fromRGB(sk[1], sk[2], sk[3])
+		holder.BorderSizePixel = 0
+		holder.Parent = back
+		local model = R6Rig.build(f.look, { name = "Face" })
+		local plate = model:FindFirstChild("FacePlate")
+		for _, guiName in { "Face", "Glow" } do
+			local sg = plate and plate:FindFirstChild(guiName)
+			if sg then
+				for _, child in sg:GetChildren() do
+					child.Parent = holder
+				end
+			end
+		end
+	end
 end
 local defaults = {}
 local function node(real)
@@ -247,6 +309,6 @@ end
 if not fs.isDir("tools/avatar/shots") then
 	fs.writeDir("tools/avatar/shots")
 end
-local outName = if weaponSheet then "tools/avatar/shots/weapons.json" else "tools/avatar/shots/r6.json"
+local outName = if presetSheet then "tools/avatar/shots/presets.json" elseif weaponSheet then "tools/avatar/shots/weapons.json" else "tools/avatar/shots/r6.json"
 fs.writeFile(outName, serde.encode("json", { format = "gui-snapshot/1", state = "r6", note = "R6 looks", device = "sheet", screen = { W, H }, inset = 0, defaults = defaults, guis = { node(gui) } }, false))
 print(string.format("wrote " .. outName .. " (%d rigs, %.0f parts each, %dx%d)", #cells, total / #cells, W, H))
