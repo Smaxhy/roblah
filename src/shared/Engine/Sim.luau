@@ -6182,7 +6182,7 @@ function Sim:interactionsFor(life, rel)
 			local src = def
 			local desc = self:render(life, def.desc, tokens)
 			local info = nil
-			if def.party then
+			if def.party and Party.enabled(self) then
 				local opt = Party.optionFor(self, life, rel, def)
 				src = if opt then Party.displayChoice(self, life, opt) else def
 				desc, info = Party.describe(self, life, rel, def, desc)

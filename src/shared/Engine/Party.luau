@@ -71,12 +71,15 @@ local CLASHING = { brave = "cautious", cautious = "reckless", kind = "cold", che
 
 -- what each class does for a party (ORIGINAL numbers, tuned by tests/party_check)
 local ROLE = {
-	fighter = { dmg = 0.36, does = "hits hard beside you" },
-	mage = { dmg = 0.4, does = "burns it down from behind you" },
-	assassin = { dmg = 0.3, heads = 2, does = "finds the gaps" },
-	ranger = { dmg = 0.28, heads = 2, does = "covers you from range" },
-	tanker = { dmg = 0.14, absorb = 0.1, per = 0.025, does = "takes the hits meant for you" },
-	healer = { dmg = 0.1, absorb = 0.12, per = 0.03, does = "keeps you standing" },
+	-- base: power added, as a share of the Gate's power per heads (a clash is decided by how
+	-- far apart the two bases are against that, so this stays small); heads: the chance every
+	-- coin lands, in points; absorb: the share of a loss they take off you
+	fighter = { base = 0.22, heads = 4, combat = true, does = "hits hard beside you" },
+	mage = { base = 0.24, heads = 4, combat = true, does = "burns it down from behind you" },
+	assassin = { base = 0.12, heads = 7, combat = true, does = "finds the gaps" },
+	ranger = { base = 0.12, heads = 6, combat = true, does = "covers you from range" },
+	tanker = { base = 0.06, heads = 3, absorb = 0.1, per = 0.025, does = "takes the hits meant for you" },
+	healer = { base = 0.04, heads = 3, absorb = 0.12, per = 0.03, does = "keeps you standing" },
 }
 Party.ROLE = ROLE
 local CLASS_NAMES = { fighter = "Fighter", mage = "Mage", assassin = "Assassin", tanker = "Tanker", ranger = "Ranger", healer = "Healer" }
@@ -202,6 +205,12 @@ function Party.rosterDef(sim: any, id: any): any
 		sim._rosterIndex = idx
 	end
 	return idx[id]
+end
+
+-- one of the story's own people (a roster entry marked canon): never a party member
+function Party.isCanon(sim: any, rel: any): boolean
+	local def = rel and Party.rosterDef(sim, rel.roster)
+	return def ~= nil and def.canon == true
 end
 
 -- an addRelation spec with a roster id: the roster says who they are (their name, and their
@@ -641,7 +650,7 @@ end
 
 function Party.addMember(sim: any, life: any, rel: any, extra: { any }?, how: string?): any
 	local st = Party.state(life)
-	if Party.memberOf(life, rel.id) or #st.members >= Party.maxOf(sim) then
+	if Party.memberOf(life, rel.id) or #st.members >= Party.maxOf(sim) or Party.isCanon(sim, rel) then
 		return nil
 	end
 	Party.ensure(sim, life, rel)
@@ -780,6 +789,9 @@ function Party.odds(sim: any, life: any, rel: any): (number, { any }, string?)
 		why = "You're too young to lead a party."
 	elseif (rel.age or 0) >= (cfg.retireAge or 62) - 2 then
 		why = "Their raiding days are over."
+	elseif Party.isCanon(sim, rel) then
+		-- (the story's own people are public figures you know from the news, never a party's)
+		why = "They're a public figure. You know them from the news."
 	end
 	local t = traitSet(rel)
 	local p = cfg.baseOdds or 0.3
@@ -975,6 +987,7 @@ function Party.support(sim: any, life: any, spec: any): any
 	local fight = spec.fight == true
 	local will, vital = sim.roles.will, sim.vital
 	local sup: any = { base = 0, coins = 0, heads = 0, absorb = 0, share = 0, who = {}, rank = gate, kind = spec.party.kind or "raid" }
+	local cp = HW.foe(gate).coinPower
 	local combat, strongest = 0, 0
 	for _, e in list do
 		local rel, m = e.rel, e.m
@@ -987,12 +1000,14 @@ function Party.support(sim: any, life: any, spec: any): any
 		local does
 		if fight then
 			if t > 0 then
-				sup.base += HW.foe(t).base * role.dmg * cond * pow
-				sup.heads += (role.heads or 0) * cond
+				-- all of them in a Gate at their rank, more above it, much less in one over them
+				local rf = (if t >= gate + 1 then 1.3 elseif t == gate then 1 elseif t == gate - 1 then 0.55 else 0.2) * cond * pow
+				sup.base += role.base * cp * rf
+				sup.heads += role.heads * rf
 				if role.absorb then
 					sup.absorb += (role.absorb + (role.per or 0) * t) * cond
 				end
-				if role.dmg >= 0.25 and t >= gate - 1 then
+				if role.combat and t >= gate then
 					combat += 1
 				end
 				strongest = math.max(strongest, t)
@@ -1022,11 +1037,12 @@ function Party.support(sim: any, life: any, spec: any): any
 		})
 	end
 	if fight then
-		sup.base = math.min(sup.base, HW.foe(gate).base * 0.9 + 2)
-		if combat >= 2 or strongest >= gate + 1 then
+		sup.base = math.min(sup.base, cp * 0.6)
+		-- a whole party that can fight it, or someone far stronger than it: one more coin
+		if (#list >= 4 and combat >= 3) or strongest >= gate + 2 then
 			sup.coins = 1
 		end
-		sup.heads = math.min(8, sup.heads)
+		sup.heads = math.min(18, sup.heads)
 		sup.absorb = math.min(0.5, sup.absorb)
 	else
 		sup.base = math.min(4, sup.base)
@@ -1239,7 +1255,7 @@ function Party.afterClash(sim: any, life: any, spec: any, sup: any, won: boolean
 		if m then
 			if won then
 				m.wins += 1
-				m.loyalty = math.min(100, m.loyalty + 3 + (if d > 0 then 2 else 0))
+				m.loyalty = math.min(100, m.loyalty + 2 + (if d > 0 then 1 else 0))
 				rel.bond = math.min(100, (rel.bond or 0) + 2)
 				Party.note(life, rel, "Won a fight beside you.")
 			else
@@ -1444,7 +1460,7 @@ function Party.effect(sim: any, life: any, result: any, target: any, extra: { an
 			table.insert(extra, { kind = "system", tone = "bad", text = string.format("You don't have the %d %s you owe %s. They saw you count it twice.", owed, sim.pack.meta.currency, target.first) })
 		end
 	end
-	if result.partyJoin and type(target) == "table" and target.alive and not m then
+	if result.partyJoin and type(target) == "table" and target.alive and not m and not Party.isCanon(sim, target) then
 		Party.addMember(sim, life, target, extra, "Asked to join your party, and you said yes.")
 	end
 	if result.partyLeave and m then
@@ -1487,7 +1503,7 @@ function Party.gate(sim: any, life: any, rel: any, def: any): (boolean, boolean,
 	end
 	if kind == "ask" then
 		local _p, _f, why = Party.odds(sim, life, rel)
-		if why == "Already in your party." or why == "Too young for a party." or why == "You're too young to lead a party." or why == "They can't join." then
+		if why == "Already in your party." or why == "Too young for a party." or why == "You're too young to lead a party." or why == "They can't join." or Party.isCanon(sim, rel) then
 			return false, false, nil
 		end
 		if why then
@@ -1522,6 +1538,9 @@ local RAID_HURT = { { -12, -5 }, { -22, -9 }, { -38, -16 }, { -64, -28 }, { -110
 
 -- the clash an interaction is fought as, for this person (spar, raid), or nil
 function Party.optionFor(sim: any, life: any, rel: any, def: any): any
+	if not Party.enabled(sim) then
+		return nil
+	end
 	local kind = def.party
 	local fightStat = sim.roles.fight
 	if kind == "spar" then
@@ -1560,6 +1579,9 @@ end
 
 -- the words under an interaction (the odds of a yes, the gift you'd give...)
 function Party.describe(sim: any, life: any, rel: any, def: any, desc: string): (string, any)
+	if not Party.enabled(sim) then
+		return desc, nil
+	end
 	local kind = def.party
 	if kind == "ask" then
 		local p, factors, why = Party.odds(sim, life, rel)
@@ -1923,7 +1945,8 @@ function Party.yearly(sim: any, life: any, report: any)
 			sim:push(life, report, { kind = "system", tone = "bad", text = string.format("%s has left your party. Loyalty that low doesn't hold.", rel.first) })
 			rel.bond = math.max(0, (rel.bond or 0) - 6)
 		elseif not cardQueued then
-			if t.scheming and not st.betrayed and m.loyalty < 60 and life.money >= 20 and Rng.chance(life, if m.loyalty < 40 then 0.2 else 0.1) then
+			if t.scheming and not st.betrayed and life.money >= 20 and Rng.chance(life, if m.loyalty < 40 then 0.2 elseif m.loyalty < 60 then 0.1 elseif m.loyalty < 80 then 0.04 else 0.015) then
+				-- (a scheming one is always working an angle: loyalty only makes it less likely)
 				-- the betrayal: they're gone, and so is a share of everything
 				local stolen = math.floor(life.money * (0.2 + Rng.int(life, 0, 15) / 100))
 				life.money -= stolen
@@ -2181,9 +2204,30 @@ function Party.memberView(sim: any, life: any, m: any): any
 	}
 end
 
+-- the pack's "ask to join" interaction (the one with party = "ask")
+function Party.askId(sim: any): string?
+	if sim._partyAskId == nil then
+		sim._partyAskId = false
+		for id, def in sim.pack.interactions or {} do
+			if type(def) == "table" and def.party == "ask" then
+				sim._partyAskId = id
+			end
+		end
+	end
+	return sim._partyAskId or nil
+end
+
 function Party.candidateView(sim: any, life: any, rel: any): any
 	Party.ensure(sim, life, rel)
 	local p, factors, why = Party.odds(sim, life, rel)
+	-- (and whatever stops the asking itself right now: asked this year, no time left)
+	local askId = Party.askId(sim)
+	if why == nil and askId then
+		local _visible, enabled, reason = sim:interactionState(life, rel, askId)
+		if not enabled then
+			why = reason or "Not right now"
+		end
+	end
 	local t = rel.rank or 0
 	local kl, kd, pick = knownOf(sim, life, rel)
 	return {
@@ -2232,7 +2276,7 @@ function Party.view(sim: any, life: any): any
 	local candidates = {}
 	local cfg = cfgOf(sim)
 	for _, rel in life.relations do
-		if rel.alive and rel.userId == nil and not Party.memberOf(life, rel.id) and (rel.age or 0) >= (cfg.relMinAge or 16) then
+		if rel.alive and rel.userId == nil and not Party.memberOf(life, rel.id) and (rel.age or 0) >= (cfg.relMinAge or 16) and not Party.isCanon(sim, rel) then
 			table.insert(candidates, Party.candidateView(sim, life, rel))
 		end
 	end
