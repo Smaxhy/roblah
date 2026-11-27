@@ -67,6 +67,12 @@ tools/blender/run.sh                 # sets up Blender on first run, then does a
 
 ![The kit, one mesh per role](images/blender_kit.jpg)
 
+All 59 outfit presets and all 202 weapons, as the game dresses them with the kit:
+
+![The outfit presets with the kit](images/blender_outfits.jpg)
+
+![Every weapon with the kit](images/blender_weapons.jpg)
+
 **The second set: shapes a part asks for.**
 A builder can request a mesh by name with the part's `MeshRole` attribute, and the outfits and
 weapons do. Those meshes are:

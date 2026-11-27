@@ -182,6 +182,9 @@ def scene_setup(width, height, ortho_scale, cam_target):
     cam = bpy.data.objects.new("cam", bpy.data.cameras.new("cam"))
     cam.data.type = "ORTHO"
     cam.data.ortho_scale = ortho_scale
+    # (the scale is the view's WIDTH even when a tall sheet makes the picture portrait: Blender
+    # otherwise fits it to the longer side)
+    cam.data.sensor_fit = "HORIZONTAL"
     # straight in front (the models face Blender +Y; each is tipped a little to show its top)
     cam.location = cam_target + Vector((0, 60, 0))
     direction = cam_target - cam.location
