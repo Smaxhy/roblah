@@ -19,4 +19,8 @@ local list = {
 for _, item in Weapons.gearList() do
 	table.insert(list, item)
 end
+-- every accessory, as a charm (Hunter/Accessories.luau: 15+ per class and a general set)
+for _, item in require(script.Parent.Parent.Parent:WaitForChild("Hunter"):WaitForChild("Accessories")).gearList() do
+	table.insert(list, item)
+end
 return list

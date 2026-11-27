@@ -214,7 +214,7 @@ do
 		end
 		return n
 	end
-	local bad, dressed, sockets = {}, 0, 0
+	local bad, dressed, sockets, coveredHidden = {}, 0, 0, 0
 	local function verify(model, gait, label)
 		for _, p in model:GetDescendants() do
 			if p:IsA("BasePart") and not p:IsA("MeshPart") then
@@ -247,6 +247,16 @@ do
 			local cover = p:IsA("BasePart") and p:GetAttribute("MeshCover")
 			if cover and socketDone[cover] and p.Transparency ~= 1 then
 				table.insert(bad, label .. "/" .. p.Name .. " still draws a socket the kit dressed")
+			end
+			-- an outfit's stand-in detail (CoveredBy, R6Rig) goes once the piece it belongs to is dressed
+			local by = p:IsA("BasePart") and p:GetAttribute("CoveredBy")
+			if by then
+				local target = model:FindFirstChild(by .. "Mesh", true)
+				if target and p.Transparency ~= 1 then
+					table.insert(bad, label .. "/" .. p.Name .. " still shows though " .. by .. " wears its mesh")
+				elseif target then
+					coveredHidden += 1
+				end
 			end
 		end
 		for _, m in model:GetDescendants() do
@@ -302,6 +312,7 @@ do
 	MeshLibrary.setKit(nil)
 	check(oldOk, "an older kit dresses weapons without error" .. (if oldOk then "" else ": " .. tostring(oldErr)))
 	check(sockets > 0, string.format("weapon sockets wear their kit mesh (%d)", sockets))
+	check(coveredHidden > 0, string.format("outfit detail a kit mesh already has is hidden (%d parts)", coveredHidden))
 	check(ok and #bad == 0, string.format("with the mesh kit, every part with a role is dressed (%d parts) and nothing else", dressed) .. (if not ok then ": " .. tostring(err) elseif #bad > 0 then ": " .. table.concat(bad, "; ", 1, math.min(#bad, 6)) else ""))
 	check(dressed > 400, "the kit reaches monsters, weapons and gear")
 	local plain = Monsters.build("dragonkin")

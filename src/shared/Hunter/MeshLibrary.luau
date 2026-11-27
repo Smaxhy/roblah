@@ -373,19 +373,29 @@ function MeshLibrary.dress(model: Instance, gait: string?): number
 			table.insert(parts, p)
 		end
 	end
+	-- (and a rig's part with CoveredBy = "<name>" stands in for detail that part's mesh has: R6Rig)
+	local function order(p: Instance): number
+		return if p:GetAttribute("MeshId") ~= nil then 0 elseif p:GetAttribute("CoveredBy") ~= nil or p:GetAttribute("MeshCover") ~= nil then 2 else 1
+	end
 	table.sort(parts, function(a, b)
-		return (a:GetAttribute("MeshId") ~= nil) and (b:GetAttribute("MeshId") == nil)
+		return order(a) < order(b)
 	end)
 	local covered: { [string]: boolean } = {}
+	local dressedNames: { [string]: boolean } = {}
 	for _, p in model:GetDescendants() do
-		local id = p:IsA("BasePart") and p:GetAttribute("Dressed") and p:GetAttribute("MeshId")
-		if type(id) == "string" then
-			covered[id] = true
+		if p:IsA("BasePart") and p:GetAttribute("Dressed") and p.Parent and p.Parent:FindFirstChild(p.Name .. "Mesh") then
+			dressedNames[p.Name] = true
+			dressedNames[p.Name] = true
+			local id = p:GetAttribute("MeshId")
+			if type(id) == "string" then
+				covered[id] = true
+			end
 		end
 	end
 	for _, p in parts do
 		local cover = p:GetAttribute("MeshCover")
-		if type(cover) == "string" and covered[cover] then
+		local by = p:GetAttribute("CoveredBy")
+		if (type(cover) == "string" and covered[cover]) or (type(by) == "string" and dressedNames[by]) then
 			p.Transparency = 1
 			p:SetAttribute("Dressed", true)
 			continue
@@ -424,6 +434,7 @@ function MeshLibrary.dress(model: Instance, gait: string?): number
 			m.Parent = p.Parent
 			p.Transparency = 1
 			p:SetAttribute("Dressed", true)
+			dressedNames[p.Name] = true
 			local id = p:GetAttribute("MeshId")
 			if type(id) == "string" then
 				covered[id] = true

@@ -248,22 +248,38 @@ the ones you've found and a hint for each one you haven't.
 
 ## R6 character customization
 
-`R6 LOOK` on the dock opens the creator: a turntable preview of a real R6 rig, and tabs:
+`R6 LOOK` on the dock opens the creator (`client/UI/R6Creator.luau`): a lit stage with a
+spotlight in your class colour and a dais whose ring glows in your trim colour.
+- **Camera:** drag to turn, scroll or pinch to zoom, BODY / FACE / BACK views, and a slow idle
+  turn.
+- **Bottom bar:** WEAR MY CLASS (your class's preset at your rank), UNDO, RANDOM, SAVE, CLOSE.
+- **Dice:** roll a whole outfit for any class, or a civilian's, keeping your face, skin and hair.
 
-- **Presets**: 16 whole outfits in a click (Association Agent, Surveillance Team, Guild Striker,
-  Tanker, Assassin, Mage, Healer, Ranger, Collection Crew, Rogue Hunter, Raid Commander, Student,
-  Office Worker, Shopkeeper, Martial Fighter, Frost Knight); then change anything.
-- **Body**: 12 skin tones, 3 builds, and an **aura** (mana particles and a light, in one of 8
+The tabs:
+
+- **Presets:** **59** whole outfits on shelves, each card a live preview of you wearing it:
+  - every class at E, C, A and S (most at D too)
+  - the Association, guilds and civilians
+  - five iconic looks of the game's own
+- **Body:** 12 skin tones, 3 builds, and an **aura** (mana particles and a light, in one of 9
   colours or your rank's own).
-- **Face**: 8 expressions, 8 eye colours, a **mana glow** in the eyes (6 colours), 6 brows,
-  **14 scars and marks** (scar over the eye, across the nose, crossed, claw marks, burn,
-  freckles, war paint, mana veins...), 16 accessories.
-- **Head**: 46 Roblox-made hair accessories, 14 dyes, and **13 headwear pieces** (hood, raid
-  helmet, knight's helm, horned helm, assassin's wrap, mage's hat, healer's veil, hard hat,
-  goggles...). Helmets and hoods cover the hair.
-- **Clothes**: 21 tops, 10 bottoms, 7 shoes, gloves, 22 colours for each part and a trim colour.
-- **Gear**: 7 armour styles, **12 back items** (capes, quiver, raid pack, sheath, shield, staff,
-  crystal crate, guild banner, mana wings) in their own colour, and a workshop weapon.
+- **Face:** 8 expressions, 8 eye colours, a **mana glow** in the eyes, 6 brows, 15 scars and
+  marks, 30 face and neck extras.
+- **Head:** 47 Roblox-made hair accessories, 14 dyes, and **33 headwear pieces** (hoods and
+  cowls, winged and horned helms, crowns, a mage's hat, a healer's veil...). Helmets and hoods
+  cover the hair.
+- **Outfit:**
+  - **59 tops** in groups (Everyday, Coats, Uniforms, Robes, Combat, Traditional), 9 of them
+    robes with skirts and wide sleeves
+  - 24 bottoms, 13 shoes and boots, 13 gloves and gauntlets
+  - 34 colours for each piece and a trim colour
+- **Gear:** 21 armour styles, **30 back items** (capes that swing, quivers, sheaths, shields,
+  banners, wings...) and a workshop weapon (69 of them).
+- **Accessories:** up to four at once, one per body slot (`Hunter/Accessories.luau`).
+  - There are **106**: 15 for each class and 16 for anyone.
+  - Each is graded E to S, and a higher grade always gives more.
+  - A class's accessories raise that class's main stat.
+  - In a life they're **charms** you can buy and wear.
 
 Randomize and Save. The server checks every field.
 
@@ -274,7 +290,8 @@ accessories, loaded by the server with InsertService the first time someone pick
 hair stands in if one can't load). Your rank is never picked here: it's what you awaken at.
 
 `tools/avatar/r6_sheet.luau` builds contact sheets on real Roblox instance types (`-- presets`
-for presets, headwear, back items and faces; `-- weapons` for every weapon, `-- weapons fx` for every swing and hit), and
+for presets, headwear, back items and faces; `-- outfits` for every top, bottom, armour, shoe,
+glove and accessory; `-- zoom id,id` for chosen presets close up; `-- weapons` for every weapon, `-- weapons fx` for every swing and hit), and
 `node tools/gui_render/shoot.js --dump <json> --png <png>` draws them.
 
 **Blender and Studio:** monsters, weapons and gear can wear smooth Blender-made meshes (a mesh
@@ -292,6 +309,7 @@ lune run tests/weapons_check                    # weapons, stars, Shiny, drops, 
 lune run tests/weaponfx_check                   # every weapon at every rarity builds; every swing and hit draws
 lune run tests/live_build_check                 # the live city, every look option, every monster (built and animated)
 lune run tests/live_ui_check                    # the news board, the R6 creator and the market build
+lune run tests/outfits_check                    # every outfit option, preset and accessory builds; old saves load
 lune run tests/plugin_check                     # the Studio plugin (after bash tools/build_plugin.sh)
 python3 tests/bridge_check.py                   # the Studio bridge
 tools/blender/run.sh                            # the Blender mesh kit and its previews
