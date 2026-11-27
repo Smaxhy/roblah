@@ -543,12 +543,9 @@ function HunterLive.install(S)
 			elseif inc.outcome == "zone_lost" then
 				count += 4
 			end
-			-- one or two kinds of monster come out of a Gate (its own dungeon's kinds)
-			local kinds = Npcs.Monsters.KINDS[math.clamp(inc.rank, 1, 6)]
-			local a = kinds[math.random(1, #kinds)]
-			local b = kinds[math.random(1, #kinds)]
-			for k = 1, count do
-				local m = Npcs.spawnMonster(inc.rank, inc.pos, inc.id, if k % 3 == 0 then b else a)
+			-- one family comes out of a Gate (its own dungeon's): fighters, a support, a leader and
+			-- weaker kin (Hunter/Monsters.packFor, via Npcs.spawnPack)
+			for _, m in Npcs.spawnPack(inc.rank, inc.pos, inc.id, count) do
 				table.insert(inc.monsters, m)
 			end
 			inc.monstersLeft = count

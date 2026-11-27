@@ -707,12 +707,23 @@ do
 	end
 	local captured = { client = nil, input = nil, charAdded = nil, rendered = {} }
 	local fired = {}
+	-- (the remote has many listeners, as in Roblox: the live HUD and the monster animation both
+	-- listen to it; captured.client calls every one of them)
+	local listeners = {}
 	local function capture(key)
 		return { Connect = function(_, fn)
 			if key == "rendered" then
 				table.insert(captured.rendered, fn)
+			elseif key ~= "client" then
+				captured[key] = fn -- (the last one: the HUD's own; this test drives that one)
 			else
-				captured[key] = fn
+				listeners[key] = listeners[key] or {}
+				table.insert(listeners[key], fn)
+				captured[key] = function(...)
+					for _, f in listeners[key] do
+						f(...)
+					end
+				end
 			end
 			return { Disconnect = function() end, Connected = true }
 		end }

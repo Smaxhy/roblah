@@ -226,6 +226,7 @@ for what, n in expect do
 	local into = g:GetService("Workspace"):FindFirstChild("BitLevelingPreview")
 	into = into and into:FindFirstChild(what)
 	local floorOk = true
+	local offFloor = {}
 	if ok and into and what ~= "gates" then
 		for _, m in into:GetChildren() do
 			local lowest = math.huge
@@ -234,12 +235,14 @@ for what, n in expect do
 					lowest = math.min(lowest, d.CFrame.Position.Y - math.max(d.Size.X, d.Size.Y, d.Size.Z))
 				end
 			end
-			if lowest > 1 or lowest < -8 then
+			-- (lowest is rough: a part's centre less its longest side; the biggest S-rank monsters have parts 16 studs long)
+			if lowest > 1 or lowest < -16 then
 				floorOk = false
+				table.insert(offFloor, m.Name .. string.format(" %.1f", lowest))
 			end
 		end
 	end
-	check(ok and res == n and into ~= nil and #into:GetChildren() == n and floorOk, string.format("the %s gallery builds %d, standing on the floor", what, n) .. (if not ok then ": " .. tostring(res) else ""))
+	check(ok and res == n and into ~= nil and #into:GetChildren() == n and floorOk, string.format("the %s gallery builds %d, standing on the floor", what, n) .. (if not ok then ": " .. tostring(res) elseif res ~= n then string.format(" (built %s)", tostring(res)) elseif not floorOk then " (some float or sink: " .. table.concat(offFloor, ", ", 1, math.min(#offFloor, 5)) .. ")" else ""))
 end
 Previews.clear(dm)
 check(dm:GetService("Workspace"):FindFirstChild("BitLevelingPreview") == nil, "Clear previews clears them")

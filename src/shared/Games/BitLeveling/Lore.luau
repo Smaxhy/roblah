@@ -10,7 +10,7 @@
 
 -- (the codex category the bestiary files under: Spec's codex.categories. "gates" until a
 -- "bestiary" category is added there, then change this one word)
-local BESTIARY = "gates"
+local BESTIARY = "bestiary"
 
 return {
 	-- ── Gates and Dungeons ──

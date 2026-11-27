@@ -36,6 +36,8 @@ local Looks = Loader.require(shared.Hunter.Looks)
 local Weapons = Loader.require(shared.Hunter.Weapons)
 local MeshLibrary = Loader.require(shared.Hunter.MeshLibrary)
 local Monsters = Loader.require(server.HunterLive.Monsters)
+-- (the layouts a place with the kit gets: one box for the head that holds ears, beard, horns or mane)
+Monsters.MESH_LAYOUT = true
 
 local function shapeOf(p): string
 	if p:IsA("WedgePart") then

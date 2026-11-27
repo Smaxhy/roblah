@@ -1108,11 +1108,13 @@ function MonsterAnim.start(folderName: string?)
 		local shared = ReplicatedStorage:WaitForChild("LifeSim", 30)
 		local remotes = shared and shared:WaitForChild("Remotes", 30)
 		local ev = remotes and remotes:WaitForChild("HunterLive", 60)
-		if ev and ev:IsA("RemoteEvent") then
-			ev.OnClientEvent:Connect(function(d)
-				if type(d) == "table" and d.fx == "monster" then
-					MonsterAnim.fx(d)
-				end
+		if ev then
+			pcall(function()
+				ev.OnClientEvent:Connect(function(d)
+					if type(d) == "table" and d.fx == "monster" then
+						MonsterAnim.fx(d)
+					end
+				end)
 			end)
 		end
 	end)

@@ -6,9 +6,9 @@ and under the Gates; awaken or don't; raid, run, hide, rebuild. The world simula
 Gates (discovery, Association response, raids, Dungeon Breaks, Red Gates, Double Dungeons),
 follows the manhwa's public timeline on the news, and has two worlds (Normal and High-Danger).
 A live 3D city lets you walk as your own customizable **R6** character while Gates (standing
-whirlpools) open around you in real time and 24 kinds of monster come out of the ones that break.
+whirlpools) open around you in real time and monsters come out of the ones that break: 172 kinds in 40 families (elves, dwarves, orcs, insects, undead, demons, dragons...) that fight with 47 special attacks.
 202 weapons in 53 families and nine elements, with ★ to ★★★ and Shiny rolls, a player market, six classes with 72 skills,
-12 magic schools and 251 live moves on a five-slot skill bar, 70 birth talents, 12 turn-based bosses, 15 story arcs and 40 endings (Monarch paths
+12 magic schools and 251 live moves on a five-slot skill bar, 70 birth talents, 22 turn-based bosses, 15 story arcs and 40 endings (Monarch paths
 included, on a clearly non-canon world line), and an opening cutscene of a raid party walking
 into a Gate.
 

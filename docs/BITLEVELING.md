@@ -241,18 +241,56 @@ the DO tab; each needs a rank, enough of its main stat, and the skill before it.
 
 ## Monsters and bosses
 
-The live city's breaks spawn **24 kinds of monster, four a rank** (`server/HunterLive/Monsters.luau`):
-goblins, giant rats, cave bats and mana slimes at E; hobgoblins, armoured beetles, giant spiders
-and dire wolves at D; orcs, lizardmen, cave trolls and naga at C; ice bears, ogres, wraiths and
-iron golems at B; high orc warlords, wyverns, minotaurs and stone golems at A; dragon-kin,
-colossi, abyssal serpents and the Hollow King at S. Each is built from parts with jointed limbs
-and a gait (biped, four-legged, crawler, spider, flyer, floating, serpent, blob, golem), and
-`client/MonsterAnim.luau` animates them on each player's machine: legs by speed, wingbeats,
-tails, coils, a swing when they hit. A break brings two kinds. `tools/vfx/monster_sheet.luau`
-renders the roster (`docs/images/monsters.png`).
+The bestiary has **172 kinds of monster in 40 families**, E to S (`Hunter/Monsters.luau` builds
+them, `Hunter/Bestiary.luau` describes them).
+- **The families:**
+  - goblins, kobolds, orcs, high orcs, ogres, trolls, giants and minotaurs
+  - ice, forest and dark elves, and dwarves
+  - lizardfolk and naga
+  - ants, beetles, mantises, centipedes, scorpions and spiders
+  - wolves, bears, boars, great cats, lycans and hounds
+  - harpies, drakes and dragon-kin
+  - golems, constructs, slimes and elementals
+  - undead, demons and plants
+  - sea monsters, centaurs, basilisks and vermin
+- **Canon or original:** 61 kinds are canon types (goblins, orcs, giants, ice elves, naga, ants,
+  wyverns, golems, demons...), with no canon individual among them. The other 111 are the game's
+  own, and the codex says which is which.
+- **Packs:** a Gate lets out one family as a pack, made of fighters, a support, a leader and weaker
+  kin.
 
-In a life, raids have a **boss room** and Red Gates a throne: **12 bosses fought in turns**
-(`Games/BitLeveling/Bosses.luau`, two a rank), with phases, moves telegraphed a turn ahead, and
+**How they move.** Each kind is built from parts with jointed limbs on one of 17 gaits: biped,
+four-legged, crawler, spider, flyer, floating, serpent, blob, golem, stomp, centaur, six-legged,
+slither, swim, orbit, hop, tentacled. `client/MonsterAnim.luau` animates them on each player's
+machine:
+- legs by speed, idle breathing, wingbeats, tails and coils
+- eleven attack styles: swing, slam, claw, bite, lunge, shoot, cast, sting, whip, peck, gore
+- wind-ups, flinches, and a fall when they die
+
+**How they fight** (`server/HunterLive/MonsterAI.luau`):
+- **Ten behaviours:**
+  - melee and brutes
+  - swarms that fan out around you
+  - ranged kinds that keep their distance
+  - casters and fliers
+  - burrowers that come up under you
+  - healers and summoners
+  - leaders that hang back and drive the pack
+- **47 special attacks:** arrows, javelins, firebolts, breath, quakes, meteors, novas, charges,
+  leaps, dives, burrows, blinks, webs, war cries, heals, wards, shields, summons, splitting,
+  enraging and more.
+- **Dodging:** each special winds up where you can see it, so you can get out of the way.
+
+**In a life,** the foes you meet in Gates come from the same families (52 foes). The codex has a
+**Bestiary** page for each family.
+
+The renders, by rank: `docs/images/bestiary_e.png` through `bestiary_s.png`
+(`tools/vfx/monster_sheet.luau`).
+
+![The S-rank bestiary](images/bestiary_s.png)
+
+In a life, raids have a **boss room** and Red Gates a throne: **22 bosses fought in turns**
+(`Games/BitLeveling/Bosses.luau`, several a rank), with phases, moves telegraphed a turn ahead, and
 friends on the server able to join. They're tuned by headless fights: a Hunter at the boss's rank
 with middling stats wins about half the time alone, a strong one nearly always; a Red Gate's boss
 is a rank above the reading, so run if you must.
@@ -342,6 +380,7 @@ lune run tests/abilities_check                  # 251 moves: data, scaling, effe
 lune run tests/weapons_check                    # weapons, stars, Shiny, drops, the market's value
 lune run tests/weaponfx_check                   # every weapon at every rarity builds; every swing and hit draws
 lune run tests/live_build_check                 # the live city, every look option, every monster (built and animated)
+lune run tests/monsters_check                   # 172 kinds: builds, rank scaling, packs, gaits, every special, packs fighting
 lune run tests/live_ui_check                    # the news board, the R6 creator and the market build
 lune run tests/outfits_check                    # every outfit option, preset and accessory builds; old saves load
 lune run tests/plugin_check                     # the Studio plugin (after bash tools/build_plugin.sh)

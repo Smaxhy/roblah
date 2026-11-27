@@ -475,6 +475,7 @@ return {
 				{ id = "orgs", name = "Associations and Guilds" },
 				{ id = "history", name = "What Happened" },
 				{ id = "beyond", name = "Beyond the Gates" },
+				{ id = "bestiary", name = "Bestiary" },
 				{ id = "game", name = "How This World Works (game)" },
 			},
 			entries = require(script.Parent:WaitForChild("Lore")),
