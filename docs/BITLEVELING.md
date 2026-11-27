@@ -110,13 +110,107 @@ brings you down, your life takes the injury, and it can kill you.
 Admins (and anyone in Studio) get **TEST GATE**, **TEST BREAK** and **TEST RED GATE** buttons on
 the dock, which open one at the site nearest them.
 
+## The opening and the Gates
+
+When you join, a short cutscene plays (`client/OpeningCutscene.luau`, Skip ends it): a night
+street behind police tape, people filming at the cordon, the Association's van, and a raid party
+of five (Tanker in front, then Fighter, Mage, Assassin, Healer) walking into a Gate one at a time.
+
+Every Gate in the live city is drawn by `client/GateVfx.luau` as canon draws them: a **standing
+whirlpool**, a vertical disc of spiral arms turning around a dark eye, with a bright rim, an inner
+horizon, mana drawn in from around it, and a light. It swirls faster as a break nears, surges and
+cracks the street when it breaks, turns red when a raid is sealed in, and collapses when it
+closes. `tools/vfx/gate_sheet.luau` renders it offline.
+
+## Weapons, rarities and the market
+
+`Hunter/Weapons.luau` has **65 weapons in 28 families** (daggers, twin daggers, swords, katanas,
+greatswords, rapiers, cleavers, scythes, spears, halberds, axes, hammers, maces, staffs, wands,
+focus orbs, grimoires, bows, crossbows, gauntlets, claws, shields, lanterns, rods, chain-blades,
+chakrams, kusarigama...), graded E to S, each with its own 3D model (`Hunter/WeaponModels.luau`).
+
+Every weapon that drops is rolled for **stars**: ★ (70%), ★★ (24%, x1.35 power, glowing edges),
+★★★ (6%, x1.8, a light of its own). On top of that, 1 in 60 is **Shiny** (x1.45 more, +6% heads
+in every fight, gold trim and sparkles). Raids, breaks, Red Gates and Double Dungeons drop them;
+harder places drop better ones. A better weapon goes in your hand, the rest to your stash.
+
+**MARKET** on the dock is the Hunters' Market (`server/HunterMarket.luau`): list a weapon for
+other players on the server to buy (up to six at once). A listed weapon is held in escrow on your
+profile, so nothing is lost if the server closes; a sale made after your life ended waits in your
+market wallet for the next one.
+
+## Classes, skills and talents
+
+Every awakened Hunter has a class (canon's six: Fighter, Mage, Assassin, Tanker, Ranger, Healer),
+leaned by your stats and birth talents. Each class has **six skills** learned in order on the DO
+tab, each needing a rank and enough of the class's main stat (`Games/BitLeveling/Skills.luau`).
+At birth you get a **talent** from 50, by rarity (Ordinary to Unreal).
+
+In the live city a class's skills power two abilities, **Q** and **R**, each with its own effect:
+Cleave and Ground Slam (Fighter), Mana Bolt and Frost Nova (Mage), a dash strike and Bleed Flurry
+(Assassin), Shield Bash and Provoke (Tanker), Piercing Arrow and Arrow Rain (Ranger), Mend and
+Sanctuary (Healer).
+
+## Monsters and bosses
+
+The live city's breaks spawn **24 kinds of monster, four a rank** (`server/HunterLive/Monsters.luau`):
+goblins, giant rats, cave bats and mana slimes at E; hobgoblins, armoured beetles, giant spiders
+and dire wolves at D; orcs, lizardmen, cave trolls and naga at C; ice bears, ogres, wraiths and
+iron golems at B; high orc warlords, wyverns, minotaurs and stone golems at A; dragon-kin,
+colossi, abyssal serpents and the Hollow King at S. Each is built from parts with jointed limbs
+and a gait (biped, four-legged, crawler, spider, flyer, floating, serpent, blob, golem), and
+`client/MonsterAnim.luau` animates them on each player's machine: legs by speed, wingbeats,
+tails, coils, a swing when they hit. A break brings two kinds. `tools/vfx/monster_sheet.luau`
+renders the roster (`docs/images/monsters.png`).
+
+In a life, raids have a **boss room** and Red Gates a throne: **12 bosses fought in turns**
+(`Games/BitLeveling/Bosses.luau`, two a rank), with phases, moves telegraphed a turn ahead, and
+friends on the server able to join. They're tuned by headless fights: a Hunter at the boss's rank
+with middling stats wins about half the time alone, a strong one nearly always; a Red Gate's boss
+is a rank above the reading, so run if you must.
+
+## Stories and endings
+
+Beyond the Gate incidents and canon headlines, a life can fall into one of **15 story arcs**
+(`Events/Saga_*.luau`, about 130 cards), each running over several years with branches and ways to
+fail: founding your own guild (a rival guild, a guild war, a collapse); rising in the Association
+(a crime ring that under-reads Gates; Surveillance Team or Branch Director); turning rogue (prison,
+testimony, or on the run); the Healer's Oath; the Wall (a Tanker holding a line); four for people
+without a rank (a reporter and a buried story, a shelter network, a crystal tycoon, a researcher's
+early-warning box); surviving a Red Gate and then a second one; the Hollow Door (a double dungeon
+of the game's own, not Cartenon); passing your weapon to a child who awakens.
+
+On the **non-canon world line** (choose to keep the Gates when canon rewrites the world) more open
+up, and every card says it's non-canon: **five Monarch paths**, where the power of a Monarch who
+died in canon (Rakan, Sillad, Querehsha, Legia, Tarnak) looks for a vessel: take the crown, refuse
+it at the last moment, or be consumed; becoming a National Level Hunter; lending your body to a
+Ruler; the Association's chair. Ashborn, Antares, Baran and Yogumunt are never offered.
+
+Every life ends in one of **40 fates** (`Games/BitLeveling/Fates.luau`), rarity 1 to 5: the death
+screen leads with it, the life's record is titled with it, and your profile collects them (a new
+one pays 1 Glow; rare ones make the server's news). The **ENDINGS** tab on the news board lists
+the ones you've found and a hint for each one you haven't.
+
 ## R6 character customization
 
-`R6 LOOK` on the dock opens the creator: a turntable preview of a real R6 rig, and tabs for
-**Body** (12 skin tones, 3 builds), **Face** (8 expressions, 8 eye colours, 6 brows, 11
-accessories), **Hair** (46 Roblox-made hair accessories, 14 dyes), **Clothes** (13 tops, 7
-bottoms, 4 shoes, gloves, 22 colours for each part and a trim colour), and **Hunter Gear** (7
-armour styles, 12 weapons). Randomize and Save. The server checks every field.
+`R6 LOOK` on the dock opens the creator: a turntable preview of a real R6 rig, and tabs:
+
+- **Presets**: 16 whole outfits in a click (Association Agent, Surveillance Team, Guild Striker,
+  Tanker, Assassin, Mage, Healer, Ranger, Collection Crew, Rogue Hunter, Raid Commander, Student,
+  Office Worker, Shopkeeper, Martial Fighter, Frost Knight); then change anything.
+- **Body**: 12 skin tones, 3 builds, and an **aura** (mana particles and a light, in one of 8
+  colours or your rank's own).
+- **Face**: 8 expressions, 8 eye colours, a **mana glow** in the eyes (6 colours), 6 brows,
+  **14 scars and marks** (scar over the eye, across the nose, crossed, claw marks, burn,
+  freckles, war paint, mana veins...), 16 accessories.
+- **Head**: 46 Roblox-made hair accessories, 14 dyes, and **13 headwear pieces** (hood, raid
+  helmet, knight's helm, horned helm, assassin's wrap, mage's hat, healer's veil, hard hat,
+  goggles...). Helmets and hoods cover the hair.
+- **Clothes**: 21 tops, 10 bottoms, 7 shoes, gloves, 22 colours for each part and a trim colour.
+- **Gear**: 7 armour styles, **12 back items** (capes, quiver, raid pack, sheath, shield, staff,
+  crystal crate, guild banner, mana wings) in their own colour, and a workshop weapon.
+
+Randomize and Save. The server checks every field.
 
 The rig is built from Parts (the six classic R6 parts, Motor6D joints, the standard attachments),
 with the clothes and gear as shells welded to each limb and the face drawn on a plate. Nothing
@@ -124,9 +218,9 @@ depends on uploaded meshes or shirt templates that could go missing; the hair is
 accessories, loaded by the server with InsertService the first time someone picks one (block
 hair stands in if one can't load). Your rank is never picked here: it's what you awaken at.
 
-`tools/avatar/r6_sheet.luau` builds a contact sheet of looks on real Roblox instance types;
-`node tools/gui_render/shoot.js --dump tools/avatar/shots/r6.json --png tools/avatar/shots/r6.png`
-draws it (faces and hair accessories show in game, not on the sheet).
+`tools/avatar/r6_sheet.luau` builds contact sheets on real Roblox instance types (`-- presets`
+for presets, headwear, back items and faces; `-- weapons` for every weapon), and
+`node tools/gui_render/shoot.js --dump <json> --png <png>` draws them.
 
 **About Blender:** there's no Blender in this environment, and meshes made in Blender would need
 uploading to Roblox under your account before a game could use them. The parts-built rig needs
@@ -138,7 +232,10 @@ Studio as MeshParts, and add them to `Looks.luau` and `R6Rig.luau`.
 ```
 lune run tools/checkgame BitLeveling            # validate, lint, headless lives
 lune run tests/hunterworld_check 100            # the world simulation's behaviour (see below)
-lune run tests/live_build_check                 # the live city, R6 civilians and monsters on real Roblox types
+lune run tests/fates_check 60                   # every ending reachable, every life ends in one
+lune run tests/weapons_check                    # weapons, stars, Shiny, drops, the market's value
+lune run tests/live_build_check                 # the live city, every look option, every monster (built and animated)
+lune run tests/live_ui_check                    # the news board, the R6 creator and the market build
 lune run tests/compile_check                    # every .luau file parses
 lune run tools/avatar/r6_sheet.luau             # R6 looks on real Roblox types (then shoot.js for a PNG)
 python3 tests/safety_scan.py src/shared/Games/BitLeveling
@@ -150,7 +247,8 @@ High-Danger World breaks more, kills more, answers later and opens more Gates in
 Gates are rare and Double Dungeons rarer; canon headlines land in their years; no secret canon
 reaches the news; Jeju falls, its residents are evacuated, and it's restored after the fourth
 raid; Korea has no S-rank before its canon 10th; lives are only pulled into incidents in their
-own city; every life saves.
+own city; every life saves; raid and Red Gate boss rooms start fights in turns and are recorded
+when they end.
 
 What can't be tested here is the live game itself (Roblox Studio isn't available in this
 environment): the Roblox-side code is syntax-checked, type-checked against Roblox's API
@@ -165,3 +263,8 @@ buttons on the dock.
 - The live city is one shared city: it's "your city" for whoever walks it, whatever their life's city is.
 - NPC monsters and Hunters use simple chase-and-strike AI (no pathfinding around buildings).
 - The Robux store is off (`fanWork = true`): Solo Leveling is someone else's IP.
+- The kit's full-server harness tests (`tests/battle_check` and the others built on
+  `tests/harness.luau`) don't boot under this Lune version, on the kit as imported too; the
+  engine pieces they cover are tested directly by the checks above.
+- The sheet renderer doesn't draw particles, lights or SurfaceGuis on parts, so auras and glows
+  are checked structurally and the faces are rendered flat.

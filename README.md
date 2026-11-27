@@ -5,13 +5,18 @@ non-commercial fan game), built on the LifeSim blueprint kit below. Live a whole
 and under the Gates; awaken or don't; raid, run, hide, rebuild. The world simulates its own
 Gates (discovery, Association response, raids, Dungeon Breaks, Red Gates, Double Dungeons),
 follows the manhwa's public timeline on the news, and has two worlds (Normal and High-Danger).
-A live 3D city lets you walk as your own customizable **R6** character while Gates open around
-you in real time.
+A live 3D city lets you walk as your own customizable **R6** character while Gates (standing
+whirlpools) open around you in real time and 24 kinds of monster come out of the ones that break.
+65 weapons with ★ to ★★★ and Shiny rolls, a player market, six classes with skills and live
+abilities, 50 birth talents, 12 turn-based bosses, 15 story arcs and 40 endings (Monarch paths
+included, on a clearly non-canon world line), and an opening cutscene of a raid party walking
+into a Gate.
 
 - **Play:** open `build/BitLeveling.rbxlx` in Roblox Studio and press Play (build it with
   `bash tools/build_game.sh BitLeveling --no-test`).
 - **Everything about it:** [`docs/BITLEVELING.md`](docs/BITLEVELING.md) (systems, canon vs.
-  original content, the two worlds, the live city, R6 customization, testing).
+  original content, the two worlds, the live city, weapons and the market, classes and skills,
+  monsters and bosses, stories and endings, R6 customization, testing).
 - **The canon research:** [`docs/BITLEVELING_CANON.md`](docs/BITLEVELING_CANON.md).
 
 ---
