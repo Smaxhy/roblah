@@ -26,6 +26,7 @@ local Debris = game:GetService("Debris")
 local Workspace = game:GetService("Workspace")
 
 local Theme = require(script.Parent:WaitForChild("UI"):WaitForChild("Theme"))
+local GateVfx = require(script.Parent:WaitForChild("GateVfx"))
 local C, F = Theme.colors, Theme.fonts
 
 local HunterLive = {
@@ -102,6 +103,7 @@ function HunterLive.start(opts: any?)
 	HunterLive.call = call
 
 	local fxRoot = make("Folder", { Name = "HunterLiveFx" }, Workspace)
+	GateVfx.autoStep()
 	local tint = Lighting:FindFirstChild("HunterLiveTint") or make("ColorCorrectionEffect", { Name = "HunterLiveTint", Enabled = true }, Lighting)
 
 	-- ── the GUI: a dock on the left, the walk HUD, toasts ──
@@ -152,10 +154,6 @@ function HunterLive.start(opts: any?)
 		end
 	end
 
-	local function gateColor(snap: any): (Color3, Color3)
-		if snap.red then
-			return RED, RED_DEEP
-		end
 		return BLUE, BLUE_DEEP
 	end
 
@@ -238,62 +236,26 @@ function HunterLive.start(opts: any?)
 		local size = 8 + snap.rank * 3 + (if snap.rank >= 6 then 6 else 0)
 		local model = make("Model", { Name = "Gate" .. snap.id }, fxRoot)
 		local yaw = (snap.id * 1.7) % (math.pi * 2)
+		-- the Gate stands on its edge, its face along the street, its bottom just off the ground
 		local center = CFrame.new(pos + Vector3.new(0, size / 2 + 1.5, 0)) * CFrame.Angles(0, yaw, 0)
-		local col, deep = gateColor(snap)
-		-- a disc stands upright (a cylinder's axis is X: turned, its face looks along the street)
-		local function disc(d: number, depth: number, c: Color3, tr: number, mat: Enum.Material, z: number): BasePart
-			return fxPart({ Shape = Enum.PartType.Cylinder, Size = Vector3.new(depth, d, d), CFrame = center * CFrame.new(z, 0, 0), Color = c, Material = mat, Transparency = tr }, model)
-		end
-		local halo = disc(size * 1.18, 0.2, col, 0.75, Enum.Material.Neon, 0)
-		local rim = disc(size, 0.5, col, 0.1, Enum.Material.Neon, 0)
-		local inner = disc(size * 0.86, 0.6, deep, 0.02, Enum.Material.SmoothPlastic, 0)
-		local swirl = disc(size * 0.62, 0.7, col:Lerp(deep, 0.45), 0.25, Enum.Material.Neon, 0)
-		local core = fxPart({ Size = Vector3.one, CFrame = center, Transparency = 1 }, model)
-		local light = make("PointLight", { Color = col, Range = 26 + snap.rank * 7, Brightness = 2.5 + snap.rank * 0.3, Shadows = false }, core)
-		local spark = make("ParticleEmitter", {
-			Texture = SPARKLE, Color = ColorSequence.new(col), LightEmission = 1, Rate = 14 + snap.rank * 10,
-			Lifetime = NumberRange.new(1.2, 2.4), Speed = NumberRange.new(1, 4), SpreadAngle = Vector2.new(180, 180),
-			Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.6), NumberSequenceKeypoint.new(1, 0) }), Transparency = NumberSequence.new(0.1, 1),
-			RotSpeed = NumberRange.new(-90, 90), Shape = Enum.ParticleEmitterShape.Disc, ShapeStyle = Enum.ParticleEmitterShapeStyle.Volume,
-		}, core)
-		local mist = make("ParticleEmitter", {
-			Texture = SMOKE, Color = ColorSequence.new(col:Lerp(Color3.new(1, 1, 1), 0.4)), Rate = 4 + snap.rank * 2, LightEmission = 0.4,
-			Lifetime = NumberRange.new(3, 5), Speed = NumberRange.new(0.5, 1.5), SpreadAngle = Vector2.new(180, 20),
-			Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, size * 0.25), NumberSequenceKeypoint.new(1, size * 0.5) }), Transparency = NumberSequence.new(0.75, 1),
-		}, core)
-		-- it opens: grow from nothing
-		for _, p in { halo, rim, inner, swirl } do
-			local s = p.Size
-			p.Size = Vector3.new(s.X, 0.1, 0.1)
-			TweenService:Create(p, TweenInfo.new(1.6, Enum.EasingStyle.Back, Enum.EasingDirection.Out), { Size = s }):Play()
-		end
-		local g = { id = snap.id, rank = snap.rank, pos = pos, size = size, model = model, core = core, light = light, spark = spark, mist = mist, discs = { halo, rim, swirl }, inner = inner, swirl = swirl, center = center, spin = 0, snap = snap }
+		local vfx = GateVfx.new(model, center, size / 2, { red = snap.red, rank = snap.rank })
+		vfx:open(1.8)
+		local core = vfx.core
+		local g = { id = snap.id, rank = snap.rank, pos = pos, size = size, model = model, core = core, vfx = vfx, center = center, snap = snap }
 		gates[snap.id] = g
 		return g
 	end
 
 	local function recolor(g: any, snap: any)
-		local col, deep = gateColor(snap)
-		for _, p in g.discs do
-			p.Color = col
-		end
-		g.swirl.Color = col:Lerp(deep, 0.45)
-		g.inner.Color = deep
-		g.light.Color = col
-		g.spark.Color = ColorSequence.new(col)
+		g.vfx:setRed(snap.red == true)
 	end
 
 	local function closeGate(g: any)
 		gates[g.id] = nil
 		siren(g, false)
-		for _, p in g.discs do
-			TweenService:Create(p, TweenInfo.new(1.2, Enum.EasingStyle.Back, Enum.EasingDirection.In), { Size = Vector3.new(p.Size.X, 0.1, 0.1) }):Play()
-		end
-		TweenService:Create(g.inner, TweenInfo.new(1.2, Enum.EasingStyle.Back, Enum.EasingDirection.In), { Size = Vector3.new(g.inner.Size.X, 0.1, 0.1) }):Play()
-		g.spark.Rate = 0
-		g.mist.Rate = 0
-		g.spark:Emit(60)
-		Debris:AddItem(g.model, 2.5)
+		g.vfx:close(1.5)
+		GateVfx.flash(fxRoot, g.center.Position, if g.snap.red then RED else BLUE, g.size * 1.6, 0.9)
+		Debris:AddItem(g.model, 3)
 	end
 
 	local function apply(list: any)
@@ -380,10 +342,15 @@ function HunterLive.start(opts: any?)
 			end
 		elseif kind == "enter" then
 			flash(v3(d.at) + Vector3.new(0, 3, 0), BLUE, 6, 0.4)
+			local g = gates[d.id]
+			if g then
+				g.vfx:surge(1)
+			end
 		elseif kind == "gateOpen" then
 			local g = gates[d.id]
 			if g then
 				flash(g.core.Position, BLUE, g.size * 1.5, 0.8)
+				g.vfx:surge(1.5)
 				shakeNear(g.pos, 0.8, 120)
 				sound(PING, g.core.Position, 0.6, 0.5)
 			end
@@ -398,7 +365,7 @@ function HunterLive.start(opts: any?)
 			if g then
 				cracks(g)
 				flash(g.core.Position, Color3.fromRGB(255, 110, 60), g.size * 2.4, 1.1)
-				g.spark.Rate *= 2.5
+				g.vfx:surge(2)
 				shakeNear(g.pos, 2 + g.rank * 0.4, 220)
 			end
 		elseif kind == "siren" then
@@ -444,11 +411,9 @@ function HunterLive.start(opts: any?)
 		local ch = player.Character
 		local hrp = ch and ch:FindFirstChild("HumanoidRootPart") :: BasePart?
 		for _, g in gates do
-			g.spin += dt * (0.6 + g.rank * 0.15)
-			g.swirl.CFrame = g.center * CFrame.Angles(g.spin, 0, 0)
-			g.inner.CFrame = g.center * CFrame.Angles(-g.spin * 0.5, 0, 0)
-			local pulse = 1 + math.sin(clock * (if g.snap.broke then 9 else 3)) * 0.08
-			g.light.Brightness = (2.5 + g.rank * 0.3) * pulse
+			if g.snap.broke and math.random() < dt * 0.8 then
+				g.vfx:surge(0.6) -- a broken Gate keeps heaving
+			end
 			for k, l in g.lightbars or {} do
 				l.Transparency = if (math.floor(clock * 6) + k) % 2 == 0 then 0 else 0.85
 			end

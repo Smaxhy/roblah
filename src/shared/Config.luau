@@ -167,6 +167,7 @@ return {
 	-- people walk the streets. Admins (and anyone in Studio) get a TEST GATE button.
 	hunterLive = {
 		enabled = true,
+		opening = true, -- the opening cinematic when a player joins (a raid party walking into a Gate)
 		firstDelay = 45,
 		every = { 150, 320 },
 		maxIncidents = 2,
