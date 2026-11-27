@@ -391,7 +391,7 @@ def main():
     layout = json.load(open(os.path.join(OUT, "layout.json")))
     rank = "EDCBAS"
     if what in ("monsters", "all"):
-        sheet("monsters", layout["monsters"], 6, 10.0, 35, "BITLEVELING · THE MONSTERS WITH THE BLENDER MESH KIT (Cycles)",
+        sheet("monsters", layout["monsters"], 8, 10.0, 35, "BITLEVELING · THE BESTIARY WITH THE BLENDER MESH KIT (Cycles), E TO S",
               lambda m: f"{rank[m['rank'] - 1]} · {m['name']}", width=1500)
     if what in ("weapons", "all"):
         sheet("weapons", layout["weapons"], 10, 10.0, 80, "BITLEVELING · EVERY WEAPON WITH THE MESH KIT (side view)",
