@@ -35,6 +35,10 @@
 			holy (a pillar of light), wind (a swirl), earth (rocks and dust), none (sparks).
 		WeaponFx.equip(model: Model, opts: { parent: Instance? }?)
 			A short flash over the weapon when it appears, a ring at the hand, a burst.
+		Sounds (client/WorldSfx, where it happens): swing plays the family's own swing (a blade's
+		swish, a greataxe's heavy whoosh, a bow's draw and release, a whip's crack...), hit plays
+		the element's impact (and the family's blow when opts.family is given), equip the draw.
+		opts.sound = false keeps any of them quiet.
 		WeaponFx.familyOf(model): string?      WeaponFx.elementOf(model): string ("none" if unset)
 		WeaponFx.styleOf(model): string        WeaponFx.colorOf(element, shade?): Color3
 		WeaponFx.trails(model): { Trail }      WeaponFx.STYLES: { string }
@@ -82,6 +86,23 @@ local FALLBACK_STYLE = {
 	gauntlets = "punch", claws = "punch", katar = "punch", whip = "lash", chainblade = "lash", kusarigama = "lash",
 	shield = "bash", buckler = "bash", towershield = "bash",
 }
+
+-- (sounds) client/WorldSfx, loaded on first use; quiet if it isn't there
+local worldSfxModule: any = nil
+local function sfx(fn: string, ...: any)
+	if worldSfxModule == nil then
+		worldSfxModule = false
+		pcall(function()
+			local m = (script :: any).Parent:FindFirstChild("WorldSfx")
+			if m then
+				worldSfxModule = require(m :: any)
+			end
+		end)
+	end
+	if worldSfxModule then
+		pcall(worldSfxModule[fn], ...)
+	end
+end
 
 local weaponsModule: any = nil
 local function weapons(): any?
@@ -670,6 +691,9 @@ function WeaponFx.swing(model: Model, opts: any?)
 	}
 	local draw = STYLE[style] or STYLE.slash
 	draw(s)
+	if opts.sound ~= false then
+		sfx("weapon", s.family, "swing", origin, { power = opts.power, stars = s.stars, style = style })
+	end
 end
 
 -- ── impacts ────────────────────────────────────────────────────────────────
@@ -766,6 +790,14 @@ function WeaponFx.hit(position: Vector3, element: string?, power: number?, opts:
 	local pal = palette(key)
 	HIT[key](parent, position, pal, k)
 	burst(parent, position, key, 10 * k, k)
+	if not (opts and opts.sound == false) then
+		if key ~= "none" then
+			sfx("magic", key, "impact", position, { power = power, volume = 0.6 })
+		end
+		if opts and opts.family then
+			sfx("weapon", opts.family, "hit", position, { power = power })
+		end
+	end
 end
 
 -- ── equip ──────────────────────────────────────────────────────────────────
@@ -830,6 +862,12 @@ function WeaponFx.equip(model: Model, opts: any?)
 	hoop(parent, CFrame.new(root.Position - Vector3.new(0, 2.8, 0)), 0.8, 3.2, 10, 0.12, color, 0.45, 0.25)
 	flash(parent, at, pal.light, 1.5, 0.3, 3)
 	burst(parent, at, element, 12, 0.9, if shiny then GOLD else nil)
+	if not (opts and opts.sound == false) then
+		sfx("weapon", WeaponFx.familyOf(model), "equip", at)
+		if shiny then
+			sfx("play", "holy.ding", at, { volume = 0.5, pitch = 1.2 })
+		end
+	end
 end
 
 return WeaponFx

@@ -32,6 +32,20 @@ local Workspace = game:GetService("Workspace")
 local Debris = game:GetService("Debris")
 
 local GateVfx = require(script.Parent:WaitForChild("GateVfx"))
+-- (sound) the set's sounds come from client/WorldSfx (from where they happen on the set) and the
+-- screen's from client/UiSounds (the class cards, the title). Without them it plays silent.
+local okWorldSfx, WorldSfx = pcall(function()
+	return require(script.Parent:WaitForChild("WorldSfx", 5))
+end)
+local okUiSounds, UiSounds = pcall(function()
+	return require(script.Parent:WaitForChild("UiSounds", 5))
+end)
+if not okWorldSfx then
+	WorldSfx = nil
+end
+if not okUiSounds then
+	UiSounds = nil
+end
 
 local OpeningCutscene = {}
 
@@ -478,6 +492,38 @@ function OpeningCutscene.play()
 	local gateC = at(0, 13, GATE_Z)
 	local gate = GateVfx.new(folder, CFrame.new(gateC), 11.5, { rank = 4 })
 
+	-- (sound) every sound cue is guarded like the rest; the loops it starts (hums, sirens, the
+	-- crowd) are kept here and faded out when the opening ends or is skipped
+	local loops = {}
+	local function snd(fn: () -> any?): any?
+		if not WorldSfx then
+			return nil
+		end
+		local ok, h = pcall(fn)
+		if ok and type(h) == "table" and h.stop then
+			table.insert(loops, h)
+			return h
+		end
+		return nil
+	end
+	local function ui(name: string, opts: any?)
+		if UiSounds then
+			pcall(UiSounds.play, name, opts)
+		end
+	end
+	snd(function()
+		WorldSfx.start()
+		return nil
+	end)
+	-- the night over the city, and the Gate in the clouds humming far above
+	local nightWind = snd(function()
+		return WorldSfx.play("nightWind")
+	end)
+	local skyHum = snd(function()
+		return WorldSfx.gate("hum", skyC, { rank = 6, near = 160, far = 1000, volume = 1.4 })
+	end)
+	local streetHum, sirens, crowdLoop, march = nil, {}, nil, nil
+
 	-- the party, in their class presets, standing out of shot until they walk up
 	local party = {}
 	for i, p in PARTY do
@@ -583,6 +629,7 @@ function OpeningCutscene.play()
 	cardLine.TextColor3 = Color3.fromRGB(210, 216, 230)
 	cardLine.Parent = card
 	local function showCard(p: any)
+		ui("card")
 		cardBar.BackgroundColor3 = p.color
 		cardTitle.Text = p.class
 		cardTitle.TextColor3 = Color3.new(1, 1, 1):Lerp(p.color, 0.45)
@@ -604,6 +651,7 @@ function OpeningCutscene.play()
 	skip.TextSize = 15
 	skip.Text = "SKIP  >"
 	skip.ZIndex = 9
+	skip:SetAttribute("UiSound", "close") -- (sound: client/UiSounds clicks every button)
 	skip.Parent = gui
 	Instance.new("UICorner").Parent = skip
 	-- the title: one label a letter, so they can drop in one by one
@@ -691,17 +739,34 @@ function OpeningCutscene.play()
 		-- the sky splits: the high Gate opens with lightning and meteors
 		{ 0.6, function()
 			skyGate:open(2.4)
+			snd(function()
+				return WorldSfx.gate("open", skyC, { rank = 6, near = 200, far = 1100, volume = 1.3 })
+			end)
 		end },
 		{ 1.4, function()
 			Fx.bolt(folder, skyC + Vector3.new(-40, 20, 0), skyC + Vector3.new(-10, -40, -20), Color3.fromRGB(180, 210, 255))
 			Lighting.Brightness = 3
 			tween(Lighting, 0.4, { Brightness = 1.2 })
+			snd(function()
+				return WorldSfx.play("lightning", skyC + Vector3.new(-25, -10, -10), { far = 1500 })
+			end)
+			snd(function()
+				return WorldSfx.play("thunder", skyC + Vector3.new(-25, -10, -10))
+			end)
 		end },
 		{ 2.3, function()
 			for k = 1, 5 do
 				task.delay(k * 0.35, function()
 					local from = skyC + Vector3.new(math.random(-60, 60), math.random(-10, 10), math.random(-20, 20))
-					Fx.projectile(folder, from, at(math.random(-120, 120), 0, math.random(200, 400)), Color3.fromRGB(120, 180, 255), 2.4, 1.4)
+					local to = at(math.random(-120, 120), 0, math.random(200, 400))
+					snd(function()
+						return WorldSfx.play("meteor", from, { pitch = 0.9 + k * 0.05 })
+					end)
+					Fx.projectile(folder, from, to, Color3.fromRGB(120, 180, 255), 2.4, 1.4, function()
+						snd(function()
+							return WorldSfx.play("meteorImpact", to)
+						end)
+					end)
 				end)
 			end
 		end },
@@ -710,6 +775,12 @@ function OpeningCutscene.play()
 			Lighting.Brightness = 3.4
 			tween(Lighting, 0.4, { Brightness = 1.2 })
 			shake = 0.5
+			snd(function()
+				return WorldSfx.play("lightning", skyC + Vector3.new(45, -20, -5), { far = 1500, pitch = 0.95 })
+			end)
+			snd(function()
+				return WorldSfx.play("thunder", skyC + Vector3.new(45, -20, -5), { pitch = 0.92 })
+			end)
 		end },
 		-- a Gate opens in the street
 		{ 6.2, function()
@@ -717,6 +788,21 @@ function OpeningCutscene.play()
 			Fx.ring(folder, at(0, 0.3, GATE_Z), Color3.fromRGB(120, 190, 255), 50, 1.2)
 			Fx.flash(folder, gateC, Color3.fromRGB(190, 225, 255), 30, 0.8)
 			shake = 1.2
+			-- (sound) the cut to the street: the sky's sounds go, the street Gate tears open and hums
+			for _, h in { skyHum, nightWind } do
+				if h then
+					pcall(h.stop, h, 0.6)
+				end
+			end
+			snd(function()
+				return WorldSfx.gate("open", gateC, { rank = 4, near = 40, far = 420, volume = 1.2 })
+			end)
+			snd(function()
+				return WorldSfx.play("debris", at(0, 0.3, GATE_Z - 6), { volume = 1.2 })
+			end)
+			streetHum = snd(function()
+				return WorldSfx.gate("hum", gateC, { rank = 4, near = 26, far = 320 })
+			end)
 			-- the asphalt cracks, glowing
 			local rng = Random.new(7)
 			for _ = 1, 16 do
@@ -731,20 +817,58 @@ function OpeningCutscene.play()
 			for _, r in runners do
 				r.go = true
 			end
+			-- (sound) people running past the camera, and the police cars' sirens at the cordon
+			crowdLoop = snd(function()
+				return WorldSfx.city("panic", at(0, 3, GATE_Z - 34), { near = 30, far = 260, duration = 5.4, volume = 1.2 })
+			end)
+			for i, x in { -14, 14 } do
+				sirens[i] = snd(function()
+					return WorldSfx.city("siren", at(x, 5, 104), { near = 30, far = 420, pitch = if i == 1 then 1 else 1.06, volume = 0.85 })
+				end)
+			end
 		end },
 		-- the van brakes in
 		{ 12.0, function()
 			van:PivotTo(CFrame.new(at(-15, 4, 40)))
 			move(van, CFrame.new(at(-15, 4, 92)) * CFrame.Angles(0, math.rad(12), 0), 2.2)
+			snd(function()
+				return WorldSfx.play("vanArrive", van)
+			end)
+			task.delay(0.85, function()
+				snd(function()
+					return WorldSfx.city("brake", van, { volume = 1.1 })
+				end)
+			end)
+			task.delay(0.5, function()
+				snd(function()
+					return WorldSfx.city("radio", at(-14, 5, 104))
+				end)
+			end)
 		end },
 		{ 14.3, function()
 			Fx.smoke(folder, at(-15, 1, 92), Color3.fromRGB(80, 80, 90))
+			snd(function()
+				return WorldSfx.city("door", at(-15, 4, 92))
+			end)
+			task.delay(0.4, function()
+				snd(function()
+					return WorldSfx.city("radio", at(-15, 5, 92), { pitch = 1.08 })
+				end)
+			end)
 		end },
 		-- the party walks up
 		{ 14.8, function()
 			for _, m in party do
 				m.walk = loopAnim(m.model, R6Rig, "walk", 0.8)
 				m.walking = true
+			end
+			-- (sound) six Hunters' footsteps, and the sirens step back for their moments
+			local lead = heroAt(1)
+			march = snd(function()
+				return WorldSfx.play("march", if lead then lead.root else at(0, 3, LINE_Z - 20))
+			end)
+			for _, h in sirens do
+				pcall(h.set, h, 0.35)
 			end
 		end },
 		{ 19.0, function()
@@ -755,6 +879,9 @@ function OpeningCutscene.play()
 				end
 				m.idle = loopAnim(m.model, R6Rig, "idle", 1)
 			end
+			if march then
+				pcall(march.stop, march, 0.3)
+			end
 		end },
 		-- the Tanker: a shield slam
 		{ 19.3, function()
@@ -762,11 +889,22 @@ function OpeningCutscene.play()
 			if h then
 				showCard(h.def)
 				swingArm(h.model, "Left", 0.25, 0.25, 0.12)
+				snd(function()
+					return WorldSfx.weapon("shield", "draw", h.root)
+				end)
 				task.delay(0.6, function()
 					Fx.ring(folder, h.root.CFrame.Position - Vector3.new(0, 2.8, 0), h.def.color, 18, 0.7, 0.5)
 					Fx.burst(folder, h.root.CFrame.Position - Vector3.new(0, 2, -1), Color3.fromRGB(150, 140, 120), 16, 6, 0.6)
 					Fx.smoke(folder, h.root.CFrame.Position - Vector3.new(0, 2.5, 0), Color3.fromRGB(120, 110, 100))
 					shake = 1.0
+					-- (sound) the shield meets the street: a slam and the ground answering
+					local p = h.root.CFrame.Position - Vector3.new(0, 2.8, 0)
+					snd(function()
+						return WorldSfx.weapon("shield", "hit", p, { power = 1 })
+					end)
+					snd(function()
+						return WorldSfx.magic("earth", "nova", p)
+					end)
 				end)
 			end
 		end },
@@ -776,10 +914,21 @@ function OpeningCutscene.play()
 			if h then
 				showCard(h.def)
 				swingArm(h.model, "Right", 0.3, 0.2, 0.12)
+				snd(function()
+					return WorldSfx.weapon("greatsword", "equip", h.root, { stars = 2 })
+				end)
+				task.delay(0.48, function()
+					snd(function()
+						return WorldSfx.weapon("greatsword", "swing", h.root, { stars = 2, power = 0.6 })
+					end)
+				end)
 				task.delay(0.55, function()
 					Fx.slash(folder, h.root.CFrame * CFrame.new(0, 0.5, 0), h.def.color, 10)
 					Fx.burst(folder, h.root.CFrame.Position + Vector3.new(0, 0, 5), Color3.fromRGB(255, 220, 160), 14, 7, 0.5)
 					shake = 0.6
+					snd(function()
+						return WorldSfx.weapon("greatsword", "crit", h.root.CFrame.Position + Vector3.new(0, 0, 5), { power = 0.7 })
+					end)
 				end)
 			end
 		end },
@@ -790,10 +939,25 @@ function OpeningCutscene.play()
 				showCard(h.def)
 				Fx.circle(folder, h.root.CFrame.Position - Vector3.new(0, 2.9, 0), h.def.color, 5, 2.4)
 				swingArm(h.model, "Right", 0.5, 1.2, 0.3)
+				-- (sound) the circle gathers mana; the fire answers the hand
+				snd(function()
+					return WorldSfx.magic("arcane", "charge", h.root.CFrame.Position - Vector3.new(0, 2.9, 0), { duration = 1.1 })
+				end)
 				task.delay(0.8, function()
 					local hand = handOf(h) + Vector3.new(0, 3, 0)
+					local up = hand + Vector3.new(0, 26, 30)
 					Fx.flash(folder, hand, Color3.fromRGB(255, 160, 60), 6, 1.4)
-					Fx.projectile(folder, hand, hand + Vector3.new(0, 26, 30), Color3.fromRGB(255, 130, 50), 2, 1.1)
+					snd(function()
+						return WorldSfx.magic("fire", "cast", hand)
+					end)
+					snd(function()
+						return WorldSfx.magic("fire", "projectile", hand, { travel = 1.1 })
+					end)
+					Fx.projectile(folder, hand, up, Color3.fromRGB(255, 130, 50), 2, 1.1, function()
+						snd(function()
+							return WorldSfx.magic("fire", "explosion", up, { volume = 0.7 })
+						end)
+					end)
 				end)
 			end
 		end },
@@ -804,6 +968,9 @@ function OpeningCutscene.play()
 				showCard(h.def)
 				Fx.smoke(folder, h.root.CFrame.Position, Color3.fromRGB(40, 30, 60))
 				local start = h.root.CFrame
+				snd(function()
+					return WorldSfx.play("vanish", start.Position)
+				end)
 				for _, d in h.model:GetDescendants() do
 					if d:IsA("BasePart") and d.Transparency < 1 then
 						d:SetAttribute("BaseT", d.Transparency)
@@ -825,6 +992,12 @@ function OpeningCutscene.play()
 					end
 					Fx.flash(folder, target.Position, h.def.color, 7, 0.4)
 					Fx.slash(folder, target * CFrame.Angles(0, math.rad(90), 0), h.def.color, 6)
+					snd(function()
+						return WorldSfx.play("blink", target.Position)
+					end)
+					snd(function()
+						return WorldSfx.weapon("daggers", "swing", target.Position, { stars = 2, shiny = true })
+					end)
 				end)
 			end
 		end },
@@ -834,10 +1007,19 @@ function OpeningCutscene.play()
 			if h then
 				showCard(h.def)
 				swingArm(h.model, "Left", 0.3, 0.9, 0.2)
+				snd(function()
+					return WorldSfx.weapon("bow", "draw", h.root)
+				end)
 				task.delay(0.9, function()
 					local from = handOf(h) + Vector3.new(0, 2, 0)
+					snd(function()
+						return WorldSfx.weapon("bow", "swing", from, { stars = 3 })
+					end)
 					Fx.projectile(folder, from, from + Vector3.new(-4, 60, 40), h.def.color, 0.8, 0.7, function()
 						Fx.ring(folder, from + Vector3.new(-4, 60, 40), h.def.color, 12, 0.6)
+						snd(function()
+							return WorldSfx.magic("wind", "impact", from + Vector3.new(-4, 60, 40), { volume = 0.7, far = 260 })
+						end)
 					end)
 				end)
 			end
@@ -848,9 +1030,19 @@ function OpeningCutscene.play()
 			if h then
 				showCard(h.def)
 				Fx.pillar(folder, h.root.CFrame.Position - Vector3.new(0, 3, 0), h.def.color, 40, 2.4)
+				-- (sound) a pillar of light that sings, and everyone's wounds closing
+				snd(function()
+					return WorldSfx.magic("holy", "beam", h.root.CFrame.Position, { duration = 2.4 })
+				end)
+				snd(function()
+					return WorldSfx.magic("healing", "heal", h.root.CFrame.Position)
+				end)
 				for _, m in party do
 					task.delay(math.random() * 0.6, function()
 						Fx.flash(folder, m.root.CFrame.Position, h.def.color, 5, 0.8)
+						snd(function()
+							return WorldSfx.magic("healing", "buff", m.root.CFrame.Position, { volume = 0.5 })
+						end)
 					end)
 				end
 			end
@@ -865,32 +1057,80 @@ function OpeningCutscene.play()
 				brute:PivotTo(CFrame.lookAt(at(0, 6, GATE_Z + 2), at(0, 6, LINE_Z)))
 				move(brute, CFrame.lookAt(at(0, 6, GATE_Z - 12), at(0, 6, LINE_Z)), 1.6)
 			end
+			-- (sound) the Gate heaves, the street shakes, and something roars on its way out
+			snd(function()
+				return WorldSfx.gate("surge", gateC, { rank = 5, near = 30, far = 400, volume = 1.4 })
+			end)
+			snd(function()
+				return WorldSfx.play("rumble", at(0, 0, GATE_Z - 6), { volume = 1.2 })
+			end)
+			if streetHum then
+				pcall(streetHum.set, streetHum, 1)
+			end
+			task.delay(0.45, function()
+				snd(function()
+					return WorldSfx.monster(brute or "orc", "aggro", brute or at(0, 6, GATE_Z - 6), { size = 2.1, volume = 1.3 })
+				end)
+			end)
 		end },
 		{ 37.0, function()
 			if brute then
 				Fx.ring(folder, at(0, 0.4, GATE_Z - 12), Color3.fromRGB(255, 80, 60), 26, 0.8)
 				brute:SetAttribute("Attacking", 1)
 				shake = 1.6
+				snd(function()
+					return WorldSfx.monster(brute, "attack", brute, { size = 2.1 })
+				end)
+				snd(function()
+					return WorldSfx.magic("earth", "nova", at(0, 0.4, GATE_Z - 12), { volume = 0.9 })
+				end)
 			end
 			local t1 = heroAt(1)
 			if t1 then
 				Fx.ring(folder, t1.root.CFrame.Position, Color3.fromRGB(255, 200, 80), 30, 0.7, 1) -- the taunt
+				snd(function()
+					return WorldSfx.play("taunt", t1.root)
+				end)
 			end
 		end },
 		{ 38.0, function()
 			local m = heroAt(3)
 			if m and brute then
 				local from = handOf(m) + Vector3.new(0, 1, 0)
-				Fx.projectile(folder, from, at(0, 7, GATE_Z - 12), Color3.fromRGB(255, 120, 40), 2.2, 0.6, function()
+				local target = at(0, 7, GATE_Z - 12)
+				snd(function()
+					return WorldSfx.magic("fire", "cast", from)
+				end)
+				snd(function()
+					return WorldSfx.magic("fire", "projectile", from, { travel = 0.6 })
+				end)
+				Fx.projectile(folder, from, target, Color3.fromRGB(255, 120, 40), 2.2, 0.6, function()
 					shake = 1.8
+					snd(function()
+						return WorldSfx.magic("fire", "impact", target, { volume = 1.2 })
+					end)
+					snd(function()
+						return WorldSfx.monster(brute, "hurt", brute, { size = 2.1 })
+					end)
 				end)
 			end
 			local f = heroAt(2)
 			if f then
 				move(f.model, CFrame.lookAt(at(-2, 3, GATE_Z - 18), at(0, 3, GATE_Z)), 0.5)
+				snd(function()
+					return WorldSfx.play("whoosh", f.root)
+				end)
 				task.delay(0.5, function()
 					swingArm(f.model, "Right", 0.1, 0.05, 0.1)
 					Fx.slash(folder, CFrame.new(at(-1, 4, GATE_Z - 16)), Color3.fromRGB(255, 90, 80), 12)
+					snd(function()
+						return WorldSfx.weapon("greatsword", "swing", f.root, { stars = 2, power = 1 })
+					end)
+					task.delay(0.06, function()
+						snd(function()
+							return WorldSfx.weapon("greatsword", "crit", at(-1, 4, GATE_Z - 16), { power = 1 })
+						end)
+					end)
 				end)
 			end
 		end },
@@ -899,9 +1139,21 @@ function OpeningCutscene.play()
 				Fx.burst(folder, at(0, 6, GATE_Z - 12), Color3.fromRGB(140, 200, 255), 30, 10, 0.9)
 				Fx.flash(folder, at(0, 6, GATE_Z - 12), Color3.fromRGB(200, 230, 255), 16, 0.6)
 				move(brute, CFrame.lookAt(at(0, 6, GATE_Z + 4), at(0, 6, LINE_Z)), 0.8, "in")
+				snd(function()
+					return WorldSfx.magic("arcane", "explosion", at(0, 6, GATE_Z - 12))
+				end)
+				snd(function()
+					return WorldSfx.monster(brute, "hurt", brute, { size = 2.1, pitch = 0.9 })
+				end)
 				task.delay(0.8, function()
 					brute.Parent = nil
 					gate:surge(0.8)
+					snd(function()
+						return WorldSfx.gate("enter", gateC, { rank = 5, volume = 1.6 })
+					end)
+					snd(function()
+						return WorldSfx.gate("surge", gateC, { rank = 4 })
+					end)
 				end)
 			end
 		end },
@@ -915,6 +1167,25 @@ function OpeningCutscene.play()
 					m.walk = loopAnim(m.model, R6Rig, "walk", 1.1)
 					m.entering = true
 				end)
+			end
+			-- (sound) the sirens fade behind them; the Gate fills the ears
+			for _, h in sirens do
+				pcall(h.set, h, 0.12)
+			end
+			if streetHum then
+				pcall(streetHum.set, streetHum, 1.3)
+			end
+		end },
+		-- into the whirlpool: a rush that rises and rises
+		{ 45.2, function()
+			snd(function()
+				return WorldSfx.play("tunnel", nil, { volume = 1.2 })
+			end)
+			for _, h in sirens do
+				pcall(h.stop, h, 1.2)
+			end
+			if streetHum then
+				pcall(streetHum.stop, streetHum, 2)
 			end
 		end },
 	}
@@ -1003,6 +1274,9 @@ function OpeningCutscene.play()
 					m.inside = true
 					GateVfx.flash(folder, p + Vector3.new(0, 1, 2), Color3.fromRGB(190, 225, 255), 9, 0.5)
 					gate:surge(0.7)
+					snd(function()
+						return WorldSfx.gate("enter", p, { pitch = 0.94 + i * 0.03 })
+					end)
 					m.model.Parent = nil
 				else
 					local np = p + step.Unit * math.min(step.Magnitude, 9 * dt)
@@ -1059,15 +1333,21 @@ function OpeningCutscene.play()
 			fade.BackgroundColor3 = Color3.new(1, 1, 1)
 			fade.BackgroundTransparency = 1
 			tween(fade, 0.25, { BackgroundTransparency = 0 })
+			ui("slam") -- (sound) out the other side, into white
 			task.delay(0.35, function()
 				tween(fade, 0.6, { BackgroundColor3 = Color3.fromRGB(4, 6, 14) })
 				for i, l in letters do
 					task.delay(i * 0.07, function()
 						l.Position = UDim2.fromScale((i - 0.5) / #letters, -0.6)
 						tween(l, 0.45, { Position = UDim2.fromScale((i - 0.5) / #letters, 0.5), TextTransparency = 0 }, Enum.EasingStyle.Back)
+						-- each letter lands (a little higher each time)
+						task.delay(0.3, function()
+							ui("letter", { pitch = 0.92 + i * 0.035 })
+						end)
 					end)
 				end
 				task.delay(1.2, function()
+					ui("shimmer")
 					-- a shimmer runs across the title
 					for i, l in letters do
 						task.delay(i * 0.05, function()
@@ -1089,6 +1369,10 @@ function OpeningCutscene.play()
 		task.wait()
 	end
 	conn:Disconnect()
+	-- (sound) every loop the opening started fades out with it (skipped or not)
+	for _, h in loops do
+		pcall(h.stop, h, 0.6)
+	end
 	for _, l in letters do
 		tween(l, 0.4, { TextTransparency = 1 })
 	end
